@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.service.framework.Fw
+import com.service.framework.R
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 import kotlinx.coroutines.Job
@@ -85,10 +86,10 @@ class DaemonService : LifecycleService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "守护服务", // 对于库模块，硬编码是可接受的
+                "守护精灵",
                 NotificationManager.IMPORTANCE_MIN
             ).apply {
-                description = "用于跨进程守护主服务"
+                description = "守护精灵后台服务"
                 setShowBadge(false)
             }
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -98,9 +99,9 @@ class DaemonService : LifecycleService() {
 
     private fun buildNotification(): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("守护服务")
-            .setContentText("正在保护应用运行")
-            .setSmallIcon(android.R.drawable.ic_menu_compass) // 使用一个不同的图标以作区分
+            .setContentTitle("守护精灵")
+            .setContentText("正在默默守护中~")
+            .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .build()
     }

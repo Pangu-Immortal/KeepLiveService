@@ -4,29 +4,29 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- 盾牌外框 - 粉色 (缩小到安全区域内) -->
+    <!-- 盾牌外框 (缩小到安全区域内) -->
     <path
-        android:fillColor="#FF6B9D"
+        android:fillColor="#000000"
         android:pathData="M54,28 L74,40 L74,56 Q74,70 54,80 Q34,70 34,56 L34,40 Z" />
 
-    <!-- 盾牌内部 - 白色 -->
+    <!-- 盾牌内部镂空 -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M54,34 L70,44 L70,54 Q70,66 54,74 Q38,66 38,54 L38,44 Z" />
 
     <!-- 树干 -->
     <path
-        android:fillColor="#8D6E63"
+        android:fillColor="#000000"
         android:pathData="M51,70 L51,60 L57,60 L57,70 Z" />
 
-    <!-- 树冠 - 绿色 -->
+    <!-- 树冠 -->
     <path
-        android:fillColor="#4DB6AC"
+        android:fillColor="#000000"
         android:pathData="M54,42 L66,60 L42,60 Z" />
 
-    <!-- 树顶星星 - 金黄色 -->
+    <!-- 树顶星星 -->
     <path
-        android:fillColor="#FFD700"
+        android:fillColor="#000000"
         android:pathData="M54,36 L55.5,40 L60,40.3 L56.8,43 L57.8,47.5 L54,45 L50.2,47.5 L51.2,43 L48,40.3 L52.5,40 Z" />
 
 </vector>

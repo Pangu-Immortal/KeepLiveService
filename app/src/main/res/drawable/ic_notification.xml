@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 通知栏小图标 - 盾牌轮廓 + 树 + 星星 -->
+
+    <!-- 盾牌轮廓 - 粗描边 -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:pathData="M12,2 L20,6 L20,11 Q20,17 12,22 Q4,17 4,11 L4,6 Z" />
+
+    <!-- 树干 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M11,18 L11,14 L13,14 L13,18 Z" />
+
+    <!-- 树冠 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,7 L17,14 L7,14 Z" />
+
+    <!-- 树顶星星 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,4.5 L12.6,6.2 L14.5,6.4 L13,7.6 L13.4,9.5 L12,8.5 L10.6,9.5 L11,7.6 L9.5,6.4 L11.4,6.2 Z" />
+
+</vector>

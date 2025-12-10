@@ -1,0 +1,33 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 账户同步图标 - 盾牌+树 -->
+    <!-- 盾牌外框 - 粉色 -->
+    <path
+        android:fillColor="#FF6B9D"
+        android:pathData="M12,2 L20,6 L20,12 Q20,18 12,22 Q4,18 4,12 L4,6 Z" />
+
+    <!-- 盾牌内部 - 白色 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,4 L18,7 L18,11.5 Q18,16 12,19 Q6,16 6,11.5 L6,7 Z" />
+
+    <!-- 树干 -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M11,17 L11,13 L13,13 L13,17 Z" />
+
+    <!-- 树冠 -->
+    <path
+        android:fillColor="#4DB6AC"
+        android:pathData="M12,7 L17,13 L7,13 Z" />
+
+    <!-- 树顶星星 -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M12,5 L12.5,6.5 L14,6.7 L13,7.7 L13.3,9 L12,8.3 L10.7,9 L11,7.7 L10,6.7 L11.5,6.5 Z" />
+
+</vector>

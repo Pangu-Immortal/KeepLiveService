@@ -61,10 +61,10 @@ class MyApp : Application() {
 
             // ==================== 通知配置 ====================
             notificationChannelId = "fw_channel"
-            notificationChannelName = "媒体服务"
-            notificationTitle = "音乐播放服务"
-            notificationContent = "正在后台运行..."
-            notificationIconResId = R.drawable.ic_launcher_foreground
+            notificationChannelName = "守护精灵"
+            notificationTitle = "守护精灵运行中"
+            notificationContent = "正在守护你的应用~"
+            notificationIconResId = R.drawable.ic_notification
             notificationActivityClass = MainActivity::class.java
 
             // ==================== 日志配置 ====================
