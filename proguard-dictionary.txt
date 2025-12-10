@@ -24,17 +24,17 @@ O0o
 lI1
 I1l
 l1I
-1lI
-1Il
-I11
-l11
-1l1
-11l
+lIx
+Ilx
+Ixx
+lxx
+xlx
+xxl
 O00
-0O0
-00O
+xO0
+xxO
 oO0
-0oO
+xoO
 o0O
 
 # Greek-like confusing names

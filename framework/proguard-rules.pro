@@ -57,6 +57,13 @@
     public android.os.IBinder onBind(android.content.Intent);
 }
 
+# JobService 需要保留回调方法
+-keep public class * extends android.app.job.JobService {
+    public <init>();
+    public boolean onStartJob(android.app.job.JobParameters);
+    public boolean onStopJob(android.app.job.JobParameters);
+}
+
 # ==================== 保留所有 BroadcastReceiver ====================
 
 -keep public class * extends android.content.BroadcastReceiver {

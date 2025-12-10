@@ -645,10 +645,29 @@ class MyApp : Application() {
 
 ### 3. 构建运行
 
+**Debug 构建：**
+
 ```bash
 ./gradlew assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+**Release 构建（带时间戳）：**
+
+```bash
+# 一键打包，自动生成带时间戳的 Release APK 和 mapping 文件
+./gradlew buildTimestampedReleaseApk
+
+# 输出路径：release/app-202512101118.apk
+#           release/mapping-202512101118.txt
+```
+
+**自定义 Gradle Tasks：**
+
+| Task | 说明 |
+|------|------|
+| `buildTimestampedReleaseApk` | 构建 Release APK，输出到根目录 `release/` 文件夹，包含 APK 和 mapping 文件 |
+| `generateProguardDictionary` | 生成新的随机混淆字典（警告：会覆盖现有字典） |
 
 ### 4. 测试蓝牙唤醒
 
@@ -668,17 +687,6 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```bash
 adb logcat | grep -E "(Fw|BluetoothReceiver|UsbReceiver|NfcReceiver)"
 ```
-
----
-
-## 依赖库
-
-| 库 | 版本 | 用途 |
-|---|------|-----|
-| androidx.core:core-ktx | 1.17.0 | Kotlin 扩展 |
-| androidx.media:media | 1.7.1 | MediaSession |
-| androidx.lifecycle:lifecycle-service | 2.10.0 | 服务生命周期 |
-| androidx.work:work-runtime-ktx | 2.10.0 | WorkManager |
 
 ---
 
@@ -797,3 +805,36 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 
 **Star ⭐ 这个项目如果对你有帮助！欢迎 Start 🌟**
 
+![二维码](https://github.com/Pangu-Immortal/Pangu-Immortal/blob/main/getqrcode.png)
+
+🔥 **Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
+
+---
+（所有功能均提供对 Android 16 版本的适配，添加联系时请备注需求）
+
+- **应用自启动**：应用安装后无需用户点击即可自动启动。
+- **暗刷 H5 广告**：偷偷刷 ADX、adsense 等 H5 广告，可以开启 20+ view 同时刷。
+- **无权限后台弹出 Activity**：无需权限即可在后台任意时机弹出 Activity，无需锁屏。
+- **应用保活**：应用可在多次强制停止操作后仍保持运行，完美抵抗强制停止操作。
+- **应用拉活**：在应用彻底死亡的状态下，可在15分钟内唤醒自身。
+- **防卸载**：防止用户卸载应用，点击卸载无反应。
+- **无感知卸载竞品**：可无感知地卸载手机中任意应用。
+- **隐藏桌面图标**：应用安装后立即隐藏自身，或在需要时随时隐藏，支持 Android 16。
+- **马甲包服务**：彻底解决关联问题，为批量马甲包提供服务。
+- **报病毒优化**：无需重新打包，净化应用，处理所有应用的报毒问题。
+- **账号隔离**：为开发者提供完善的账号隔离体系，防止账号关联。
+- **IP 漂移**：支持拉取高 eCPM 地区的 AdMob 广告。
+- **模拟 iOS**：支持 Android 设备模拟并拉取 iOS 的 AdMob 广告，大幅提高 eCPM。
+- **机型模拟工具**：支持批量刷下载量，可无成本快速刷百万下载量，迅速提高商店排名。
+- **国内机型保活**：为运动类、外卖类、聊天类等应用实现永生不死，不被系统杀死，已为多款应用接入。
+- **防抓包处理**：数据脱敏，适用于棋牌类大规模上架等操作。
+- **多开、双开工具**：支持无限分身等功能。
+- **大模型定制开发**：提供私有数据训练、NSFW 模型开发、成人模型制作、成人话术、成人照片、成人视频等私有化专属大模型训练制作。
+- **数字人、换脸、图生图、图生视频**：制作明星、自己、家人的数字人，老照片复活，与已逝去的亲人对话。
+- **云游戏、云手机搭建**：提供全套云端容器方案，涵盖云原生 GPU、定制化服务器、全光网络、协同渲染、AI 内容生成、云原生工具包等核心技术路径。
+- **定制化播放器**：提供加密播放器、3D 播放器、云播放器等，可为任意视频编解码提供定制服务，为 AR、VR、MR 场景提供服务。
+- **滤镜定制**：提供视频、相机、图片等滤镜处理，可根据竞品效果进行模仿。
+- **AI 多场景定制**：多年 AI 行业经验，可为小团队提供定制化的 AI 服务。
+- **ROM 定制**：提供各类定制化功能的 Android 系统，也可提供车载系统的定制化，提供软硬件交互的外包服务。
+
+---
