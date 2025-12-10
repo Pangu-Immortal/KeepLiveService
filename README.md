@@ -8,18 +8,24 @@
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
 
 > 安全研究用途：完整复现市面上所有的保活机制，穷尽展示所有保活手段，适配所有的主流机型和 ROM。
+> 
+> 为了拉齐全网共同认知，让小团队开发不在迷茫，开源了全套所有私密函数和私密策略。会长期持续迭代，会陆陆续续的公开所有的隐私策略，ecpm 策略等等，欢迎 star🌟 持续关注。
+> 
+> 更多详细内容，可以查阅项目：https://github.com/Pangu-Immortal/KeepAlivePerfect
 
+点击star🌟，关注不迷路。
+🔥 **Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
 ## 项目亮点
 
-- **🆕 适配 Google Play 最新要求** - 完全兼容 2024 年 Google Play 商店的所有技术要求
+- **🆕 适配 Google Play 最新要求** - 完全兼容 2026 年 Google Play 商店的所有技术要求
 - **📱 Android 16K 页面大小支持** - 原生代码已适配 16KB 页面对齐，兼容 Android 15+ 的 16K 页面设备
-- **🔧 最新开发工具链** - 使用 AGP 8.13.1、Kotlin 2.0.21、JDK 21、NDK 27 等最新稳定版开发
+- **🔧 最新开发工具链** - 使用 AGP 8.14.3、Kotlin 2.2.21、JDK 21、NDK 27 等最新稳定版开发
 - **📦 64 位架构全覆盖** - 支持 arm64-v8a、armeabi-v7a、x86_64、x86 四种架构
 - **🛡️ 生产级代码质量** - 通过 Lint 检查、ProGuard 混淆优化，可直接上架应用商店
 
 ## 项目简介
 
-Fw（Framework）是一个模块化的 Android 保活框架，用于研究和复现商业应用的后台保活技术。当蓝牙设备连接、USB 设备插入、NFC 标签发现等事件发生时，即使应用在后台或进程被杀死，也能自动唤醒并恢复服务。
+Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的商业应用的后台保活技术。当蓝牙设备连接、USB 设备插入、NFC 标签发现等事件发生时，即使应用在后台或进程被杀死，也能自动唤醒并恢复服务。
 
 **特性：**
 
@@ -30,6 +36,73 @@ Fw（Framework）是一个模块化的 Android 保活框架，用于研究和复
 - 🏭 支持主流厂商（小米、华为、OPPO、vivo、三星、Google、传音等）
 - 🔨 包含 Native C++ 层保活
 - 📊 提供厂商集成分析工具
+
+---
+
+## 开发环境
+
+| 项目 | 版本 |
+|-----|------|
+| Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2|
+| Gradle | 8.14.3 |
+| AGP (Android Gradle Plugin) | 8.14.3 |
+| Kotlin | 2.2.21 |
+| JVM | 21 |
+| NDK | 27.0.12077973 |
+| CMake | 3.22.1 |
+
+---
+
+## SDK 版本
+
+| 项目 | 版本                |
+|-----|-------------------|
+| compileSdk | 36.1 (Android 16) |
+| targetSdk | 36.1              |
+| minSdk | 24 (Android 7.0)  |
+
+---
+
+## Android 版本适配
+
+| Android 版本 | API   | 适配要点 |
+|-------------|-------|---------|
+| 7.x | 24-25 | `startService()` |
+| 8.0+ | 26+   | `startForegroundService()` + 通知渠道，静态广播受限 |
+| 9.0+ | 28+   | 后台限制加强 |
+| 10+ | 29+   | 后台启动 Activity 受限 |
+| 11+ | 30+   | 前台服务类型必须声明 |
+| 12+ | 31+   | `BLUETOOTH_CONNECT` 运行时权限，精确闹钟权限 |
+| 13+ | 33+   | `POST_NOTIFICATIONS` 运行时权限 |
+| 14+ | 34+   | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限 |
+| 15+ | 35+   | 更严格的后台限制，**16KB 页面大小设备支持** |
+| 16 | 36.1  | 最新 API |
+
+### Android 16K 页面大小适配
+
+从 Android 15 开始，部分设备使用 16KB 页面大小（而非传统的 4KB）。本项目已完成 16K 适配：
+
+**适配方式：**
+
+1. **CMake 链接选项** - 在 `CMakeLists.txt` 中添加：
+
+   ```cmake
+   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+   ```
+
+2. **ELF 段对齐** - 编译后的 Native 库 LOAD 段对齐值为 `0x4000` (16384 = 16KB)
+
+**验证方法：**
+
+```bash
+# 使用 NDK 的 llvm-readelf 检查 ELF 对齐
+llvm-readelf -l libfw_native.so | grep LOAD
+# 输出应显示对齐值为 0x4000
+```
+
+**参考文档：** [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+
+---
 
 ## 快速开始
 
@@ -111,6 +184,11 @@ VendorIntegrationAnalyzer.getFullAnalysisReport(context, "com.moji.mjweather")
 ```
 
 ---
+
+
+![二维码](https://github.com/Pangu-Immortal/Pangu-Immortal/blob/main/getqrcode.png)
+
+🔥 **Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
 
 ## 保活策略完整列表
 
@@ -200,7 +278,7 @@ VendorIntegrationAnalyzer.getFullAnalysisReport(context, "com.moji.mjweather")
 
 厂商推送服务（小米推送、华为推送、FCM 等）是系统级常驻服务，即使应用被杀，推送到达时也会拉起应用。
 
-### 集成方式
+### 集成方式（举例子）
 
 ```kotlin
 // 1. 集成厂商推送 SDK
@@ -255,7 +333,7 @@ class MyApp : Application() {
 | 个推 | GeTui | `com.igexin.sdk` |
 | 极光 | JPush | `cn.jpush.android` |
 
-### FCM 数据消息 (Data Message) 模式建议
+### FCM 数据消息 (Data Message) 模式建议（只有 data 模式可以拉活）
 
 对于通过 FCM (Firebase Cloud Messaging) 进行推送，强烈建议使用 **数据消息 (Data Message)** 而不是通知消息 (Notification Message)。
 
@@ -320,35 +398,6 @@ class MyApp : Application() {
 通过这种方式，FCM 就不再仅仅是一个通知通道，而是一个强大的后台唤醒工具。
 
 ---
-
-## 各类保活机制分析
-
-作为安全研究，分析国内市场"永生不死"应用的可能机制：
-
-### 1. 厂商白名单合作（最可能）
-
-```
-/system/etc/sysconfig/xxx.xml
-/vendor/etc/sysconfig/xxx.xml
-```
-
-可能存在 hardcode 的包名白名单，不在用户可见的"自启动管理"中。
-
-### 2. 推送通道
-
-集成了厂商推送 SDK，推送服务是系统级常驻，可以唤醒任意已注册的应用。
-
-### 3. 预装合作
-
-预装应用可能有：
-
-- 特殊的系统签名
-- `android:sharedUserId="android.uid.system"`
-- 位于 `/system/priv-app/` 目录
-
-### 4. 锁屏天气功能
-
-提供"锁屏天气"功能，实际是在锁屏界面显示 Activity，让应用保持前台状态。
 
 ### 检测命令
 
@@ -439,71 +488,6 @@ KeepLiveService/
 ├── settings.gradle.kts            # 项目设置
 └── gradle/libs.versions.toml      # 依赖版本管理
 ```
-
----
-
-## 开发环境
-
-| 项目 | 版本 |
-|-----|------|
-| Android Studio | Meerkat 2024.3.2+ |
-| Gradle | 8.13.1 |
-| AGP (Android Gradle Plugin) | 8.13.1 |
-| Kotlin | 2.0.21 |
-| JVM | 21 |
-| NDK | 27.0.12077973 |
-| CMake | 3.22.1 |
-
----
-
-## SDK 版本
-
-| 项目 | 版本                |
-|-----|-------------------|
-| compileSdk | 36.1 (Android 16) |
-| targetSdk | 36.1              |
-| minSdk | 24 (Android 7.0)  |
-
----
-
-## Android 版本适配
-
-| Android 版本 | API   | 适配要点 |
-|-------------|-------|---------|
-| 7.x | 24-25 | `startService()` |
-| 8.0+ | 26+   | `startForegroundService()` + 通知渠道，静态广播受限 |
-| 9.0+ | 28+   | 后台限制加强 |
-| 10+ | 29+   | 后台启动 Activity 受限 |
-| 11+ | 30+   | 前台服务类型必须声明 |
-| 12+ | 31+   | `BLUETOOTH_CONNECT` 运行时权限，精确闹钟权限 |
-| 13+ | 33+   | `POST_NOTIFICATIONS` 运行时权限 |
-| 14+ | 34+   | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限 |
-| 15+ | 35+   | 更严格的后台限制，**16KB 页面大小设备支持** |
-| 16 | 36.1  | 最新 API |
-
-### Android 16K 页面大小适配
-
-从 Android 15 开始，部分设备使用 16KB 页面大小（而非传统的 4KB）。本项目已完成 16K 适配：
-
-**适配方式：**
-
-1. **CMake 链接选项** - 在 `CMakeLists.txt` 中添加：
-
-   ```cmake
-   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
-   ```
-
-2. **ELF 段对齐** - 编译后的 Native 库 LOAD 段对齐值为 `0x4000` (16384 = 16KB)
-
-**验证方法：**
-
-```bash
-# 使用 NDK 的 llvm-readelf 检查 ELF 对齐
-llvm-readelf -l libfw_native.so | grep LOAD
-# 输出应显示对齐值为 0x4000
-```
-
-**参考文档：** [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
 
 ---
 

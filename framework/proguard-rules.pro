@@ -2,7 +2,7 @@
 # Fw Android Keep-Alive Framework - Library Module ProGuard Rules
 # ===============================================================================
 #
-# Author: qihao (Pangu-Immortal)
+# Author: Pangu-Immortal
 # GitHub: https://github.com/Pangu-Immortal
 # Build Date: 2025-12-09
 #

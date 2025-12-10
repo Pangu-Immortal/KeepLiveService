@@ -3,7 +3,7 @@
  * Fw Android Keep-Alive Framework - Enhanced Logging Utility
  * ===============================================================================
  *
- * @author qihao (Pangu-Immortal)
+ * @author Pangu-Immortal
  * @github https://github.com/Pangu-Immortal
  * @createDate 2025-12-09
  *
@@ -74,7 +74,7 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Enhanced logging utility providing detailed log output for debugging and security research
  *
- * @author qihao (Pangu-Immortal)
+ * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
  * @since 1.0.0
  */
 object FwLog {

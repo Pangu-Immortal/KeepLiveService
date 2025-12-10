@@ -26,7 +26,7 @@ import com.service.framework.util.getBluetoothDevice
  * - 此机制在用户“强制停止”(Force Stop)应用后会失效，这是 Android 系统为保护用户而设计的机制。
  * - 需要 `BLUETOOTH_CONNECT` 运行时权限 (Android 12+)。
  *
- * @author qihao (Pangu-Immortal)
+ * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
  * @since 1.0.0
  */
 @SuppressLint("MissingPermission")

@@ -3,7 +3,7 @@
  * Fw Android Keep-Alive Framework - Library Module Build Configuration
  * ===============================================================================
  *
- * @author qihao (Pangu-Immortal)
+ * @author Pangu-Immortal
  * @github https://github.com/Pangu-Immortal
  * @buildDate 2025-12-09
  *
@@ -48,7 +48,7 @@ android {
         // 构建配置字段 - 用于运行时获取构建信息
         buildConfigField("String", "FW_VERSION", "\"1.0.0\"")
         buildConfigField("String", "FW_BUILD_TIME", "\"2025-12-09T${System.currentTimeMillis()}\"")
-        buildConfigField("String", "FW_AUTHOR", "\"qihao (Pangu-Immortal)\"")
+        buildConfigField("String", "FW_AUTHOR", "\"Pangu-Immortal\"")
         buildConfigField("String", "FW_GITHUB", "\"https://github.com/Pangu-Immortal\"")
         buildConfigField("int", "FW_STRATEGY_COUNT", "20")
 

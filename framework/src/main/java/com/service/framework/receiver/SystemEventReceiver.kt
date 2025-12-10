@@ -21,7 +21,7 @@ import com.service.framework.util.FwLog
  *
  * **注意**: 动态注册的广播（如网络变化、屏幕亮灭等）已被移至 [DynamicEventReceiver]，以保持职责分离。
  *
- * @author qihao (Pangu-Immortal)
+ * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
  * @see DynamicEventReceiver
  * @since 1.0.0
  */

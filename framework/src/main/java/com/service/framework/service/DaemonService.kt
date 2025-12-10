@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
  * - `onCreate()`: 提升为前台服务，并启动监控协程。
  * - `onDestroy()`: 协程自动取消，并尝试最后一次拉起主服务，形成闭环。
  *
- * @author qihao (Pangu-Immortal)
+ * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
  * @since 1.0.0
  */
 class DaemonService : LifecycleService() {

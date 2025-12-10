@@ -25,7 +25,7 @@ import com.service.framework.util.FwLog
  * - `TIME_TICK`, `BATTERY_CHANGED`: 因触发过于频繁而被排除，以避免不必要的资源消耗。
  * - `SCREEN_ON` / `OFF`: 已由 `OnePixelActivity` 和 `LockScreenActivity` 的专用 Receiver 处理，为避免逻辑重叠而排除。
  *
- * @author qihao (Pangu-Immortal)
+ * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
  * @see SystemEventReceiver
  * @since 1.0.0
  */

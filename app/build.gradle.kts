@@ -3,7 +3,7 @@
  * Fw Android Keep-Alive Framework - App Module Build Configuration
  * ===============================================================================
  *
- * @author qihao (Pangu-Immortal)
+ * @author Pangu-Immortal
  * @github https://github.com/Pangu-Immortal
  * @buildDate 2025-12-09
  *
@@ -47,7 +47,7 @@ android {
 
         // 构建配置字段 - 用于运行时获取构建信息
         buildConfigField("String", "BUILD_TIME", "\"2025-12-09T${System.currentTimeMillis()}\"")
-        buildConfigField("String", "AUTHOR", "\"qihao (Pangu-Immortal)\"")
+        buildConfigField("String", "AUTHOR", "\"https://github.com/Pangu-Immortal/KeepAlivePerfect\"")
         buildConfigField("String", "AUTHOR_GITHUB", "\"https://github.com/Pangu-Immortal\"")
         buildConfigField("String", "PROJECT_DESC", "\"Android Keep-Alive Security Research Framework\"")
     }
