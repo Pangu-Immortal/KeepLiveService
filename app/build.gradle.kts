@@ -1,9 +1,13 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.io.File
+
 /**
  * ===============================================================================
  * Fw Android Keep-Alive Framework - App Module Build Configuration
  * ===============================================================================
  *
- * @author Pangu-Immortal
+ * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
  * @github https://github.com/Pangu-Immortal
  * @buildDate 2025-12-09
  *
@@ -32,9 +36,7 @@ plugins {
 
 android {
     namespace = "com.google.services"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.google.services"
@@ -73,6 +75,9 @@ android {
                 "proguard-rules.pro"
             )
 
+            // 使用 debug 签名以便于测试
+            signingConfig = signingConfigs.getByName("debug")
+
             // Release 构建信息
             buildConfigField("boolean", "ENABLE_VERBOSE_LOG", "false")
             buildConfigField("String", "BUILD_TYPE_DESC", "\"Release Build - Obfuscated\"")
@@ -84,10 +89,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    kotlinOptions {
-        jvmTarget = "21"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -97,6 +98,69 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+// 注意：proguard-dictionary.txt 已经手动配置好了，不需要自动生成
+// 如果需要重新生成，可以手动运行 generateProguardDictionary task
+val generateProguardDictionary by tasks.register("generateProguardDictionary") {
+    group = "Build"
+    description = "Generates a new random ProGuard dictionary (WARNING: overwrites existing dictionary)"
+    doLast {
+        val dictionaryFile = rootProject.file("proguard-dictionary-generated.txt")
+        dictionaryFile.writer().use { writer ->
+            val chars = ('a'..'z') + ('A'..'Z')
+            writer.appendLine("# Auto-generated ProGuard dictionary on ${Date()}")
+            repeat(1000) {
+                val randomWord = (1..16).map { chars.random() }.joinToString("")
+                writer.appendLine(randomWord)
+            }
+        }
+        println("SUCCESS: Generated new random Proguard dictionary at ${dictionaryFile.path}")
+        println("NOTE: To use this dictionary, manually replace proguard-dictionary.txt")
+    }
+}
+
+// Register a new task with a UNIQUE name
+tasks.register("buildTimestampedReleaseApk") {
+    group = "Build"
+    description = "Builds release APK with timestamp and copies to root/release directory."
+    dependsOn("assembleRelease")
+
+    doLast {
+        val buildOutputDir = layout.buildDirectory.dir("outputs/apk/release").get().asFile
+        val mappingDir = layout.buildDirectory.dir("outputs/mapping/release").get().asFile
+        val originalApk = File(buildOutputDir, "app-release.apk")
+        val originalMapping = File(mappingDir, "mapping.txt")
+
+        // 创建根目录下的 release 文件夹
+        val releaseDir = rootProject.file("release")
+        if (!releaseDir.exists()) {
+            releaseDir.mkdirs()
+        }
+
+        if (originalApk.exists()) {
+            // 时间戳格式：yyyyMMddHHmm
+            val timestamp = SimpleDateFormat("yyyyMMddHHmm").format(Date())
+            val newApk = File(releaseDir, "app-$timestamp.apk")
+            val newMapping = File(releaseDir, "mapping-$timestamp.txt")
+
+            // 删除已存在的同名文件
+            if (newApk.exists()) newApk.delete()
+            if (newMapping.exists()) newMapping.delete()
+
+            // 复制 APK 到 release 目录
+            originalApk.copyTo(newApk, overwrite = true)
+            println("SUCCESS: APK copied to ${newApk.path}")
+
+            // 复制 mapping 文件（如果存在）
+            if (originalMapping.exists()) {
+                originalMapping.copyTo(newMapping, overwrite = true)
+                println("SUCCESS: Mapping copied to ${newMapping.path}")
+            }
+        } else {
+            println("ERROR: 'app-release.apk' not found in $buildOutputDir. The build might have failed.")
         }
     }
 }
