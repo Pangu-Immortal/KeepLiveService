@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FloatWindowManager.kt - 悬浮窗保活管理器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   管理系统悬浮窗的显示与隐藏，支持 1 像素透明悬浮窗和可见悬浮窗两种模式。
+ *   通过悬浮窗保持应用处于"使用中"状态，从而提升进程优先级。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.content.Context

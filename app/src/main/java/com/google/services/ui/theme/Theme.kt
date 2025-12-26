@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * Theme.kt - Material 3 主题配置
+ * ============================================================================
+ *
+ * 功能简介：
+ *   配置应用的 Material 3 主题，包括：
+ *   - 少女风亮色主题（GirlyLightColorScheme）
+ *   - 少女风暗色主题（GirlyDarkColorScheme）
+ *   - KeepLiveServiceTheme 组合函数
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.google.services.ui.theme
 
 import android.os.Build

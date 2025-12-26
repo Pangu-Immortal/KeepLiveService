@@ -1,8 +1,23 @@
 /**
+ * ============================================================================
  * fw_jni.cpp - JNI 接口层
+ * ============================================================================
  *
- * 提供 Java 层调用 Native 函数的接口
- * 包含所有 JNI 方法的实现
+ * 功能简介：
+ *   提供 Java 层调用 Native 函数的 JNI 接口，封装了守护进程、进程管理、
+ *   Socket 通信等所有 Native 功能的 Java 调用入口。
+ *
+ * 主要函数：
+ *   - startDaemon / stopDaemon / isDaemonRunning: 守护进程管理
+ *   - getOomAdj / setOomAdj: OOM adj 值操作
+ *   - setProcessPriority / getProcessPriority: 进程优先级操作
+ *   - getProcessStatus / getMemoryInfo: 进程和内存信息获取
+ *   - checkRoot / getProcessCount: 系统状态检测
+ *   - startSocketServer / stopSocketServer / connectSocket / sendHeartbeat: Socket 操作
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
  */
 
 #include <jni.h>

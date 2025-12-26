@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    启动页背景 - 粉紫渐变卡通风格
+    用于 Splash Screen API 的背景
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 底层：粉紫渐变背景 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="135"
+                android:startColor="#FFFF6B9D"
+                android:centerColor="#FFB39DDB"
+                android:endColor="#FF9575CD" />
+        </shape>
+    </item>
+
+    <!-- 装饰层：左上角大星星 -->
+    <item
+        android:width="48dp"
+        android:height="48dp"
+        android:top="80dp"
+        android:left="40dp"
+        android:gravity="top|left">
+        <vector
+            android:width="48dp"
+            android:height="48dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:fillColor="#40FFFFFF"
+                android:pathData="M12,2L14.39,8.26L21.2,9.27L16.1,14.14L17.27,20.87L12,17.77L6.73,20.87L7.9,14.14L2.8,9.27L9.61,8.26Z" />
+        </vector>
+    </item>
+
+    <!-- 装饰层：右上角小星星 -->
+    <item
+        android:width="32dp"
+        android:height="32dp"
+        android:top="120dp"
+        android:right="60dp"
+        android:gravity="top|right">
+        <vector
+            android:width="32dp"
+            android:height="32dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:fillColor="#30FFFFFF"
+                android:pathData="M12,2L14.39,8.26L21.2,9.27L16.1,14.14L17.27,20.87L12,17.77L6.73,20.87L7.9,14.14L2.8,9.27L9.61,8.26Z" />
+        </vector>
+    </item>
+
+    <!-- 装饰层：左下角云朵 -->
+    <item
+        android:width="80dp"
+        android:height="48dp"
+        android:bottom="160dp"
+        android:left="24dp"
+        android:gravity="bottom|left">
+        <vector
+            android:width="80dp"
+            android:height="48dp"
+            android:viewportWidth="64"
+            android:viewportHeight="32">
+            <path
+                android:fillColor="#25FFFFFF"
+                android:pathData="M52,20c0,-4.42 -3.58,-8 -8,-8c-0.5,0 -1,0.05 -1.48,0.14C40.44,8.42 36.54,6 32,6c-5.52,0 -10.09,4.06 -10.87,9.36C17.58,15.92 15,18.74 15,22c0,3.87 3.13,7 7,7h30c3.31,0 6,-2.69 6,-6c0,-1.25 -0.38,-2.42 -1.04,-3.38" />
+        </vector>
+    </item>
+
+    <!-- 装饰层：右下角小星星 -->
+    <item
+        android:width="24dp"
+        android:height="24dp"
+        android:bottom="200dp"
+        android:right="40dp"
+        android:gravity="bottom|right">
+        <vector
+            android:width="24dp"
+            android:height="24dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:fillColor="#35FFFFFF"
+                android:pathData="M12,2L14.39,8.26L21.2,9.27L16.1,14.14L17.27,20.87L12,17.77L6.73,20.87L7.9,14.14L2.8,9.27L9.61,8.26Z" />
+        </vector>
+    </item>
+
+    <!-- 装饰层：顶部小圆点1 -->
+    <item
+        android:width="12dp"
+        android:height="12dp"
+        android:top="200dp"
+        android:left="80dp"
+        android:gravity="top|left">
+        <shape android:shape="oval">
+            <solid android:color="#20FFFFFF" />
+        </shape>
+    </item>
+
+    <!-- 装饰层：顶部小圆点2 -->
+    <item
+        android:width="8dp"
+        android:height="8dp"
+        android:top="280dp"
+        android:right="100dp"
+        android:gravity="top|right">
+        <shape android:shape="oval">
+            <solid android:color="#25FFFFFF" />
+        </shape>
+    </item>
+
+    <!-- 装饰层：底部小圆点 -->
+    <item
+        android:width="16dp"
+        android:height="16dp"
+        android:bottom="300dp"
+        android:left="120dp"
+        android:gravity="bottom|left">
+        <shape android:shape="oval">
+            <solid android:color="#20FFFFFF" />
+        </shape>
+    </item>
+
+</layer-list>

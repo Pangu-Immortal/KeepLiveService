@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * MainActivity.kt - 主界面 Activity
+ * ============================================================================
+ *
+ * 功能简介：
+ *   应用主界面，展示守护精灵控制面板
+ *   包含权限管理、服务控制、策略展示等功能
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.google.services
 
 import android.content.Intent
@@ -10,6 +23,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,9 +33,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -29,19 +43,27 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.google.services.ui.components.AnimationOverlay
+import com.google.services.ui.components.BouncingMascotsAnimation
+import com.google.services.ui.components.CartoonBackground
+import com.google.services.ui.components.SparklingStarsDecoration
 import com.google.services.ui.theme.*
 import com.google.services.util.PermissionHelper
 import com.service.framework.Fw
 import com.service.framework.strategy.AutoStartPermissionManager
 import com.service.framework.strategy.BatteryOptimizationManager
+import com.service.framework.util.DeviceUtils
 
 class MainActivity : ComponentActivity() {
 
@@ -199,170 +221,76 @@ fun MainScreen(
     val isFrameworkInitialized = remember(refreshTrigger) {
         Fw.isInitialized()
     }
-    val manufacturer = remember { AutoStartPermissionManager.getManufacturer() }
+    val manufacturer = remember { DeviceUtils.getManufacturer() }
+
+    // 使用 DeviceUtils 工具类判断是否为需要额外权限的特殊机型
+    val isSpecialVendor = remember { DeviceUtils.isSpecialVendor() }
 
     Scaffold(
         topBar = {
-            // 可爱的渐变色顶部
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Pink40,
-                                SakuraPink
-                            )
-                        )
-                    )
-                    .statusBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 24.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Logo图标
-                    Image(
-                        painter = painterResource(id = com.service.framework.R.drawable.ic_account),
-                        contentDescription = "Logo",
-                        modifier = Modifier.size(56.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Column {
-                        Text(
-                            text = "守护精灵 🧚",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "${Build.MANUFACTURER} ${Build.MODEL}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                    }
-                }
-            }
+            // 可爱的渐变色顶部 - 带动画效果
+            AnimatedTopBar()
         },
         containerColor = Color.Transparent
     ) { innerPadding ->
-        // 游戏风渐变背景 - 更鲜艳
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFFFE4EC),  // 粉色
-                            Color(0xFFE8DEF8),  // 紫色
-                            Color(0xFFD4F1F9),  // 青色
-                            Color(0xFFFFE4EC)   // 粉色
-                        )
-                    )
-                )
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StatusCard(
-                isBatteryOptimized = isBatteryOptimized,
-                hasOverlayPermission = hasOverlayPermission,
-                isFrameworkInitialized = isFrameworkInitialized
-            )
-
-            PermissionSection(
-                isBatteryOptimized = isBatteryOptimized,
-                hasOverlayPermission = hasOverlayPermission,
-                manufacturer = manufacturer,
-                onRequestBatteryOptimization = onRequestBatteryOptimization,
-                onOpenAutoStartSettings = onOpenAutoStartSettings,
-                onOpenOverlaySettings = onOpenOverlaySettings,
-                onRequestPermissions = onRequestPermissions
-            )
-
-            ServiceControlSection(
-                onStartService = onStartService,
-                onStopService = onStopService,
-                onCheckService = onCheckService,
-                onOpenAppSettings = onOpenAppSettings
-            )
-
-            StrategyInfoSection()
-
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-    }
-}
-
-@Composable
-fun StatusCard(
-    isBatteryOptimized: Boolean,
-    hasOverlayPermission: Boolean,
-    isFrameworkInitialized: Boolean
-) {
-    val allGood = isBatteryOptimized && hasOverlayPermission && isFrameworkInitialized
-
-    // 简洁卡片 - 无白边
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (allGood)
-                Color(0xFFE8F5E9).copy(alpha = 0.95f)
-            else
-                Color(0xFFFCE4EC).copy(alpha = 0.95f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (allGood) Mint40.copy(alpha = 0.2f)
-                        else RosePink.copy(alpha = 0.2f)
-                    ),
-                contentAlignment = Alignment.Center
+        // 最外层 Box - 用于叠加动画层
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 使用卡通动画背景替代静态渐变
+            CartoonBackground(
+                modifier = Modifier.fillMaxSize(),
+                showStars = true,
+                showClouds = true,
+                showBubbles = true,
+                showFairies = true,
+                showSparkles = true
             ) {
-                Icon(
-                    imageVector = if (allGood) Icons.Rounded.Verified else Icons.Rounded.ErrorOutline,
-                    contentDescription = null,
-                    tint = if (allGood) Mint40 else RosePink,
-                    modifier = Modifier.size(32.dp)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .verticalScroll(scrollState)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 带动画的状态卡片 - 传入机型信息用于动态判断
+                    AnimatedStatusCard(
+                        isBatteryOptimized = isBatteryOptimized,
+                        hasOverlayPermission = hasOverlayPermission,
+                        isFrameworkInitialized = isFrameworkInitialized,
+                        isSpecialVendor = isSpecialVendor
+                    )
+
+                    PermissionSection(
+                        isBatteryOptimized = isBatteryOptimized,
+                        hasOverlayPermission = hasOverlayPermission,
+                        manufacturer = manufacturer,
+                        onRequestBatteryOptimization = onRequestBatteryOptimization,
+                        onOpenAutoStartSettings = onOpenAutoStartSettings,
+                        onOpenOverlaySettings = onOpenOverlaySettings,
+                        onRequestPermissions = onRequestPermissions
+                    )
+
+                    // 带动画的操控台
+                    AnimatedServiceControlSection(
+                        onStartService = onStartService,
+                        onStopService = onStopService,
+                        onCheckService = onCheckService,
+                        onOpenAppSettings = onOpenAppSettings
+                    )
+
+                    StrategyInfoSection()
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (allGood) "满血状态~ ✨" else "还差一点点~",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (allGood) Color(0xFF2E7D5A) else PinkDeep
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (allGood) "所有buff已就位，冲鸭~"
-                    else "完成下面的任务，解锁全技能~",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF666666)
-                )
-            }
+            // 最上层动画叠加 - 不影响触摸
+            AnimationOverlay(
+                modifier = Modifier.fillMaxSize(),
+                showTopRunner = true,
+                showEdgeRunners = true,
+                showBouncingMascots = true
+            )
         }
     }
 }
@@ -377,6 +305,10 @@ fun PermissionSection(
     onOpenOverlaySettings: () -> Unit,
     onRequestPermissions: () -> Unit
 ) {
+    // 使用 DeviceUtils 工具类判断机型
+    val isSpecialVendor = DeviceUtils.isSpecialVendor()
+    val isHuaweiVendor = DeviceUtils.isHuaweiVendor()
+
     // 简洁卡片
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -405,30 +337,40 @@ fun PermissionSection(
                 )
             }
 
-            PermissionItem(
-                icon = Icons.Outlined.BatteryChargingFull,
-                title = "电池护盾 🔋",
-                subtitle = if (isBatteryOptimized) "已点亮~" else "戳我点亮~",
-                isGranted = isBatteryOptimized,
-                onClick = onRequestBatteryOptimization
-            )
+            // 电池护盾 - 仅小米/vivo/OPPO 显示
+            if (isSpecialVendor) {
+                PermissionItem(
+                    icon = Icons.Outlined.BatteryChargingFull,
+                    title = "电池护盾 🔋",
+                    subtitle = if (isBatteryOptimized) "已点亮~" else "戳我点亮~",
+                    isGranted = isBatteryOptimized,
+                    onClick = onRequestBatteryOptimization
+                )
+            }
 
-            PermissionItem(
-                icon = Icons.Outlined.RocketLaunch,
-                title = "自启动魔法 🚀",
-                subtitle = "需要手动点亮哦~",
-                isGranted = null,
-                onClick = onOpenAutoStartSettings
-            )
+            // 自启动魔法 - 仅小米/vivo/OPPO 显示
+            if (isSpecialVendor) {
+                PermissionItem(
+                    icon = Icons.Outlined.RocketLaunch,
+                    title = "自启动魔法 🚀",
+                    subtitle = "需要手动点亮哦~",
+                    isGranted = null,
+                    onClick = onOpenAutoStartSettings
+                )
+            }
 
-            PermissionItem(
-                icon = Icons.Outlined.Layers,
-                title = "悬浮窗特权 🎈",
-                subtitle = if (hasOverlayPermission) "已点亮~" else "戳我点亮~",
-                isGranted = hasOverlayPermission,
-                onClick = onOpenOverlaySettings
-            )
+            // 悬浮窗特权 - 仅小米/vivo/OPPO 显示
+            if (isSpecialVendor) {
+                PermissionItem(
+                    icon = Icons.Outlined.Layers,
+                    title = "悬浮窗特权 🎈",
+                    subtitle = if (hasOverlayPermission) "已点亮~" else "戳我点亮~",
+                    isGranted = hasOverlayPermission,
+                    onClick = onOpenOverlaySettings
+                )
+            }
 
+            // 消息铃铛 - 所有机型都显示
             PermissionItem(
                 icon = Icons.Outlined.Notifications,
                 title = "消息铃铛 🔔",
@@ -437,8 +379,8 @@ fun PermissionSection(
                 onClick = onRequestPermissions
             )
 
-            // 厂商提示
-            if (manufacturer.contains("xiaomi") || manufacturer.contains("redmi")) {
+            // 厂商提示 - 使用 DeviceUtils 工具类判断
+            if (DeviceUtils.isXiaomiVendor()) {
                 VendorTipCard(
                     title = "小米/红米攻略 📱",
                     tips = listOf(
@@ -449,7 +391,7 @@ fun PermissionSection(
                 )
             }
 
-            if (manufacturer.contains("huawei") || manufacturer.contains("honor")) {
+            if (DeviceUtils.isHuaweiVendor()) {
                 VendorTipCard(
                     title = "华为/荣耀攻略 📱",
                     tips = listOf(
@@ -460,8 +402,7 @@ fun PermissionSection(
                 )
             }
 
-            if (manufacturer.contains("oppo") || manufacturer.contains("vivo") ||
-                manufacturer.contains("realme") || manufacturer.contains("oneplus")) {
+            if (DeviceUtils.isOppoVendor() || DeviceUtils.isVivoVendor()) {
                 VendorTipCard(
                     title = "OPPO/vivo/一加攻略 📱",
                     tips = listOf(
@@ -483,10 +424,11 @@ fun PermissionItem(
     isGranted: Boolean?,
     onClick: () -> Unit
 ) {
+    // 状态颜色：统一使用粉绿配色，null 状态使用蓝色表示"待设置"
     val statusColor = when (isGranted) {
-        true -> Mint40
-        false -> RosePink
-        null -> Lavender40
+        true -> Mint40                    // 已授权 - 薄荷绿
+        false -> RosePink                 // 未授权 - 玫瑰粉
+        null -> Color(0xFF64B5F6)         // 待设置 - 天蓝色（友好提示）
     }
 
     // 简洁按钮样式
@@ -533,6 +475,7 @@ fun PermissionItem(
                 )
             }
 
+            // 右侧状态图标 - 统一圆形风格
             Box(
                 modifier = Modifier
                     .size(28.dp)
@@ -542,9 +485,9 @@ fun PermissionItem(
             ) {
                 Icon(
                     imageVector = when (isGranted) {
-                        true -> Icons.Default.Check
-                        false -> Icons.Default.Close
-                        null -> Icons.Default.Warning
+                        true -> Icons.Default.Check           // ✓ 已授权
+                        false -> Icons.Default.Close          // ✕ 未授权
+                        null -> Icons.AutoMirrored.Filled.ArrowForward  // → 去设置（友好提示）
                     },
                     contentDescription = null,
                     tint = statusColor,
@@ -590,13 +533,348 @@ fun VendorTipCard(title: String, tips: List<String>) {
 }
 
 @Composable
-fun ServiceControlSection(
+fun StrategyInfoSection() {
+    // 简洁卡片 - 无阴影避免边框感
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Lavender80.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Checklist,
+                    contentDescription = null,
+                    tint = Lavender40
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "技能图鉴 📖",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF6B5B95)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 核心保活策略列表
+            val strategies = listOf(
+                // 核心服务类
+                "前台服务 + MediaSession" to "核心魔法 🎵",
+                "双进程守护" to "影分身术 👯",
+                "Native 守护进程" to "底层结界 🔮",
+                // 系统服务类
+                "无障碍服务保活" to "无敌护盾 ♿",
+                "通知监听服务" to "消息雷达 📡",
+                "账户同步机制" to "系统通行证 🎫",
+                // 唤醒策略类
+                "定时任务调度" to "闹钟精灵 ⏰",
+                "蓝牙广播监听" to "唤醒咒语 📶",
+                "系统广播监听" to "开机守卫 🌅",
+                // 特殊策略类
+                "无法强制停止" to "金钟罩 🛡️",
+                "1像素 Activity" to "隐身斗篷 👻",
+                "悬浮窗保活" to "小窗精灵 🎈",
+                "进程优先级提升" to "VIP通道 ⚡"
+            )
+
+            strategies.forEach { (name, desc) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(SakuraPink)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF555555)
+                        )
+                    }
+                    Text(
+                        text = desc,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Lavender40
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ==================== 动画组件 ====================
+
+/**
+ * 动画顶部栏
+ * Logo 有轻微的漂浮动画，标题有呼吸效果
+ */
+@Composable
+fun AnimatedTopBar() {
+    // Logo 漂浮动画
+    val infiniteTransition = rememberInfiniteTransition(label = "topBar")
+    val floatOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "float"
+    )
+
+    // 光晕脉冲
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Pink40,
+                        SakuraPink
+                    )
+                )
+            )
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 24.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Logo图标 - 带漂浮动画和光晕
+            Box(contentAlignment = Alignment.Center) {
+                // 光晕效果
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .offset(y = (-floatOffset).dp)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = glowAlpha),
+                                    Color.Transparent
+                                )
+                            ),
+                            CircleShape
+                        )
+                )
+                // Logo
+                Image(
+                    painter = painterResource(id = com.service.framework.R.drawable.ic_account),
+                    contentDescription = "Logo",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .offset(y = (-floatOffset).dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "守护精灵 🧚",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${Build.MANUFACTURER} ${Build.MODEL}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+            }
+
+            // 右侧闪烁星星装饰
+            SparklingStarsDecoration(
+                modifier = Modifier.size(60.dp)
+            )
+        }
+    }
+}
+
+/**
+ * 带动画的状态卡片
+ * 图标有脉冲效果，进入时有弹性动画
+ *
+ * @param isBatteryOptimized 电池优化是否已忽略
+ * @param hasOverlayPermission 悬浮窗权限是否已授权
+ * @param isFrameworkInitialized 框架是否已初始化
+ * @param isSpecialVendor 是否为特殊机型（小米/vivo/OPPO 等需要额外权限的机型）
+ */
+@Composable
+fun AnimatedStatusCard(
+    isBatteryOptimized: Boolean,
+    hasOverlayPermission: Boolean,
+    isFrameworkInitialized: Boolean,
+    isSpecialVendor: Boolean = false
+) {
+    // 根据机型动态判断"满血状态"条件
+    // 特殊机型：需要电池优化 + 悬浮窗权限 + 框架初始化
+    // 普通机型：只需要框架初始化即可
+    val allGood = if (isSpecialVendor) {
+        isBatteryOptimized && hasOverlayPermission && isFrameworkInitialized
+    } else {
+        isFrameworkInitialized
+    }
+
+    // 图标脉冲动画
+    val infiniteTransition = rememberInfiniteTransition(label = "status")
+    val iconScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iconPulse"
+    )
+
+    // 光晕旋转
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (allGood)
+                Color(0xFFE8F5E9).copy(alpha = 0.95f)
+            else
+                Color(0xFFFCE4EC).copy(alpha = 0.95f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        if (allGood) Mint40.copy(alpha = 0.2f)
+                        else RosePink.copy(alpha = 0.2f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                // 旋转光晕（成功时显示）
+                if (allGood) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .rotate(rotation)
+                            .background(
+                                Brush.sweepGradient(
+                                    colors = listOf(
+                                        Mint40.copy(alpha = 0.3f),
+                                        Color.Transparent,
+                                        Mint40.copy(alpha = 0.3f),
+                                        Color.Transparent
+                                    )
+                                ),
+                                CircleShape
+                            )
+                    )
+                }
+                Icon(
+                    imageVector = if (allGood) Icons.Rounded.Verified else Icons.Rounded.ErrorOutline,
+                    contentDescription = null,
+                    tint = if (allGood) Mint40 else RosePink,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .scale(iconScale)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (allGood) "满血状态~ ✨" else "还差一点点~",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (allGood) Color(0xFF2E7D5A) else PinkDeep
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (allGood) "所有buff已就位，冲鸭~"
+                    else "完成下面的任务，解锁全技能~",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF666666)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 带动画的操控台
+ * 按钮有悬浮和发光效果
+ */
+@Composable
+fun AnimatedServiceControlSection(
     onStartService: () -> Unit,
     onStopService: () -> Unit,
     onCheckService: () -> Unit,
     onOpenAppSettings: () -> Unit
 ) {
-    // 简洁卡片
+    // 主按钮发光动画
+    val infiniteTransition = rememberInfiniteTransition(label = "control")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "buttonGlow"
+    )
+
+    // 火箭摇摆动画
+    val rocketRotation by infiniteTransition.animateFloat(
+        initialValue = -5f,
+        targetValue = 5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "rocketWobble"
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -610,10 +888,12 @@ fun ServiceControlSection(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // 游戏手柄图标 - 带轻微旋转
                 Icon(
                     imageVector = Icons.Outlined.SportsEsports,
                     contentDescription = null,
-                    tint = Pink40
+                    tint = Pink40,
+                    modifier = Modifier.rotate(rocketRotation / 2)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -629,21 +909,37 @@ fun ServiceControlSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 出发按钮
-                Button(
-                    onClick = onStartService,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Pink40),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                // 出发按钮 - 带发光效果
+                Box(
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.RocketLaunch,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                    // 发光背景
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .offset(y = 2.dp)
+                            .background(
+                                Pink40.copy(alpha = glowAlpha * 0.3f),
+                                RoundedCornerShape(14.dp)
+                            )
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("冲鸭!", fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = onStartService,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Pink40),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.RocketLaunch,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(rocketRotation)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("冲鸭!", fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 // 休息按钮
@@ -697,79 +993,6 @@ fun ServiceControlSection(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("更多~", fontWeight = FontWeight.Medium)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun StrategyInfoSection() {
-    // 简洁卡片 - 无阴影避免边框感
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Lavender80.copy(alpha = 0.9f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Outlined.Checklist,
-                    contentDescription = null,
-                    tint = Lavender40
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "技能图鉴 📖",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6B5B95)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            val strategies = listOf(
-                "前台服务 + MediaSession" to "核心魔法 🎵",
-                "蓝牙广播监听" to "唤醒咒语 📡",
-                "定时任务调度" to "闹钟精灵 ⏰",
-                "账户同步机制" to "系统通行证 🎫",
-                "系统广播监听" to "开机守卫 🌅",
-                "双进程守护" to "影分身术 👯",
-                "1像素 Activity" to "隐身斗篷 👻",
-                "Native 守护" to "底层结界 🔮"
-            )
-
-            strategies.forEach { (name, desc) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(SakuraPink)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF555555)
-                        )
-                    }
-                    Text(
-                        text = desc,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Lavender40
-                    )
                 }
             }
         }

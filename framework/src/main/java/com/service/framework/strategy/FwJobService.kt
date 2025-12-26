@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * FwJobService.kt - JobScheduler 保活策略
+ * ============================================================================
+ *
+ * 功能简介：
+ *   利用系统 JobScheduler 定期执行任务，检查并拉起服务。
+ *
+ * 核心机制：
+ *   - 利用 JobScheduler 定期执行任务
+ *   - 最小间隔 15 分钟（Android 系统限制）
+ *   - 支持设备重启后保留任务（setPersisted）
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.app.job.JobInfo

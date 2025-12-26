@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * SyncService.kt - 同步服务
+ * ============================================================================
+ *
+ * 功能简介：
+ *   提供系统同步服务，系统通过此服务与同步适配器通信。
+ *   使用单例模式确保同步适配器实例唯一。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.account
 
 import android.app.Service

@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * FwForegroundService.kt - 核心前台服务
+ * ============================================================================
+ *
+ * 功能简介：
+ *   保活框架的核心前台服务，具备以下特性：
+ *   - 持久通知栏显示
+ *   - MediaSession 媒体会话（让系统认为是媒体应用）
+ *   - WakeLock 唤醒锁
+ *   - START_STICKY 自动重启
+ *   - 被销毁时触发自救机制
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.service
 
 import android.annotation.SuppressLint

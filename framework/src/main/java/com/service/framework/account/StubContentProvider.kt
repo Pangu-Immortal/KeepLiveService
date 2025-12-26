@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * StubContentProvider.kt - 同步用 ContentProvider（空实现）
+ * ============================================================================
+ *
+ * 功能简介：
+ *   账户同步机制需要一个 ContentProvider 作为数据源。
+ *   这里只是一个空壳实现，用于满足同步框架的要求。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.account
 
 import android.content.ContentProvider

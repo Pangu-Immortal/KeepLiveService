@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    应用图标背景 - 粉紫渐变
+    与卡通主题风格一致
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -6,7 +10,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- 鲜明的绿色渐变背景 -->
+    <!-- 粉紫渐变背景 - 从左上到右下 -->
     <path android:pathData="M0,0h108v108h-108z">
         <aapt:attr name="android:fillColor">
             <gradient
@@ -15,11 +19,31 @@
                 android:startY="0"
                 android:endX="108"
                 android:endY="108">
-                <item android:offset="0.0" android:color="#FF26A69A" />
-                <item android:offset="0.5" android:color="#FF4DB6AC" />
-                <item android:offset="1.0" android:color="#FF80CBC4" />
+                <item android:offset="0.0" android:color="#FFFF6B9D" />
+                <item android:offset="0.4" android:color="#FFB39DDB" />
+                <item android:offset="1.0" android:color="#FF9575CD" />
             </gradient>
         </aapt:attr>
     </path>
+
+    <!-- 装饰：左上角半透明星星 -->
+    <path
+        android:fillColor="#20FFFFFF"
+        android:pathData="M20,25 L22,30 L27,31 L24,34 L25,39 L20,36 L15,39 L16,34 L13,31 L18,30 Z" />
+
+    <!-- 装饰：右下角半透明星星 -->
+    <path
+        android:fillColor="#15FFFFFF"
+        android:pathData="M85,80 L86.5,84 L91,84.5 L88,87 L88.5,91 L85,89 L81.5,91 L82,87 L79,84.5 L83.5,84 Z" />
+
+    <!-- 装饰：小圆点1 -->
+    <path
+        android:fillColor="#18FFFFFF"
+        android:pathData="M75,20m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+
+    <!-- 装饰：小圆点2 -->
+    <path
+        android:fillColor="#15FFFFFF"
+        android:pathData="M30,85m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
 
 </vector>

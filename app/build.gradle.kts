@@ -42,8 +42,8 @@ android {
         applicationId = "com.google.services"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.1"
+        versionCode = 25122616
+        versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -168,6 +168,12 @@ tasks.register("buildTimestampedReleaseApk") {
 dependencies {
     // Framework 模块
     implementation(project(":framework"))
+
+    // Splash Screen
+    implementation(libs.androidx.splashscreen)
+
+    // Lottie 动画库
+    implementation(libs.lottie.compose)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

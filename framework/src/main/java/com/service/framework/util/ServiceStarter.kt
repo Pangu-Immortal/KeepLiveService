@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * ServiceStarter.kt - 服务启动工具类
+ * ============================================================================
+ *
+ * 功能简介：
+ *   封装服务启动逻辑，兼容不同 Android 版本。
+ *
+ * 主要功能：
+ *   - startForegroundService(): 启动前台服务
+ *   - startServiceCompat(): 兼容不同版本启动服务
+ *   - stopForegroundService(): 停止前台服务
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.util
 
 import android.content.Context

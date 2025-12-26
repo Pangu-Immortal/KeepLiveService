@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * LockScreenActivity.kt - 锁屏界面保活 Activity
+ * ============================================================================
+ *
+ * 功能简介：
+ *   实现锁屏界面上的 Activity 显示，通过在锁屏上显示内容来提升进程优先级。
+ *   支持锁屏时显示、解锁键盘锁、保持屏幕常亮等功能。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.app.Activity

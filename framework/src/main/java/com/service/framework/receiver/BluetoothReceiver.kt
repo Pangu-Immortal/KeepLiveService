@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * BluetoothReceiver.kt - 蓝牙广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监听蓝牙相关系统广播，是实现"连接蓝牙耳机自动唤醒 App"功能的核心组件。
+ *   支持 ACL 链路连接、A2DP 音频通道、蓝牙耳机 Profile 及蓝牙适配器状态变化等事件。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.annotation.SuppressLint
@@ -27,7 +41,7 @@ import com.service.framework.util.getBluetoothDevice
  * - 需要 `BLUETOOTH_CONNECT` 运行时权限 (Android 12+)。
  *
  * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
- * @since 1.0.0
+ * @since 2.1.0
  */
 @SuppressLint("MissingPermission")
 class BluetoothReceiver : BroadcastReceiver() {

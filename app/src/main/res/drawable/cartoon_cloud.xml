@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    卡通云朵 - 漂浮装饰元素
+    用于主界面背景动画
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="40dp"
+    android:viewportWidth="64"
+    android:viewportHeight="40">
+
+    <!-- 云朵主体 - 白色半透明 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,24c0,-4.42 -3.58,-8 -8,-8c-0.5,0 -1,0.05 -1.48,0.14C40.44,12.42 36.54,10 32,10c-5.52,0 -10.09,4.06 -10.87,9.36C17.58,19.92 15,22.74 15,26c0,3.87 3.13,7 7,7h28c3.31,0 6,-2.69 6,-6c0,-1.25 -0.38,-2.42 -1.04,-3.38" />
+
+    <!-- 云朵阴影 -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M22,33c-3.87,0 -7,-3.13 -7,-7c0,-0.35 0.03,-0.69 0.08,-1.03C13.27,25.77 12,27.76 12,30c0,3.31 2.69,6 6,6h30c2.21,0 4.13,-1.2 5.17,-2.98C52.44,33.34 51.75,33.5 51,33.5c-0.35,0 -0.69,-0.03 -1.03,-0.08" />
+
+</vector>

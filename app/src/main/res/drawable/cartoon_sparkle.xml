@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    卡通闪光 - 闪烁装饰元素
+    用于主界面背景动画
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+    <!-- 十字闪光 - 水平 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4,16L14,14L16,4L18,14L28,16L18,18L16,28L14,18Z" />
+
+    <!-- 小点装饰 -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M16,16m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+
+</vector>

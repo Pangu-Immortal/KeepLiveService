@@ -1,3 +1,26 @@
+/**
+ * ============================================================================
+ * FwConfig.kt - 保活框架配置类
+ * ============================================================================
+ *
+ * 功能简介：
+ *   Fw 保活框架的配置数据类，支持精细化控制每项保活策略。
+ *   使用 Builder DSL 模式进行配置。
+ *
+ * 配置分类：
+ *   - 基础策略：前台服务、MediaSession、1像素Activity
+ *   - 定时唤醒：JobScheduler、WorkManager、AlarmManager
+ *   - 账户同步：账户类型、同步间隔
+ *   - 广播策略：系统广播、蓝牙、媒体按键等
+ *   - 内容观察者：媒体、联系人、短信、设置变化
+ *   - 进程守护：双进程、Native守护、Socket通信
+ *   - 通知配置：渠道、标题、图标等
+ *   - 高级策略：锁屏Activity、悬浮窗
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.core
 
 import android.app.Activity
@@ -79,7 +102,11 @@ data class FwConfig(
     // region 高级侵入性策略
     val enableLockScreenActivity: Boolean,
     val enableFloatWindow: Boolean,
-    val floatWindowHidden: Boolean
+    val floatWindowHidden: Boolean,
+    // endregion
+
+    // region 无法强制停止策略
+    val enableForceStopResistance: Boolean
     // endregion
 ) {
 
@@ -163,6 +190,10 @@ data class FwConfig(
         var floatWindowHidden: Boolean = true
         // endregion
 
+        // region 无法强制停止策略
+        var enableForceStopResistance: Boolean = false // 默认关闭（侵入性强，仅 Android 5.0-9.0 有效）
+        // endregion
+
         /**
          * 构建一个不可变的 [FwConfig] 实例。
          */
@@ -189,7 +220,9 @@ data class FwConfig(
             // 日志配置
             enableDebugLog, logTag,
             // 高级侵入性策略
-            enableLockScreenActivity, enableFloatWindow, floatWindowHidden
+            enableLockScreenActivity, enableFloatWindow, floatWindowHidden,
+            // 无法强制停止策略
+            enableForceStopResistance
         )
     }
 }

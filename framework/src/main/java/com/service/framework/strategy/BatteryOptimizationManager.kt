@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * BatteryOptimizationManager.kt - 电池优化与自启动权限管理
+ * ============================================================================
+ *
+ * 功能简介：
+ *   管理电池优化豁免设置和各厂商自启动权限。包含电池优化白名单申请、
+ *   厂商自启动设置跳转、设备厂商识别等功能。支持小米、华为、OPPO、
+ *   vivo、三星、魅族等主流厂商的自启动管理入口。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.content.Context
@@ -242,37 +256,6 @@ object AutoStartPermissionManager {
         } catch (e: Exception) {
             FwLog.e("$TAG: 打开设置失败 - ${e.message}", e)
             false
-        }
-    }
-
-    /**
-     * 获取当前设备厂商
-     */
-    fun getManufacturer(): String = Build.MANUFACTURER.lowercase()
-
-    /**
-     * 获取引导文案
-     */
-    fun getGuideText(): String {
-        return when {
-            getManufacturer().contains("xiaomi") || getManufacturer().contains("redmi") -> {
-                "请在「自启动管理」中开启本应用的自启动权限"
-            }
-            getManufacturer().contains("huawei") || getManufacturer().contains("honor") -> {
-                "请在「应用启动管理」中开启本应用的自启动权限，并关闭电池优化"
-            }
-            getManufacturer().contains("oppo") -> {
-                "请在「自启动管理」中开启本应用的自启动权限"
-            }
-            getManufacturer().contains("vivo") -> {
-                "请在「后台高耗电」中允许本应用后台运行"
-            }
-            getManufacturer().contains("samsung") -> {
-                "请在「电池」设置中将本应用设为「不受监视的应用」"
-            }
-            else -> {
-                "请在系统设置中允许本应用自启动和后台运行"
-            }
         }
     }
 }

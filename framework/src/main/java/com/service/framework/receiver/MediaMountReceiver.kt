@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * MediaMountReceiver.kt - 媒体/存储广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监听外部存储（SD卡/U盘）挂载/卸载事件及媒体扫描完成事件，
+ *   适用于文件管理器、相册应用、备份应用、媒体播放器等场景。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.content.BroadcastReceiver

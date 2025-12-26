@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FwAuthenticator.kt - 账户认证器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   实现 AbstractAccountAuthenticator 的账户认证器，用于账户同步机制。
+ *   通过注册虚假账户，利用系统同步机制唤醒应用，同步间隔可设置为 60 秒。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.account
 
 import android.accounts.AbstractAccountAuthenticator

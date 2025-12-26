@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * DaemonService.kt - 守护进程服务
+ * ============================================================================
+ *
+ * 功能简介：
+ *   运行于独立 :daemon 进程的守护服务，与主进程互相监控。
+ *
+ * 核心机制：
+ *   - 独立进程：通过 android:process=":daemon" 与主进程隔离
+ *   - 双向守护：此服务监控主进程，主进程也监控此服务
+ *   - 协程定时检查：使用 lifecycleScope 周期性检查主进程存活
+ *   - 自动拉起：检测到主进程死亡后立即尝试拉起
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.service
 
 import android.app.ActivityManager
@@ -35,7 +53,7 @@ import kotlinx.coroutines.launch
  * - `onDestroy()`: 协程自动取消，并尝试最后一次拉起主服务，形成闭环。
  *
  * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
- * @since 1.0.0
+ * @since 2.1.0
  */
 class DaemonService : LifecycleService() {
 

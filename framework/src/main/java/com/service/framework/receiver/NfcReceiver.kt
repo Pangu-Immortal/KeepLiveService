@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * NfcReceiver.kt - NFC 广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监听 NFC 标签发现事件、NDEF 消息、NFC 技术发现、适配器状态变化及
+ *   HCE 交易事件，支持多种 NFC 技术类型的识别与分析。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.content.BroadcastReceiver

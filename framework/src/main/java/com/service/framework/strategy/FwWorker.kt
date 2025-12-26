@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * FwWorker.kt - WorkManager 保活策略
+ * ============================================================================
+ *
+ * 功能简介：
+ *   利用 WorkManager 定期执行后台任务，智能调度任务执行时机。
+ *
+ * 核心机制：
+ *   - 利用 WorkManager 周期性执行任务
+ *   - 支持约束条件（网络、充电状态等）
+ *   - 最小间隔 15 分钟
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.content.Context

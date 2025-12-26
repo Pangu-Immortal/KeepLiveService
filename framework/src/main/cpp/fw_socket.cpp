@@ -1,21 +1,31 @@
 /**
+ * ============================================================================
  * fw_socket.cpp - Native 层 Socket 保活通道
+ * ============================================================================
+ *
+ * 功能简介：
+ *   实现基于 Unix Domain Socket 的进程间通信和心跳检测机制，
+ *   用于主进程和守护进程之间的存活状态监控。
  *
  * 核心机制：
- * 1. 创建本地 Unix Domain Socket
- * 2. 主进程和守护进程通过 socket 通信
- * 3. 心跳检测，断开时触发重连
+ *   1. 创建本地 Unix Domain Socket
+ *   2. 主进程和守护进程通过 socket 通信
+ *   3. 心跳检测，断开时触发重连
  *
  * 安全研究要点：
- * - Unix Domain Socket 比 TCP/IP 更高效
- * - 可用于进程间通信（IPC）
- * - 守护进程可以通过 socket 检测主进程存活
- * - 也可以用于与系统服务保持连接
+ *   - Unix Domain Socket 比 TCP/IP 更高效
+ *   - 可用于进程间通信（IPC）
+ *   - 守护进程可以通过 socket 检测主进程存活
+ *   - 也可以用于与系统服务保持连接
  *
  * 实现方式：
- * 1. 主进程创建 server socket，守护进程连接
- * 2. 定期发送心跳，检测连接状态
- * 3. 连接断开表示对方可能已死
+ *   1. 主进程创建 server socket，守护进程连接
+ *   2. 定期发送心跳，检测连接状态
+ *   3. 连接断开表示对方可能已死
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
  */
 
 #include <jni.h>

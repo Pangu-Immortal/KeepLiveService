@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FwSyncAdapter.kt - 同步适配器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   基于 AbstractThreadedSyncAdapter 的同步适配器实现。
+ *   系统会定期调用 onPerformSync 方法，在其中拉起服务。
+ *   同步间隔可设置为 60 秒，比 JobScheduler 更频繁。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.account
 
 import android.accounts.Account

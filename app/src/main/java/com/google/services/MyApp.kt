@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * MyApp.kt - Application 入口类
+ * ============================================================================
+ *
+ * 功能简介：
+ *   Application 类，在这里一行代码初始化 Framework 模块
+ *
+ * 安全研究说明：
+ *   - 使用独立的 framework 模块实现所有策略
+ *   - 在 Application.onCreate() 中初始化，确保进程唤醒后立即启动
+ *   - 所有策略可通过配置开关控制
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.google.services
 
 import android.app.Application
@@ -6,13 +23,7 @@ import com.service.framework.Fw
 
 /**
  * Application 类
- *
  * 核心：在这里一行代码初始化 Framework 模块
- *
- * 安全研究说明：
- * - 使用独立的 framework 模块实现所有策略
- * - 在 Application.onCreate() 中初始化，确保进程唤醒后立即启动
- * - 所有策略可通过配置开关控制
  */
 class MyApp : Application() {
 
