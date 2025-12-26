@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * ContextExtensions.kt - Context 扩展函数
+ * ============================================================================
+ *
+ * 功能简介：
+ *   提供 Context 和 Intent 相关的扩展函数，简化常用操作。
+ *
+ * 主要功能：
+ *   - getBluetoothDevice(): 安全获取 Intent 中的蓝牙设备对象
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.util
 
 import android.bluetooth.BluetoothDevice

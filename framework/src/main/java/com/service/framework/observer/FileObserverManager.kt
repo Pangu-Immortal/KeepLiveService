@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FileObserverManager.kt - 文件系统观察者管理器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   基于 Linux inotify 的文件监听机制，监听文件系统变化。
+ *   支持监听下载目录、相册目录、截图目录、文档目录等。
+ *   文件创建/修改/删除时触发回调，可作为辅助保活手段。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.observer
 
 import android.os.Build

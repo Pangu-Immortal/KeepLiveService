@@ -1,3 +1,25 @@
+/**
+ * ============================================================================
+ * FwNative.kt - Native 层保活接口
+ * ============================================================================
+ *
+ * 功能简介：
+ *   封装 Native 层（C/C++）的保活功能接口，包括：
+ *   - Native 守护进程（fork 子进程监控父进程）
+ *   - 进程优先级管理（OOM adj、nice 值）
+ *   - Socket 保活通道（进程间心跳通信）
+ *   - 系统信息获取（内存、进程数等）
+ *   - 无法强制停止策略（文件锁监控）
+ *
+ * 安全研究要点：
+ *   - Native 层可绕过部分 Java 层限制
+ *   - fork 子进程在父进程死亡后仍可存活
+ *   - 部分功能在 Android 10+ 已被限制
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.native
 
 import android.content.Context
@@ -293,4 +315,94 @@ object FwNative {
             false
         }
     }
+
+    // ==================== 无法强制停止策略（教学用途） ====================
+    //
+    // 以下方法复现了 Android 5.0 - 9.0 时代的保活技术
+    // 核心原理：
+    // 1. 使用文件锁 (flock) 监控进程死亡
+    // 2. 直接通过 Binder 驱动调用 AMS，速度极快
+    // 3. fork() 创建守护进程互相监控
+    //
+    // Android 10+ 已封堵：
+    // 1. 强制停止改为 cgroup 进程组整体杀死
+    // 2. SELinux 限制了 Binder 设备的直接访问
+    // 3. 后台进程的 Binder 调用受限
+
+    /**
+     * 锁定指定文件
+     *
+     * 使用 flock() 系统调用获取排他锁
+     * 当进程死亡时，锁会自动释放
+     *
+     * @param lockFilePath 锁文件路径
+     */
+    @JvmStatic
+    external fun lockFile(lockFilePath: String)
+
+    /**
+     * 设置进程会话 ID
+     *
+     * 调用 setsid() 使进程成为会话领导，脱离父进程
+     */
+    @JvmStatic
+    external fun nativeSetSid()
+
+    /**
+     * 等待文件锁被释放
+     *
+     * 阻塞等待指定文件的锁被释放（即持有锁的进程死亡）
+     * 这是检测进程死亡的核心机制
+     *
+     * @param lockFilePath 锁文件路径
+     */
+    @JvmStatic
+    external fun waitFileLock(lockFilePath: String)
+
+    /**
+     * 启动无法强制停止守护进程（教学用途）
+     *
+     * 通过 fork() 创建守护进程，与主进程互相监控：
+     * 1. 使用文件锁检测对方进程是否存活
+     * 2. 检测到对方死亡后，直接通过 Binder 调用 AMS 拉活服务
+     * 3. 由于是 Native 层直接 Binder transact，速度极快
+     *
+     * 注意：此功能仅在 Android 5.0 - 9.0 上有效
+     * Android 10+ 由于 cgroup 进程组杀死机制，此方法已失效
+     *
+     * @param indicatorSelfPath 自己的指示器文件路径
+     * @param indicatorDaemonPath 对方的指示器文件路径
+     * @param observerSelfPath 自己的观察者文件路径
+     * @param observerDaemonPath 对方的观察者文件路径
+     * @param packageName 应用包名
+     * @param serviceName 服务完整类名
+     * @param sdkVersion 当前 SDK 版本号
+     */
+    @JvmStatic
+    external fun startForceStopDaemon(
+        indicatorSelfPath: String,
+        indicatorDaemonPath: String,
+        observerSelfPath: String,
+        observerDaemonPath: String,
+        packageName: String,
+        serviceName: String,
+        sdkVersion: Int
+    )
+
+    /**
+     * 测试 Binder 直接调用（教学用途）
+     *
+     * 直接通过 Binder 驱动调用 AMS.startService
+     * 仅用于验证 Binder 驱动访问是否正常
+     *
+     * @param packageName 应用包名
+     * @param serviceName 服务完整类名
+     * @param sdkVersion 当前 SDK 版本号
+     */
+    @JvmStatic
+    external fun testBinderCall(
+        packageName: String,
+        serviceName: String,
+        sdkVersion: Int
+    )
 }

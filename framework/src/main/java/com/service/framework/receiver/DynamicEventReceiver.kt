@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * DynamicEventReceiver.kt - 动态系统事件广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   专用于运行时动态注册的系统事件广播接收器，监听网络连接状态变化、
+ *   电源连接/断开、用户解锁屏幕等事件，用于判断唤醒时机。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.content.BroadcastReceiver
@@ -27,7 +41,7 @@ import com.service.framework.util.FwLog
  *
  * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
  * @see SystemEventReceiver
- * @since 1.0.0
+ * @since 2.1.0
  */
 class DynamicEventReceiver : BroadcastReceiver() {
 

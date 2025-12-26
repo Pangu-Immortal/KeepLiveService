@@ -1,5 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    主题配置
+    包含 Splash Screen 主题和主应用主题
+-->
 <resources>
 
-    <style name="Theme.KeepLiveService" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- 主应用主题 - Material Light 无 ActionBar -->
+    <style name="Theme.KeepLiveService" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 状态栏和导航栏颜色 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Splash Screen 主题 - 粉紫卡通风格 -->
+    <!--
+        注意：windowSplashScreenBackground 只支持单一颜色，不支持 drawable
+        渐变和装饰效果在 Compose SplashContent 中通过 Lottie 动画实现
+    -->
+    <style name="Theme.KeepLiveService.Splash" parent="Theme.SplashScreen">
+        <!-- 背景使用粉紫主色（渐变效果由 Compose 层实现） -->
+        <item name="windowSplashScreenBackground">#FFFF6B9D</item>
+        <!-- 中心图标 -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <!-- 图标背景颜色（圆形遮罩后面的颜色） -->
+        <item name="windowSplashScreenIconBackgroundColor">#FFFFFF</item>
+        <!-- 动画持续时间 -->
+        <item name="windowSplashScreenAnimationDuration">800</item>
+        <!-- 过渡到的主题 -->
+        <item name="postSplashScreenTheme">@style/Theme.KeepLiveService</item>
+    </style>
+
 </resources>

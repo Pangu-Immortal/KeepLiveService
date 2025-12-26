@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * Color.kt - 应用主题颜色定义
+ * ============================================================================
+ *
+ * 功能简介：
+ *   定义应用的卡通少女风配色体系，包括：
+ *   - 粉色系：棉花糖粉、草莓粉、樱花粉、蜜桃粉等
+ *   - 紫色系：云朵紫、葡萄紫、芋泥紫等
+ *   - 辅助色：薄荷绿、苏打蓝、珊瑚橙等
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.google.services.ui.theme
 
 import androidx.compose.ui.graphics.Color

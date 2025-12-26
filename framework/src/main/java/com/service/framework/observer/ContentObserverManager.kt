@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * ContentObserverManager.kt - 内容观察者管理器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监听各种 ContentProvider 的数据变化来拉活应用。
+ *   支持监听相册、联系人、短信、系统设置等数据变化。
+ *   使用节流机制避免频繁触发。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.observer
 
 import android.content.Context

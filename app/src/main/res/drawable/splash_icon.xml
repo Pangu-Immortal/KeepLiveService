@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    启动页图标 - 守护精灵 Logo（增强版）
+    - 更大的中心 Logo
+    - 清晰的边框增强对比
+    - 丰富的卡通装饰元素
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+
+    <!-- ========== 装饰层 - 星星和气泡 ========== -->
+
+    <!-- 左上角大星星 -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M50,50 L54,62 L66,63 L57,71 L59,83 L50,77 L41,83 L43,71 L34,63 L46,62 Z" />
+
+    <!-- 右上角大星星 -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M238,55 L242,67 L254,68 L245,76 L247,88 L238,82 L229,88 L231,76 L222,68 L234,67 Z" />
+
+    <!-- 左侧中星星 -->
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M35,140 L38,148 L46,149 L40,154 L41,162 L35,158 L29,162 L30,154 L24,149 L32,148 Z" />
+
+    <!-- 右侧中星星 -->
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M253,130 L256,138 L264,139 L258,144 L259,152 L253,148 L247,152 L248,144 L242,139 L250,138 Z" />
+
+    <!-- 左下小星星 -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M60,220 L62,226 L68,227 L64,230 L65,236 L60,233 L55,236 L56,230 L52,227 L58,226 Z" />
+
+    <!-- 右下小星星 -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M228,215 L230,221 L236,222 L232,225 L233,231 L228,228 L223,231 L224,225 L220,222 L226,221 Z" />
+
+    <!-- 顶部小星星1 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M120,35 L122,39 L126,40 L123,42 L124,46 L120,44 L116,46 L117,42 L114,40 L118,39 Z" />
+
+    <!-- 顶部小星星2 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M168,40 L170,44 L174,45 L171,47 L172,51 L168,49 L164,51 L165,47 L162,45 L166,44 Z" />
+
+    <!-- 漂浮气泡1 - 左上 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M75,90m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0" />
+
+    <!-- 漂浮气泡2 - 右上 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M213,85m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0" />
+
+    <!-- 漂浮气泡3 - 左下 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M45,180m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0" />
+
+    <!-- 漂浮气泡4 - 右下 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M243,175m-9,0a9,9 0,1 1,18 0a9,9 0,1 1,-18 0" />
+
+    <!-- 底部小气泡 -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M100,250m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M188,245m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+
+    <!-- ========== 主 Logo - 盾牌 ========== -->
+
+    <!-- 盾牌阴影 - 增加立体感 -->
+    <path
+        android:fillColor="#40000000"
+        android:pathData="M148,72 L204,108 L204,156 Q204,200 148,232 Q92,200 92,156 L92,108 Z" />
+
+    <!-- 盾牌外框 - 深紫色边框（增强对比） -->
+    <path
+        android:fillColor="#7B1FA2"
+        android:pathData="M144,68 L200,104 L200,152 Q200,196 144,228 Q88,196 88,152 L88,104 Z" />
+
+    <!-- 盾牌主体 - 白色填充 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M144,82 L190,112 L190,152 Q190,188 144,214 Q98,188 98,152 L98,112 Z" />
+
+    <!-- 盾牌内边框 - 浅紫描边 -->
+    <path
+        android:fillColor="#E1BEE7"
+        android:pathData="M144,90 L182,116 L182,150 Q182,182 144,204 Q106,182 106,150 L106,116 Z" />
+
+    <!-- 盾牌内部白色 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M144,96 L176,118 L176,148 Q176,176 144,196 Q112,176 112,148 L112,118 Z" />
+
+    <!-- ========== 树和星星 ========== -->
+
+    <!-- 树干 - 棕色 -->
+    <path
+        android:fillColor="#6D4C41"
+        android:pathData="M136,188 L136,164 L152,164 L152,188 Z" />
+
+    <!-- 树干纹理 -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M142,188 L142,164 L146,164 L146,188 Z" />
+
+    <!-- 树冠 - 薄荷绿（更鲜艳） -->
+    <path
+        android:fillColor="#26A69A"
+        android:pathData="M144,108 L180,168 L108,168 Z" />
+
+    <!-- 树冠高光 -->
+    <path
+        android:fillColor="#4DB6AC"
+        android:pathData="M144,118 L164,158 L124,158 Z" />
+
+    <!-- 树顶大星星 - 金黄色 -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M144,88 L151,106 L170,108 L156,120 L160,139 L144,129 L128,139 L132,120 L118,108 L137,106 Z" />
+
+    <!-- 星星高光 -->
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M144,96 L148,106 L158,107 L150,114 L152,124 L144,119 L136,124 L138,114 L130,107 L140,106 Z" />
+
+    <!-- 星星中心 -->
+    <path
+        android:fillColor="#FFF8E1"
+        android:pathData="M144,104 L146,110 L152,110 L148,114 L149,120 L144,117 L139,120 L140,114 L136,110 L142,110 Z" />
+
+</vector>

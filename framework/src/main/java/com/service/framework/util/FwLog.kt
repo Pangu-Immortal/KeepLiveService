@@ -75,7 +75,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Enhanced logging utility providing detailed log output for debugging and security research
  *
  * @author https://github.com/Pangu-Immortal/KeepAlivePerfect
- * @since 1.0.0
+ * @since 2.1.0
  */
 object FwLog {
 

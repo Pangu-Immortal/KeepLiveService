@@ -28,16 +28,22 @@
         android:theme="@style/Theme.KeepLiveService"
         tools:targetApi="31">
 
-        <!-- ==================== 主界面 ==================== -->
+        <!-- ==================== 启动页 ==================== -->
         <activity
-            android:name=".MainActivity"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.KeepLiveService">
+            android:theme="@style/Theme.KeepLiveService.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ==================== 主界面 ==================== -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KeepLiveService" />
 
         <!--
             其他组件说明：

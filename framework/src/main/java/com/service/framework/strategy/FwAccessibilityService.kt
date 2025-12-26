@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FwAccessibilityService.kt - 无障碍服务保活策略
+ * ============================================================================
+ *
+ * 功能简介：
+ *   实现基于 Android 无障碍服务的保活策略。无障碍服务是系统级服务，
+ *   具有极高的进程优先级，系统会尽量保持其存活。提供服务状态检测、
+ *   设置页面跳转、服务连接管理等功能。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.accessibilityservice.AccessibilityService

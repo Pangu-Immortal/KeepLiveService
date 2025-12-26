@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * VendorIntegrationAnalyzer.kt - 厂商集成分析器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   分析和检测应用与厂商系统的集成情况，包括推送 SDK 检测、系统权限分析、
+ *   厂商白名单检测等。支持小米、华为、OPPO、vivo、魅族等主流厂商的推送
+ *   SDK 识别，帮助了解应用的保活能力来源。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.content.Context

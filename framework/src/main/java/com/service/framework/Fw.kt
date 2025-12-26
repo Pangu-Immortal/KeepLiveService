@@ -1,3 +1,30 @@
+/**
+ * ============================================================================
+ * Fw.kt - 保活框架入口类
+ * ============================================================================
+ *
+ * 功能简介：
+ *   Fw 框架的核心入口，提供一行代码初始化保活功能。
+ *   负责统一管理所有保活策略的启动、停止和配置。
+ *
+ * 主要功能：
+ *   - init(): 初始化框架，启动所有已配置的保活策略
+ *   - check(): 手动触发保活检查
+ *   - stop(): 停止所有保活策略
+ *
+ * 保活策略包括：
+ *   - 前台服务、MediaSession
+ *   - 双进程守护、Native 守护
+ *   - JobScheduler、WorkManager、AlarmManager
+ *   - 账户同步、系统广播监听
+ *   - 内容观察者、文件观察者
+ *   - 1像素Activity、锁屏Activity
+ *   - 悬浮窗、无法强制停止策略
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework
 
 import android.annotation.SuppressLint
@@ -18,6 +45,7 @@ import com.service.framework.receiver.MediaButtonReceiver
 import com.service.framework.receiver.WifiReceiver
 import com.service.framework.service.DaemonService
 import com.service.framework.strategy.*
+import com.service.framework.strategy.forcestop.ForceStopResistance
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 
@@ -121,6 +149,7 @@ object Fw {
             if (enableLockScreenActivity) registerLockScreenReceiver()
             if (enableFloatWindow) startFloatWindow()
             if (enableNativeDaemon || enableNativeSocket) initNativeModule()
+            if (enableForceStopResistance) startForceStopResistance() // 无法强制停止策略
         }
 
         FwLog.d("================= 所有策略已启动 ================")
@@ -212,6 +241,16 @@ object Fw {
             if (enableNativeDaemon) FwNative.startDaemon(application.packageName, "com.service.framework.service.FwForegroundService", nativeDaemonCheckInterval)
             if (enableNativeSocket) FwNative.startSocketServer(nativeSocketName)
         }
+    }
+
+    /**
+     * 启动无法强制停止策略，用户疯狂点击 强制停止 时无法停止。
+     * 通过多进程文件锁监控和 app_process 拉活实现
+     * 注意：此策略仅在 Android 5.0-11.0 上有效
+     */
+    private fun startForceStopResistance() {
+        FwLog.d("策略: 启动无法强制停止策略...")
+        ForceStopResistance.attach(application)
     }
 
     private fun registerReceiver(receiver: BroadcastReceiver, filter: IntentFilter, isExported: Boolean = false) {

@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * WifiReceiver.kt - WiFi 广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监听 WiFi 相关事件，包括 WiFi 状态变化、网络连接状态、扫描结果可用、
+ *   信号强度变化等，需要动态注册（Android 8.0+ 无法静态注册 WiFi 相关广播）。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.content.BroadcastReceiver

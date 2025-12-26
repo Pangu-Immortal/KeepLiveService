@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * AlarmStrategy.kt - AlarmManager 保活策略
+ * ============================================================================
+ *
+ * 功能简介：
+ *   使用精确闹钟定时触发，在闹钟触发时拉起服务。
+ *
+ * 核心机制：
+ *   - 使用精确闹钟定时触发
+ *   - Android 12+ 需要 SCHEDULE_EXACT_ALARM 权限
+ *   - 闹钟触发后自动重新调度下一次
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.app.AlarmManager

@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * ProcessPriorityManager.kt - 进程优先级管理器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监控和管理进程优先级状态，提供进程重要性级别查询、OOM adj 值读取、
+ *   内存使用情况获取、进程被杀风险评估等功能。帮助应用了解当前进程状态
+ *   并采取相应的保活策略。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.app.ActivityManager

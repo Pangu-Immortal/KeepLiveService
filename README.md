@@ -145,6 +145,9 @@ Fw.init(this) {
     // 双进程守护
     enableDualProcess(true)
 
+    // 无法强制停止策略（仅 Android 5.0-11.0 有效）
+    enableForceStopResistance(false) // 默认关闭，侵入性较强
+
     // Native 层保活
     enableNativeDaemon(true)
     enableNativeSocket(true)
@@ -254,7 +257,207 @@ VendorIntegrationAnalyzer.getFullAnalysisReport(context, "com.moji.mjweather")
 | Native 守护进程 | `FwNative` | C++ fork() 子进程监控，使用 am 命令重启 | ⭐⭐⭐⭐ |
 | Socket 心跳 | `FwNative` | Unix Domain Socket 进程间通信 | ⭐⭐⭐ |
 
-### 8. 进程优先级管理
+### 8. 无法强制停止策略
+原理介绍，阅读地址：https://mp.weixin.qq.com/s/-9L6XOfrzh69hOQ9puK6iQ
+
+| 策略 | 类名 | 说明 | 有效性 |
+|-----|------|------|-------|
+| 多进程文件锁监控 | `ForceStopResistance` | 多个辅助进程通过文件锁互相监控 | ⭐⭐⭐⭐ |
+| app_process 拉活 | `AppProcessLauncher` | 通过 app_process 命令启动 Java 进程 | ⭐⭐⭐⭐ |
+| AMS Binder 直接调用 | `AmsBinderInvoker` | 直接调用 AMS Binder 启动服务/广播/Instrumentation | ⭐⭐⭐⭐⭐ |
+| Instrumentation 拉活 | `FwInstrumentation` | 通过 am instrument 命令拉起进程 | ⭐⭐⭐⭐ |
+
+> **适用范围**：此策略在 **Android 5.0 - 12.0** (API 21 - 31) 上测试有效。Android 10+ 官方声称已封堵，实际在 Android 13 才开始下发的补丁，实测大部分的设备仍可用。
+>
+> **默认关闭**：由于侵入性较强，此功能默认关闭，需手动启用。
+>
+> **教学意义**：此功能复现了早期 Android 生态的安全漏洞，展示系统演进过程中的攻防博弈。
+
+#### 核心原理：5ms 时间差竞争
+
+无法强制停止的关键在于 **杀死与唤醒的时间差**。当用户点击「强制停止」时，系统需要逐个杀死应用的所有进程，每个进程之间存在约 **5ms** 的时间间隔。
+
+**为什么存在时间差？**
+
+Android 系统强制停止应用时的执行流程：
+
+1. AMS 遍历应用的所有进程
+2. 对每个进程调用 `Process.killProcess()` 或发送 `SIGKILL`
+3. 等待进程死亡确认
+4. 继续杀死下一个进程
+
+这个「遍历 → 杀死 → 确认」的循环需要时间，每个进程大约 **5ms**。如果应用有 4 个进程（主进程 + 3 个辅助进程），总时间窗口约 **15-20ms**。
+
+**为什么 5ms 足够？**
+
+关键在于使用 **C++ Native 层直接 Binder 调用**，而不是 Java 层：
+
+| 方式 | 调用链 | 耗时 |
+|-----|-------|-----|
+| Java `startService()` | Intent 创建 → Parcel 序列化 → Binder 代理 → AMS 处理 | **10-50ms** |
+| C++ 直接 Binder | `open("/dev/binder")` → 预构造 Parcel → `ioctl()` 发送 | **< 1ms** |
+
+C++ 层的优势：
+
+- **预先构造 Parcel**：服务启动参数在初始化时就序列化好，检测到死亡时直接发送
+- **跳过 Intent 解析**：不需要创建 Intent 对象，省去对象创建开销
+- **直接驱动调用**：通过 `ioctl(fd, BINDER_WRITE_READ, &bwr)` 直接与 Binder 驱动通信
+- **无 GC 开销**：纯 C++ 代码，不受 Java 垃圾回收影响
+
+**时间线示例**：
+
+```
+T=0ms    : 用户点击「强制停止」
+T=1ms    : 系统开始杀死进程1（主进程）
+T=2ms    : 进程1 文件锁释放，进程2 检测到
+T=2.5ms  : 进程2 通过 Binder 直接调用 AMS.startService ← 关键！
+T=3ms    : AMS 收到请求，开始启动服务
+T=6ms    : 系统杀死进程2
+T=8ms    : 新服务进程启动完成 ← 拉活成功！
+T=11ms   : 系统杀死进程3
+T=16ms   : 系统杀死进程4
+T=20ms   : 强制停止流程结束，但服务已重新运行
+```
+
+**AMS Binder 直接调用是核心**：
+- 传统方式：`startService()` → 创建 Intent → Binder 代理 → AMS → 启动服务（耗时长）
+- 直接调用：打开 /dev/binder → 预构造 Parcel → `ioctl()` 直接发送（耗时极短）
+
+通过跳过 Intent 解析、权限检查等中间步骤，直接向 AMS 发送启动请求，可以在进程被完全杀死前完成拉活操作。
+
+#### 工作流程
+
+**阶段一：初始化（应用启动时）**
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           应用启动                                        │
+└──────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+            ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+            │  主进程      │ │ 辅助进程1    │ │ 辅助进程2    │
+            │  :main      │ │ :assist1    │ │ :assist2    │
+            └─────────────┘ └─────────────┘ └─────────────┘
+                    │               │               │
+                    ▼               ▼               ▼
+            ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+            │ 1.锁定文件A  │ │ 1.锁定文件B  │ │ 1.锁定文件C  │
+            │ 2.打开Binder │ │ 2.打开Binder │ │ 2.打开Binder │
+            │ 3.获取AMS句柄│ │ 3.获取AMS句柄│ │ 3.获取AMS句柄│
+            │ 4.预构造Parcel│ │ 4.预构造Parcel│ │ 4.预构造Parcel│
+            │ 5.fork守护进程│ │ 5.fork守护进程│ │ 5.fork守护进程│
+            └─────────────┘ └─────────────┘ └─────────────┘
+                    │               │               │
+                    └───────┬───────┴───────┬───────┘
+                            ▼               ▼
+                    ┌─────────────────────────────┐
+                    │  所有进程互相监控对方的文件锁  │
+                    │  （阻塞在 flock() 等待锁释放） │
+                    └─────────────────────────────┘
+```
+
+**阶段二：强制停止触发时的时间竞争**
+
+```
+时间轴（毫秒）
+────────────────────────────────────────────────────────────────────────────
+
+T=0ms   │ 用户点击「强制停止」
+        │
+T=1ms   │ ┌─────────────────────────────────────────────────────────────┐
+        │ │ AMS 开始杀死主进程 (:main)                                   │
+        │ │ → Process.killProcess() / SIGKILL                           │
+        │ └─────────────────────────────────────────────────────────────┘
+        │
+T=2ms   │ ┌─────────────────────────────────────────────────────────────┐
+        │ │ 主进程死亡 → 文件锁A自动释放                                  │
+        │ │ → 辅助进程1 的 flock() 立即返回（检测到主进程死亡！）          │
+        │ └─────────────────────────────────────────────────────────────┘
+        │
+T=2.5ms │ ┌─────────────────────────────────────────────────────────────┐
+        │ │ 【关键】辅助进程1 通过预构造的 Parcel 直接 ioctl() 调用      │
+        │ │ → Binder transact 到 AMS.startService()                     │
+        │ │ → 耗时 < 1ms（因为 Parcel 已预构造，无需创建对象）            │
+        │ └─────────────────────────────────────────────────────────────┘
+        │
+T=3ms   │ ┌─────────────────────────────────────────────────────────────┐
+        │ │ AMS 收到 startService 请求                                   │
+        │ │ → 开始创建新的服务进程                                       │
+        │ └─────────────────────────────────────────────────────────────┘
+        │
+T=6ms   │ ┌─────────────────────────────────────────────────────────────┐
+        │ │ AMS 继续杀死辅助进程1 (:assist1)                             │
+        │ │ → 但 startService 请求已发出！                               │
+        │ └─────────────────────────────────────────────────────────────┘
+        │
+T=8ms   │ ┌─────────────────────────────────────────────────────────────┐
+        │ │ 【拉活成功】新服务进程启动完成                                │
+        │ │ → 应用已重新运行！                                           │
+        │ └─────────────────────────────────────────────────────────────┘
+        │
+T=11ms  │ AMS 杀死辅助进程2 (:assist2)
+        │
+T=16ms  │ AMS 杀死辅助进程3 (:assist3)
+        │
+T=20ms  │ 强制停止流程结束
+        │ → 但应用服务已在 T=8ms 重新运行！
+        │
+────────────────────────────────────────────────────────────────────────────
+```
+
+**关键点总结**：
+
+| 步骤 | 操作 | 耗时 | 说明 |
+|-----|------|-----|------|
+| 1 | 检测进程死亡 | ~0ms | flock() 阻塞等待，锁释放立即返回 |
+| 2 | 发送 Binder 请求 | <1ms | 预构造 Parcel + 直接 ioctl() |
+| 3 | AMS 处理请求 | ~5ms | 系统创建新进程 |
+| **总计** | **从检测到拉活** | **<6ms** | **小于进程杀死间隔（~5ms）** |
+
+#### 为什么 Android 10+ 理论上失效？
+
+Android 10 开始引入了以下限制：
+
+1. **cgroup 进程组杀死**：强制停止时使用 `killProcessGroup()` 杀死整个 cgroup，理论上所有进程同时死亡
+2. **后台启动限制**：后台进程无法启动 Activity/Service
+3. **Binder 调用限制**：非前台进程的 Binder 调用受限
+4. **SELinux 加强**：app_process 等命令执行受限
+
+**但实测情况**：在部分 Android 12 设备上，此策略仍然有效。可能原因：
+
+- 某些厂商 ROM 未完全实现 cgroup 进程组杀死
+- `killProcessGroup()` 实际执行仍存在微小时间差
+- 设备内核版本差异导致行为不一致
+
+建议在目标设备上实际测试验证效果。
+
+#### Native 层实现（C++）
+
+为了最大化时间窗口利用率，核心逻辑使用 C++ 实现：
+
+```
+framework/src/main/cpp/
+├── fw_force_stop.cpp          # 无法强制停止核心实现
+├── binder/
+│   ├── common.h               # 公共定义
+│   ├── cParcel.cpp/h          # Parcel 数据封装
+│   └── data_transact.cpp/h    # Binder 事务处理
+└── utils/
+    ├── String16.cpp/h         # UTF-16 字符串
+    ├── Unicode.cpp/h          # Unicode 编解码
+    └── SharedBuffer.cpp/h     # 共享缓冲区
+```
+
+关键技术点：
+
+1. **直接打开 /dev/binder** - 通过 `open("/dev/binder")` 直接访问 Binder 驱动
+2. **手动构造 Parcel** - 不依赖 Android Framework，手动序列化数据
+3. **ioctl 系统调用** - 使用 `ioctl(fd, BINDER_WRITE_READ, &bwr)` 直接通信
+4. **flock 文件锁** - 使用 POSIX 文件锁检测进程死亡
+
+### 9. 进程优先级管理
 
 | 功能 | 类名 | 说明 |
 |-----|------|------|
@@ -262,7 +465,7 @@ VendorIntegrationAnalyzer.getFullAnalysisReport(context, "com.moji.mjweather")
 | 被杀风险评估 | `ProcessPriorityManager` | 评估进程被系统杀死的风险等级 |
 | 内存信息获取 | `ProcessPriorityManager` | 获取系统和应用内存使用情况 |
 
-### 9. 厂商集成策略
+### 10. 厂商集成策略
 
 | 功能 | 类名 | 说明 |
 |-----|------|------|
@@ -467,18 +670,34 @@ KeepLiveService/
 │       │   │   ├── VendorIntegrationAnalyzer.kt   # 厂商集成分析（新增）
 │       │   │   ├── FwAccessibilityService.kt      # 无障碍服务
 │       │   │   ├── FwNotificationListenerService.kt # 通知监听服务
-│       │   │   └── ProcessPriorityManager.kt # 进程优先级管理
+│       │   │   ├── ProcessPriorityManager.kt # 进程优先级管理
+│       │   │   └── forcestop/               # 无法强制停止策略（C++ 实现）
+│       │   │       ├── ForceStopResistance.kt    # 策略入口（调用 Native）
+│       │   │       ├── AssistService1/2/3.kt     # 辅助进程服务
+│       │   │       ├── ProcessUtils.kt           # 进程工具类
+│       │   │       ├── HiddenApiBypass.kt        # 隐藏 API 绕过
+│       │   │       ├── ForceStopReceiver.kt      # 唤醒广播接收器
+│       │   │       └── FwInstrumentation.kt      # Instrumentation 组件
 │       │   ├── native/
 │       │   │   └── FwNative.kt              # Native 层 JNI 接口
 │       │   └── util/
 │       │       ├── ServiceStarter.kt        # 服务启动器
 │       │       └── FwLog.kt                 # 日志工具
 │       ├── cpp/                             # Native C++ 层
-│       │   ├── CMakeLists.txt
+│       │   ├── CMakeLists.txt               # CMake 构建配置
 │       │   ├── fw_daemon.cpp                # 守护进程（fork）
 │       │   ├── fw_process.cpp               # 进程管理（OOM adj）
 │       │   ├── fw_socket.cpp                # Socket 通信
-│       │   └── fw_jni.cpp                   # JNI 入口
+│       │   ├── fw_jni.cpp                   # JNI 入口
+│       │   ├── fw_force_stop.cpp            # 无法强制停止核心实现
+│       │   ├── binder/                      # Binder 直接调用
+│       │   │   ├── common.h                 # 公共定义
+│       │   │   ├── cParcel.cpp/h            # Parcel 数据封装
+│       │   │   └── data_transact.cpp/h      # Binder 事务处理
+│       │   └── utils/                       # 工具类
+│       │       ├── String16.cpp/h           # UTF-16 字符串
+│       │       ├── Unicode.cpp/h            # Unicode 编解码
+│       │       └── SharedBuffer.cpp/h       # 共享缓冲区
 │       └── res/
 │           └── xml/
 │               ├── authenticator.xml        # 账户认证配置

@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FwNotificationListenerService.kt - 通知监听服务保活策略
+ * ============================================================================
+ *
+ * 功能简介：
+ *   实现基于通知监听服务的保活策略。NotificationListenerService 是系统级
+ *   服务，具有较高的进程优先级。提供通知监听权限检测、设置页面跳转、
+ *   服务重绑定请求、通知事件处理等功能。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.app.NotificationManager

@@ -1,33 +1,43 @@
 /**
+ * ============================================================================
  * fw_process.cpp - Native 层进程管理
+ * ============================================================================
+ *
+ * 功能简介：
+ *   提供 Native 层进程管理功能，包括进程优先级设置、OOM adj 值读写、
+ *   内存信息获取、root 权限检测等系统级操作。
  *
  * 核心机制：
- * 1. 提升进程优先级
- * 2. 设置进程 OOM adj 值
- * 3. 监控系统资源
+ *   1. 提升进程优先级
+ *   2. 设置进程 OOM adj 值
+ *   3. 监控系统资源
  *
  * 安全研究要点：
- * - Android 使用 OOM Killer 管理进程
- * - OOM adj 值越低，进程越不容易被杀
- * - 前台进程 adj = 0，后台进程 adj 较高
- * - 需要 root 权限才能修改其他进程的 adj
+ *   - Android 使用 OOM Killer 管理进程
+ *   - OOM adj 值越低，进程越不容易被杀
+ *   - 前台进程 adj = 0，后台进程 adj 较高
+ *   - 需要 root 权限才能修改其他进程的 adj
  *
  * 进程优先级（OOM adj 值）：
- * - NATIVE_ADJ (-1000): Native 进程
- * - SYSTEM_ADJ (-900): 系统进程
- * - PERSISTENT_PROC_ADJ (-800): 持久化进程
- * - PERSISTENT_SERVICE_ADJ (-700): 持久化服务
- * - FOREGROUND_APP_ADJ (0): 前台应用
- * - VISIBLE_APP_ADJ (100): 可见应用
- * - PERCEPTIBLE_APP_ADJ (200): 可感知应用
- * - BACKUP_APP_ADJ (300): 备份应用
- * - HEAVY_WEIGHT_APP_ADJ (400): 重量级应用
- * - SERVICE_ADJ (500): 服务
- * - HOME_APP_ADJ (600): Home 应用
- * - PREVIOUS_APP_ADJ (700): 上一个应用
- * - SERVICE_B_ADJ (800): 后台服务
- * - CACHED_APP_MIN_ADJ (900): 缓存应用最小值
- * - CACHED_APP_MAX_ADJ (999): 缓存应用最大值
+ *   - NATIVE_ADJ (-1000): Native 进程
+ *   - SYSTEM_ADJ (-900): 系统进程
+ *   - PERSISTENT_PROC_ADJ (-800): 持久化进程
+ *   - PERSISTENT_SERVICE_ADJ (-700): 持久化服务
+ *   - FOREGROUND_APP_ADJ (0): 前台应用
+ *   - VISIBLE_APP_ADJ (100): 可见应用
+ *   - PERCEPTIBLE_APP_ADJ (200): 可感知应用
+ *   - BACKUP_APP_ADJ (300): 备份应用
+ *   - HEAVY_WEIGHT_APP_ADJ (400): 重量级应用
+ *   - SERVICE_ADJ (500): 服务
+ *   - HOME_APP_ADJ (600): Home 应用
+ *   - PREVIOUS_APP_ADJ (700): 上一个应用
+ *   - SERVICE_B_ADJ (800): 后台服务
+ *   - CACHED_APP_MIN_ADJ (900): 缓存应用最小值
+ *   - CACHED_APP_MAX_ADJ (999): 缓存应用最大值
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
  */
 
 #include <jni.h>

@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * SystemEventReceiver.kt - 系统关键事件广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   专用于静态注册的系统关键事件广播接收器，捕获开机完成、锁定启动完成、
+ *   应用版本更新等只有静态注册才能接收到的系统广播，是应用自启动的重要入口。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.content.BroadcastReceiver
@@ -23,7 +37,7 @@ import com.service.framework.util.FwLog
  *
  * @author qihao (Pangu-Immortal)
  * @see DynamicEventReceiver
- * @since 1.0.0
+ * @since 2.1.0
  */
 class SystemEventReceiver : BroadcastReceiver() {
 

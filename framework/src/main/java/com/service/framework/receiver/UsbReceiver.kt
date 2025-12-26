@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * UsbReceiver.kt - USB 设备广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监听 USB 设备连接/断开事件、USB 配件（Accessory Mode）连接事件以及
+ *   USB 状态变化，支持多种 USB 设备类型的识别与分析。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.content.BroadcastReceiver

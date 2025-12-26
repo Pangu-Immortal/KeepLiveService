@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * OnePixelActivity.kt - 1 像素 Activity 保活策略
+ * ============================================================================
+ *
+ * 功能简介：
+ *   在屏幕关闭时启动 1x1 像素的透明 Activity，提升进程优先级。
+ *
+ * 核心机制：
+ *   - 屏幕关闭时启动 1x1 像素透明 Activity
+ *   - 利用前台 Activity 提升进程优先级
+ *   - 屏幕点亮时自动关闭
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
 package com.service.framework.strategy
 
 import android.app.Activity

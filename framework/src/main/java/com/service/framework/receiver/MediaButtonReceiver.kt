@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * MediaButtonReceiver.kt - 媒体按键广播接收器
+ * ============================================================================
+ *
+ * 功能简介：
+ *   监听媒体按键事件（播放、暂停、上一曲、下一曲等），包括蓝牙耳机按键触发的
+ *   媒体按键事件，是音乐应用响应蓝牙耳机按键的标准方式。
+ *
+ * @author Pangu-Immortal
+ * @github https://github.com/Pangu-Immortal/KeepLiveService
+ * @since 2.1.0
+ */
+
 package com.service.framework.receiver
 
 import android.content.BroadcastReceiver

@@ -428,6 +428,58 @@
             android:turnScreenOn="true"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
 
+        <!-- ==================== 无法强制停止策略 ==================== -->
+
+        <!--
+            辅助进程服务 1
+            运行在独立进程 :assist1
+            与其他辅助进程互相守护
+        -->
+        <service
+            android:name="com.service.framework.strategy.forcestop.AssistService1"
+            android:exported="false"
+            android:process=":assist1"
+            android:foregroundServiceType="dataSync" />
+
+        <!--
+            辅助进程服务 2
+            运行在独立进程 :assist2
+        -->
+        <service
+            android:name="com.service.framework.strategy.forcestop.AssistService2"
+            android:exported="false"
+            android:process=":assist2"
+            android:foregroundServiceType="dataSync" />
+
+        <!--
+            辅助进程服务 3
+            运行在独立进程 :assist3
+        -->
+        <service
+            android:name="com.service.framework.strategy.forcestop.AssistService3"
+            android:exported="false"
+            android:process=":assist3"
+            android:foregroundServiceType="dataSync" />
+
+        <!--
+            强制停止唤醒广播接收器
+            用于接收唤醒广播
+        -->
+        <receiver
+            android:name="com.service.framework.strategy.forcestop.ForceStopReceiver"
+            android:exported="false"
+            android:enabled="true" />
+
     </application>
+
+    <!--
+        Instrumentation 保活组件
+        用于通过 am instrument 命令拉活
+        注意：instrumentation 标签必须放在 manifest 根级别，不能放在 application 内
+    -->
+    <instrumentation
+        android:name="com.service.framework.strategy.forcestop.FwInstrumentation"
+        android:targetPackage="${applicationId}"
+        android:targetProcesses="${applicationId},${applicationId}:daemon,${applicationId}:assist1,${applicationId}:assist2,${applicationId}:assist3" />
 
 </manifest>
