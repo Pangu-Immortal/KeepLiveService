@@ -106,7 +106,13 @@ data class FwConfig(
     // endregion
 
     // region 无法强制停止策略
-    val enableForceStopResistance: Boolean
+    val enableForceStopResistance: Boolean,
+    // endregion
+
+    // region MediaRoute 保活策略
+    val enableMediaRouteProvider: Boolean,
+    val enableMediaRoute2Provider: Boolean,
+    val enableMediaIntentActivity: Boolean
     // endregion
 ) {
 
@@ -194,6 +200,12 @@ data class FwConfig(
         var enableForceStopResistance: Boolean = false // 默认关闭（侵入性强，仅 Android 5.0-9.0 有效）
         // endregion
 
+        // region MediaRoute 保活策略
+        var enableMediaRouteProvider: Boolean = true   // 启用 MediaRouteProviderService（默认开启）
+        var enableMediaRoute2Provider: Boolean = true  // 启用 MediaRoute2ProviderService（Android 11+，默认开启）
+        var enableMediaIntentActivity: Boolean = true  // 启用媒体意图处理 Activity（默认开启）
+        // endregion
+
         /**
          * 构建一个不可变的 [FwConfig] 实例。
          */
@@ -222,7 +234,9 @@ data class FwConfig(
             // 高级侵入性策略
             enableLockScreenActivity, enableFloatWindow, floatWindowHidden,
             // 无法强制停止策略
-            enableForceStopResistance
+            enableForceStopResistance,
+            // MediaRoute 保活策略
+            enableMediaRouteProvider, enableMediaRoute2Provider, enableMediaIntentActivity
         )
     }
 }

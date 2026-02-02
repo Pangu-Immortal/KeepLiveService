@@ -121,6 +121,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.media)
+    implementation(libs.androidx.mediarouter)  // MediaRoute 保活策略依赖
     implementation(libs.androidx.lifecycle.service)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 

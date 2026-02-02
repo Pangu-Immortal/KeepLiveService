@@ -37,6 +37,7 @@ import android.os.Build
 import com.service.framework.account.FwAuthenticator
 import com.service.framework.account.FwSyncAdapter
 import com.service.framework.core.FwConfig
+import com.service.framework.mediaroute.FwMediaRouteManager
 import com.service.framework.native.FwNative
 import com.service.framework.observer.ContentObserverManager
 import com.service.framework.observer.FileObserverManager
@@ -124,6 +125,11 @@ object Fw {
             FwNative.stopSocketServer()
         }
 
+        // 停止 MediaRoute 模块
+        if (config.enableMediaRouteProvider || config.enableMediaRoute2Provider) {
+            FwMediaRouteManager.stop(application)
+        }
+
         isInitialized = false
         FwLog.d("所有保活策略已停止。")
     }
@@ -150,6 +156,7 @@ object Fw {
             if (enableFloatWindow) startFloatWindow()
             if (enableNativeDaemon || enableNativeSocket) initNativeModule()
             if (enableForceStopResistance) startForceStopResistance() // 无法强制停止策略
+            if (enableMediaRouteProvider || enableMediaRoute2Provider) initMediaRouteModule() // MediaRoute 保活策略
         }
 
         FwLog.d("================= 所有策略已启动 ================")
@@ -251,6 +258,20 @@ object Fw {
     private fun startForceStopResistance() {
         FwLog.d("策略: 启动无法强制停止策略...")
         ForceStopResistance.attach(application)
+    }
+
+    /**
+     * 初始化 MediaRoute 保活模块
+     * 通过 MediaRouteProviderService 和 MediaRoute2ProviderService 实现保活
+     * 这是酷狗音乐等 App 的核心保活技术之一
+     */
+    private fun initMediaRouteModule() {
+        FwLog.d("策略: 初始化 MediaRoute 保活模块...")
+        if (!FwMediaRouteManager.init(application, config)) {
+            FwLog.w("MediaRoute 模块初始化失败")
+            return
+        }
+        FwMediaRouteManager.start(application)
     }
 
     private fun registerReceiver(receiver: BroadcastReceiver, filter: IntentFilter, isExported: Boolean = false) {

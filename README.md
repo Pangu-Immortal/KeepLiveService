@@ -1,23 +1,21 @@
-
-
 # Fw - Android 保活框架
 
 <div align="center">
 
 ![萌萌计数器](https://count.getloli.com/get/@KeepLiveService?theme=rule34)
 
-</div>
-
-<p align="center">
+<p>
   <b>🌟 如果觉得有帮助，请点击 <a href="https://github.com/Pangu-Immortal/KeepLiveService/stargazers">Star</a> 支持一下，关注不迷路！🌟</b>
 </p>
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-purple.svg)](https://kotlinlang.org)
 [![16K Page Size](https://img.shields.io/badge/16K%20Page%20Size-Compatible-orange.svg)](https://developer.android.com/guide/practices/page-sizes)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
+
+</div>
 
 > 安全研究用途：完整复现市面上所有的保活机制，穷尽展示所有保活手段，适配所有的主流机型和 ROM。
 > 
@@ -42,8 +40,29 @@ Tips：
 - **🔧 最新开发工具链** - 使用 AGP 8.14.3、Kotlin 2.2.21、JDK 21、NDK 27 等最新稳定版开发
 - **📦 64 位架构全覆盖** - 支持 arm64-v8a、armeabi-v7a、x86_64、x86 四种架构
 - **🛡️ 生产级代码质量** - 通过 Lint 检查、ProGuard 混淆优化，可直接上架应用商店
+- **🎵 MediaRoute 保活技术** - 酷狗音乐核心保活策略，向系统注册媒体路由获得特殊保护
+- **⚡ 无法强制停止策略** - 5ms 时间差竞争技术，C++ 直接调用 AMS Binder
 
-### **Star ⭐ 这个项目如果对你有帮助！欢迎 Start 🌟**
+### **Star ⭐ 这个项目如果对你有帮助！**
+
+---
+
+## 📚 目录
+
+| 章节 | 说明 |
+| ------ | ------ |
+| [项目简介](#项目简介) | 框架介绍、特性列表 |
+| [快速开始](#快速开始) | 一行代码初始化、配置示例 |
+| [保活策略完整列表](#保活策略完整列表) | 25+ 种保活策略详解 |
+| [厂商推送通道复用](#厂商推送通道复用高级策略) | 厂商推送 SDK 集成 |
+| [项目架构](#项目架构) | 目录结构、模块说明 |
+| [厂商适配](#厂商适配) | 各厂商特殊处理方案 |
+| [权限说明](#权限说明) | Manifest 权限、运行时权限 |
+| [核心原理](#核心原理) | 酷狗/墨迹天气保活原理分析 |
+| [常见问题](#常见问题) | FAQ |
+| [更新日志](#更新日志) | 版本历史 |
+
+---
 
 ## 项目简介
 
@@ -53,7 +72,7 @@ Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的
 
 - 🚀 一行代码初始化
 - 📦 模块化设计，策略可独立开关
-- 🔧 支持 20+ 种保活策略
+- 🔧 支持 25+ 种保活策略
 - 📱 适配 Android 7.0 - 16（API 24 - 36.1）
 - 🏭 支持主流厂商（小米、华为、OPPO、vivo、三星、Google、传音等）
 - 🔨 包含 Native C++ 层保活
@@ -139,43 +158,71 @@ Fw.init(this)
 
 ```kotlin
 Fw.init(this) {
-    // 基础策略
-    enableForegroundService(true)
-    enableMediaSession(true)
-    enableOnePixelActivity(true)
+    // ==================== 基础策略 ====================
+    enableForegroundService = true      // 前台服务（核心）
+    enableMediaSession = true           // MediaSession（让系统认为是媒体应用）
+    enableOnePixelActivity = true       // 1像素Activity
 
-    // 定时唤醒
-    enableJobScheduler(true)
-    enableWorkManager(true)
-    enableAlarmManager(true)
+    // ==================== 定时唤醒策略 ====================
+    enableJobScheduler = true           // JobScheduler
+    jobSchedulerInterval = 15 * 60 * 1000L  // 15分钟
+    enableWorkManager = true            // WorkManager
+    workManagerIntervalMinutes = 15L    // 15分钟
+    enableAlarmManager = true           // AlarmManager
+    alarmManagerInterval = 5 * 60 * 1000L   // 5分钟
 
-    // 账户同步
-    enableAccountSync(true)
+    // ==================== 账户同步策略 ====================
+    enableAccountSync = true            // 账户同步
+    syncIntervalSeconds = 60L           // 60秒
 
-    // 广播监听
-    enableBluetoothBroadcast(true)
-    enableUsbBroadcast(true)
-    enableNfcBroadcast(true)
-    enableMediaMountBroadcast(true)
+    // ==================== 广播策略 ====================
+    enableSystemBroadcast = true        // 系统广播
+    enableBluetoothBroadcast = true     // 蓝牙广播（核心：酷狗音乐的关键）
+    enableMediaButtonReceiver = true    // 媒体按键
+    enableUsbBroadcast = true           // USB 广播
+    enableNfcBroadcast = true           // NFC 广播
+    enableMediaMountBroadcast = true    // 媒体挂载广播
 
-    // 内容观察者
-    enableMediaContentObserver(true)
-    enableFileObserver(true)
+    // ==================== 内容观察者策略 ====================
+    enableMediaContentObserver = true   // 相册变化
+    enableContactsContentObserver = false // 联系人变化（需要权限）
+    enableSmsContentObserver = false    // 短信变化（需要权限）
+    enableSettingsContentObserver = true // 设置变化
+    enableFileObserver = true           // 文件系统变化
 
-    // 双进程守护
-    enableDualProcess(true)
+    // ==================== 双进程守护策略 ====================
+    enableDualProcess = true            // Java 双进程守护
 
-    // 无法强制停止策略（仅 Android 5.0-11.0 有效）
-    enableForceStopResistance(false) // 默认关闭，侵入性较强
+    // ==================== Native 层保活 ====================
+    enableNativeDaemon = true           // Native 守护进程
+    nativeDaemonCheckInterval = 3000    // 检查间隔 3 秒
+    enableNativeSocket = true           // Socket 心跳
+    nativeSocketName = "fw_native_socket"
 
-    // Native 层保活
-    enableNativeDaemon(true)
-    enableNativeSocket(true)
+    // ==================== 无法强制停止策略 ====================
+    enableForceStopResistance = false   // 默认关闭（侵入性强，仅 Android 5.0-12.0 有效）
 
-    // 通知配置
-    notificationTitle("音乐播放中")
-    notificationContent("点击打开应用")
-    notificationActivityClass(MainActivity::class.java)
+    // ==================== MediaRoute 保活策略（新增 v2.2.0）====================
+    enableMediaRouteProvider = true     // MediaRouteProviderService
+    enableMediaRoute2Provider = true    // MediaRoute2ProviderService (Android 11+)
+    enableMediaIntentActivity = true    // 媒体意图处理 Activity
+
+    // ==================== 高级侵入性策略 ====================
+    enableLockScreenActivity = false    // 锁屏 Activity（默认关闭）
+    enableFloatWindow = false           // 悬浮窗（默认关闭）
+    floatWindowHidden = true            // 隐藏悬浮窗（1像素）
+
+    // ==================== 通知配置 ====================
+    notificationChannelId = "fw_channel"
+    notificationChannelName = "守护服务"
+    notificationTitle = "音乐播放中"
+    notificationContent = "点击打开应用"
+    notificationIconResId = R.drawable.ic_notification
+    notificationActivityClass = MainActivity::class.java
+
+    // ==================== 日志配置 ====================
+    enableDebugLog = true
+    logTag = "Fw"
 }
 ```
 
@@ -275,7 +322,75 @@ VendorIntegrationAnalyzer.getFullAnalysisReport(context, "com.moji.mjweather")
 | Native 守护进程 | `FwNative` | C++ fork() 子进程监控，使用 am 命令重启 | ⭐⭐⭐⭐ |
 | Socket 心跳 | `FwNative` | Unix Domain Socket 进程间通信 | ⭐⭐⭐ |
 
-### 8. 无法强制停止策略
+### 8. MediaRoute 保活策略（新增 v2.2.0）
+
+这是**酷狗音乐**等应用的核心保活技术之一。通过向系统注册虚拟媒体路由，获得"媒体类应用"身份，系统会维护服务连接，不容易被杀死。
+
+| 策略 | 类名 | 说明 | 有效性 |
+|-----|------|------|-------|
+| MediaRouteProviderService | `FwMediaRouteProviderService` | 向 MediaRouter 注册媒体路由提供者，系统维护 Binder 连接 | ⭐⭐⭐⭐⭐ |
+| MediaRoute2ProviderService | `FwMediaRoute2ProviderService` | Android 11+ 新 MediaRouter2 API，双重保活 | ⭐⭐⭐⭐⭐ |
+| MediaRoute Native | `FwMediaRouteNative` | C++ 层服务状态监控、心跳检测、WakeLock 管理 | ⭐⭐⭐⭐ |
+| MediaRoute Manager | `FwMediaRouteManager` | 统一管理模块生命周期，根据系统版本选择性启动 | ⭐⭐⭐⭐ |
+
+**核心机制：**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    系统 MediaRouter 服务                         │
+│   ┌───────────────────┐     ┌───────────────────────┐          │
+│   │ MediaRouter (旧版) │     │ MediaRouter2 (Android 11+) │      │
+│   └────────┬──────────┘     └───────────┬───────────┘          │
+└────────────┼────────────────────────────┼───────────────────────┘
+             │ Binder 连接                 │ Binder 连接
+             ▼                             ▼
+┌────────────────────────┐    ┌─────────────────────────────┐
+│ FwMediaRouteProvider   │    │ FwMediaRoute2ProviderService │
+│ Service                │    │                             │
+│  - 注册虚拟媒体路由      │    │  - 发布 MediaRoute2 路由     │
+│  - 30秒心跳检查         │    │  - 30秒心跳检查              │
+│  - WakeLock 管理        │    │  - 触发保活检查              │
+└────────────────────────┘    └─────────────────────────────┘
+             │                             │
+             └──────────────┬──────────────┘
+                            ▼
+               ┌─────────────────────────┐
+               │   FwMediaRouteNative    │
+               │   (C++ Native 层)        │
+               │  - 服务状态监控          │
+               │  - 心跳计数              │
+               │  - WakeLock 检查         │
+               └─────────────────────────┘
+```
+
+**配置示例：**
+
+```kotlin
+Fw.init(this) {
+    // MediaRoute 保活策略（默认开启）
+    enableMediaRouteProvider = true      // MediaRouteProviderService
+    enableMediaRoute2Provider = true     // MediaRoute2ProviderService (Android 11+)
+    enableMediaIntentActivity = true     // 媒体意图处理 Activity
+}
+```
+
+**相关文件：**
+
+```
+framework/src/main/java/com/service/framework/mediaroute/
+├── FwMediaRouteManager.kt           # 模块管理器
+├── FwMediaRouteProviderService.kt   # MediaRoute 服务
+├── FwMediaRoute2ProviderService.kt  # MediaRoute2 服务 (Android 11+)
+├── FwMediaRouteProvider.kt          # 自定义路由提供者
+├── FwMediaRouteNative.kt            # Native 层 JNI 接口
+└── FwMediaActivity.kt               # 媒体意图处理 Activity
+
+framework/src/main/cpp/mediaroute/
+├── CMakeLists.txt                   # CMake 构建配置
+└── fw_mediaroute_jni.cpp            # Native 层实现
+```
+
+### 9. 无法强制停止策略
 原理介绍，阅读地址：https://mp.weixin.qq.com/s/-9L6XOfrzh69hOQ9puK6iQ
 
 | 策略 | 类名 | 说明 | 有效性 |
@@ -475,7 +590,7 @@ framework/src/main/cpp/
 3. **ioctl 系统调用** - 使用 `ioctl(fd, BINDER_WRITE_READ, &bwr)` 直接通信
 4. **flock 文件锁** - 使用 POSIX 文件锁检测进程死亡
 
-### 9. 进程优先级管理
+### 10. 进程优先级管理
 
 | 功能 | 类名 | 说明 |
 |-----|------|------|
@@ -483,7 +598,7 @@ framework/src/main/cpp/
 | 被杀风险评估 | `ProcessPriorityManager` | 评估进程被系统杀死的风险等级 |
 | 内存信息获取 | `ProcessPriorityManager` | 获取系统和应用内存使用情况 |
 
-### 10. 厂商集成策略
+### 11. 厂商集成策略
 
 | 功能 | 类名 | 说明 |
 |-----|------|------|
@@ -696,6 +811,13 @@ KeepLiveService/
 │       │   │       ├── HiddenApiBypass.kt        # 隐藏 API 绕过
 │       │   │       ├── ForceStopReceiver.kt      # 唤醒广播接收器
 │       │   │       └── FwInstrumentation.kt      # Instrumentation 组件
+│       │   ├── mediaroute/                # MediaRoute 保活模块（新增 v2.2.0）
+│       │   │   ├── FwMediaRouteManager.kt       # 模块统一管理器
+│       │   │   ├── FwMediaRouteProviderService.kt # MediaRoute 服务
+│       │   │   ├── FwMediaRoute2ProviderService.kt # MediaRoute2 服务 (Android 11+)
+│       │   │   ├── FwMediaRouteProvider.kt      # 自定义路由提供者
+│       │   │   ├── FwMediaRouteNative.kt        # Native 层 JNI 接口
+│       │   │   └── FwMediaActivity.kt           # 媒体意图处理 Activity
 │       │   ├── native/
 │       │   │   └── FwNative.kt              # Native 层 JNI 接口
 │       │   └── util/
@@ -716,6 +838,9 @@ KeepLiveService/
 │       │       ├── String16.cpp/h           # UTF-16 字符串
 │       │       ├── Unicode.cpp/h            # Unicode 编解码
 │       │       └── SharedBuffer.cpp/h       # 共享缓冲区
+│       │   └── mediaroute/                  # MediaRoute Native 层（新增 v2.2.0）
+│       │       ├── CMakeLists.txt           # CMake 构建配置
+│       │       └── fw_mediaroute_jni.cpp    # JNI 实现（服务状态监控、心跳）
 │       └── res/
 │           └── xml/
 │               ├── authenticator.xml        # 账户认证配置
@@ -987,12 +1112,50 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 
 ## 更新日志
 
+### v2.2.0 (2025-02) 🆕
+
+**新增 MediaRoute 保活策略** - 酷狗音乐核心保活技术
+
+- 新增 `FwMediaRouteProviderService` - 向系统 MediaRouter 注册媒体路由提供者
+- 新增 `FwMediaRoute2ProviderService` - Android 11+ MediaRouter2 API 支持
+- 新增 `FwMediaRouteNative` - C++ 层服务状态监控、心跳检测、WakeLock 管理
+- 新增 `FwMediaRouteManager` - 统一管理模块生命周期
+- 新增 `FwMediaActivity` - 媒体意图处理 Activity
+- 配置项：`enableMediaRouteProvider`、`enableMediaRoute2Provider`、`enableMediaIntentActivity`
+
+### v2.1.0 (2025-01)
+
+**新增无法强制停止策略** - 5ms 时间差竞争技术
+
+- 新增 `ForceStopResistance` - 多进程文件锁监控
+- 新增 `AppProcessLauncher` - app_process 命令拉活
+- 新增 `AmsBinderInvoker` - C++ 直接调用 AMS Binder
+- 新增 `FwInstrumentation` - Instrumentation 拉活
+- Native 层 Binder 直接调用实现（< 1ms 响应）
+- 适用范围：Android 5.0 - 12.0
+
+### v2.0.0 (2025-01)
+
+**架构升级**
+
+- 升级至 AGP 8.14.3、Kotlin 2.2.21、JDK 21
+- 支持 Android 16 (API 36.1)
+- 适配 16KB 页面大小（Google Play 2026 要求）
+- 新增 `LockScreenActivity` - 锁屏 Activity（类似墨迹天气锁屏天气）
+- 新增 `FloatWindowManager` - 悬浮窗保活
+- 新增 `BatteryOptimizationManager` - 电池优化豁免管理
+- 新增 `VendorIntegrationAnalyzer` - 厂商集成分析工具
+- 新增 `AutoStartPermissionManager` - 厂商自启动权限管理
+
 ### v1.0.0 (2024-12)
 
 - 初始版本
 - 支持 20+ 种保活策略
-- 包含 Native C++ 层
-- 厂商集成分析工具
+- 包含 Native C++ 层守护进程
+- 支持 JobScheduler、WorkManager、AlarmManager 定时唤醒
+- 支持蓝牙、USB、NFC、媒体按键等广播监听
+- 支持账户同步、内容观察者策略
+- 支持 Java 双进程守护
 
 ---
 
@@ -1003,7 +1166,7 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
 
-   Copyright 2024 KeepLiveService Contributors
+   Copyright 2024-2025 KeepLiveService Contributors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -1040,7 +1203,7 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 
 ---
 
-**Star ⭐ 这个项目如果对你有帮助！欢迎 Start 🌟**
+**Star ⭐ 这个项目如果对你有帮助！**
 
 ![二维码](https://github.com/Pangu-Immortal/Pangu-Immortal/blob/main/getqrcode.png)
 
@@ -1075,18 +1238,13 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 - **ROM 定制**：提供各类定制化功能的 Android 系统，也可提供车载系统的定制化，提供软硬件交互的外包服务。
 
 ---
-**Star ⭐ 这个项目如果对你有帮助！欢迎 Start 🌟**
-
----
 
 ## ⭐ Star 趋势
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+<a href="https://star-history.com/#Pangu-Immortal/KeepLiveService&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Pangu-Immortal/KeepLiveService&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Pangu-Immortal/KeepLiveService&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Pangu-Immortal/KeepLiveService&type=Date" />
+ </picture>
+</a>
