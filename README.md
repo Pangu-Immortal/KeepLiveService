@@ -1,18 +1,11 @@
+
 <div align="center">
 
 ![萌萌计数器](https://count.getloli.com/get/@KeepLiveService?theme=rule34)
 
 </div>
 
-
 # Fw - Android 保活框架
-
-<div align="center">
-
-[![Stars](https://img.shields.io/github/stars/Pangu-Immortal/KeepLiveService?style=for-the-badge&logo=github&color=yellow)](https://github.com/Pangu-Immortal/KeepLiveService)
-[![Forks](https://img.shields.io/github/forks/Pangu-Immortal/KeepLiveService?style=for-the-badge&logo=github&color=blue)](https://github.com/Pangu-Immortal/KeepLiveService/fork)
-[![访问量](https://komarev.com/ghpvc/?username=Pangu-Immortal-KeepLiveService&label=访问量&color=10b981&style=for-the-badge)](https://github.com/Pangu-Immortal/KeepLiveService)
-</div>
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
@@ -1083,12 +1076,6 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 ---
 
 ## ⭐ Star 趋势
-
-<div align="center">
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Pangu-Immortal/KeepLiveService&type=Date)](https://star-history.com/#Pangu-Immortal/KeepLiveService&Date)
-
-</div>
 
 ## Contributing
 
