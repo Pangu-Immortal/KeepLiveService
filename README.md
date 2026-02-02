@@ -21,7 +21,6 @@
 > 
 > 更多详细内容，可以查阅项目：https://github.com/Pangu-Immortal/KeepAlivePerfect
 
-点击star🌟，关注不迷路。
 🔥 **Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
 
 Tips：
