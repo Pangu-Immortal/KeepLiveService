@@ -1,4 +1,9 @@
-![访客统计](https://count.getloli.com/get/@KeepLiveService?theme=rule34)
+<div align="center">
+
+![萌萌计数器](https://count.getloli.com/get/@KeepLiveService?theme=rule34)
+
+</div>
+
 
 # Fw - Android 保活框架
 
@@ -7,9 +12,6 @@
 [![Stars](https://img.shields.io/github/stars/Pangu-Immortal/KeepLiveService?style=for-the-badge&logo=github&color=yellow)](https://github.com/Pangu-Immortal/KeepLiveService)
 [![Forks](https://img.shields.io/github/forks/Pangu-Immortal/KeepLiveService?style=for-the-badge&logo=github&color=blue)](https://github.com/Pangu-Immortal/KeepLiveService/fork)
 [![访问量](https://komarev.com/ghpvc/?username=Pangu-Immortal-KeepLiveService&label=访问量&color=10b981&style=for-the-badge)](https://github.com/Pangu-Immortal/KeepLiveService)
-
-![萌萌计数器](https://moe-counter.glitch.me/get/@KeepLiveService?theme=rule34)
-
 </div>
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -210,8 +212,6 @@ VendorIntegrationAnalyzer.getFullAnalysisReport(context, "com.moji.mjweather")
 ```
 
 ---
-
-
 ![二维码](https://github.com/Pangu-Immortal/Pangu-Immortal/blob/main/getqrcode.png)
 
 🔥 **Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
@@ -1028,8 +1028,6 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 - ✅ 允许分发
 - ✅ 允许私有使用
 - ✅ 允许专利使用
-
-
 ---
 
 ## 免责声明
