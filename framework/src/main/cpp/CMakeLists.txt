@@ -72,3 +72,7 @@ target_link_libraries(fw_native
     ${log-lib}
     ${android-lib}
 )
+
+# ==================== MediaRoute 子模块 ====================
+# 添加 MediaRoute 保活模块（与主模块隔离）
+add_subdirectory(mediaroute)

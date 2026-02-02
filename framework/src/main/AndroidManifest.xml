@@ -470,6 +470,86 @@
             android:exported="false"
             android:enabled="true" />
 
+        <!-- ==================== MediaRoute 保活策略 ==================== -->
+
+        <!--
+            MediaRouteProviderService（核心：酷狗音乐的保活技术）
+
+            通过向系统注册虚拟媒体路由，获得"媒体类应用"身份
+            系统会维护与此服务的 Binder 连接，不容易被杀死
+
+            关键点：
+            1. 声明 android.media.MediaRouteProviderService intent-filter
+            2. 系统 MediaRouter 会自动发现并连接此服务
+            3. 连接建立后，服务进程优先级提升
+        -->
+        <service
+            android:name="com.service.framework.mediaroute.FwMediaRouteProviderService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.MediaRouteProviderService" />
+            </intent-filter>
+        </service>
+
+        <!--
+            MediaRoute2ProviderService（Android 11+ 新 API）
+
+            Android R (API 30) 引入的新媒体路由 API
+            与旧版 MediaRouteProviderService 并存，实现双重保活
+        -->
+        <service
+            android:name="com.service.framework.mediaroute.FwMediaRoute2ProviderService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.MediaRoute2ProviderService" />
+            </intent-filter>
+        </service>
+
+        <!--
+            媒体意图处理 Activity
+
+            处理系统媒体相关的隐式意图
+            通过注册媒体类型的 intent-filter，使应用可以被系统广播唤醒
+            收到意图后触发保活检查，然后静默关闭
+        -->
+        <activity
+            android:name="com.service.framework.mediaroute.FwMediaActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:noHistory="true">
+
+            <!-- 处理音频文件查看 -->
+            <intent-filter android:priority="-999">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+
+            <!-- 处理视频文件查看 -->
+            <intent-filter android:priority="-999">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+
+            <!-- 处理分享的音频 -->
+            <intent-filter android:priority="-999">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+
+            <!-- 处理分享的视频 -->
+            <intent-filter android:priority="-999">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+
+        </activity>
+
     </application>
 
     <!--
