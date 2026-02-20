@@ -41,6 +41,8 @@ Tips：
 - **📦 64 位架构全覆盖** - 支持 arm64-v8a、armeabi-v7a、x86_64、x86 四种架构
 - **🛡️ 生产级代码质量** - 通过 Lint 检查、ProGuard 混淆优化，可直接上架应用商店
 - **🎵 MediaRoute 保活技术** - 酷狗音乐核心保活策略，向系统注册媒体路由获得特殊保护
+- **🔇 静默音频保活** - 零音量播放无声音频，防止 CPU 休眠，支持三档能耗控制
+- **🔄 连续重启保护** - 智能检测异常重启频率，防止无限循环耗电
 - **⚡ 无法强制停止策略** - 5ms 时间差竞争技术，C++ 直接调用 AMS Binder
 
 ### **Star ⭐ 这个项目如果对你有帮助！**
@@ -53,7 +55,7 @@ Tips：
 | ------ | ------ |
 | [项目简介](#项目简介) | 框架介绍、特性列表 |
 | [快速开始](#快速开始) | 一行代码初始化、配置示例 |
-| [保活策略完整列表](#保活策略完整列表) | 25+ 种保活策略详解 |
+| [保活策略完整列表](#保活策略完整列表) | 27+ 种保活策略详解 |
 | [厂商推送通道复用](#厂商推送通道复用高级策略) | 厂商推送 SDK 集成 |
 | [项目架构](#项目架构) | 目录结构、模块说明 |
 | [厂商适配](#厂商适配) | 各厂商特殊处理方案 |
@@ -72,7 +74,7 @@ Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的
 
 - 🚀 一行代码初始化
 - 📦 模块化设计，策略可独立开关
-- 🔧 支持 25+ 种保活策略
+- 🔧 支持 27+ 种保活策略
 - 📱 适配 Android 7.0 - 16（API 24 - 36）
 - 🏭 支持主流厂商（小米、华为、OPPO、vivo、三星、Google、传音等）
 - 🔨 包含 Native C++ 层保活
@@ -206,6 +208,10 @@ Fw.init(this) {
     enableMediaRouteProvider = true     // MediaRouteProviderService
     enableMediaRoute2Provider = true    // MediaRoute2ProviderService (Android 11+)
     enableMediaIntentActivity = true    // 媒体意图处理 Activity
+
+    // ==================== 静默音频策略（新增 v2.2.1）====================
+    enableSilentAudio = true            // 静默音频播放（防止 CPU 休眠）
+    aggressiveLevel = AggressiveLevel.MEDIUM // 能耗等级：LOW/MEDIUM/HIGH
 
     // ==================== 高级侵入性策略 ====================
     enableLockScreenActivity = false    // 锁屏 Activity（默认关闭）
@@ -390,7 +396,53 @@ framework/src/main/cpp/mediaroute/
 └── fw_mediaroute_jni.cpp            # Native 层实现
 ```
 
-### 9. 无法强制停止策略
+### 9. 静默音频保活策略（新增 v2.2.1）
+
+通过 MediaPlayer 循环播放无声音频文件，防止 CPU 休眠。音量设为 0，用户完全无感知。此策略参考**酷狗音乐**、**QQ音乐**等主流音乐 App 的保活方案。
+
+| 策略 | 类名 | 说明 | 有效性 |
+|-----|------|------|-------|
+| 静默音频播放 | `SilentAudioStrategy` | 循环播放 1 秒无声 WAV（仅 8KB），防止 CPU 休眠 | ⭐⭐⭐⭐⭐ |
+| 能耗等级控制 | `AggressiveLevel` | LOW/MEDIUM/HIGH 三档，控制重播间隔和策略激进度 | ⭐⭐⭐⭐ |
+
+**能耗等级说明：**
+
+| 等级 | 静默音频间隔 | AlarmManager 间隔 | 守护进程检查间隔 | 适用场景 |
+|-----|-----------|------------------|--------------|---------|
+| `LOW` | 10 秒 | 10 分钟 | 10 秒 | 普通后台任务，最省电 |
+| `MEDIUM` | 5 秒 | 5 分钟 | 3 秒 | 均衡模式（默认） |
+| `HIGH` | 立即重播 | 1 分钟 | 1 秒 | 即时通讯类，最大化保活 |
+
+**配置示例：**
+
+```kotlin
+Fw.init(this) {
+    enableSilentAudio = true                    // 启用静默音频
+    aggressiveLevel = AggressiveLevel.MEDIUM    // 均衡模式
+}
+```
+
+### 10. 连续重启保护（新增 v2.2.1）
+
+防止保活策略在极端情况下导致无限循环重启、耗尽电池。
+
+| 策略 | 类名 | 说明 | 有效性 |
+|-----|------|------|-------|
+| 重启频率监控 | `RestartProtection` | 60 秒内重启超过 10 次触发 5 分钟冷却期 | ⭐⭐⭐⭐ |
+
+**核心机制：**
+- SharedPreferences 记录每次重启时间戳
+- 滑动窗口算法统计 60 秒内重启次数
+- 超过 10 次触发 5 分钟冷却期，期间暂停所有主动拉起策略
+- 冷却结束后自动恢复
+
+### 11. BIND_ABOVE_CLIENT 绑定（新增 v2.2.1）
+
+| 策略 | 类名 | 说明 | 有效性 |
+|-----|------|------|-------|
+| 高优先级绑定 | `DaemonService` | 守护进程以 `BIND_ABOVE_CLIENT` 绑定主服务，告诉系统被绑定服务比客户端更重要 | ⭐⭐⭐⭐ |
+
+### 12. 无法强制停止策略
 原理介绍，阅读地址：https://mp.weixin.qq.com/s/-9L6XOfrzh69hOQ9puK6iQ
 
 | 策略 | 类名 | 说明 | 有效性 |
@@ -590,7 +642,7 @@ framework/src/main/cpp/
 3. **ioctl 系统调用** - 使用 `ioctl(fd, BINDER_WRITE_READ, &bwr)` 直接通信
 4. **flock 文件锁** - 使用 POSIX 文件锁检测进程死亡
 
-### 10. 进程优先级管理
+### 13. 进程优先级管理
 
 | 功能 | 类名 | 说明 |
 |-----|------|------|
@@ -598,7 +650,7 @@ framework/src/main/cpp/
 | 被杀风险评估 | `ProcessPriorityManager` | 评估进程被系统杀死的风险等级 |
 | 内存信息获取 | `ProcessPriorityManager` | 获取系统和应用内存使用情况 |
 
-### 11. 厂商集成策略
+### 14. 厂商集成策略
 
 | 功能 | 类名 | 说明 |
 |-----|------|------|
@@ -771,7 +823,8 @@ KeepLiveService/
 │       ├── java/com/service/framework/
 │       │   ├── Fw.kt                        # 框架入口（一行代码初始化）
 │       │   ├── core/
-│       │   │   └── FwConfig.kt              # 配置类（Builder 模式）
+│       │   │   ├── FwConfig.kt              # 配置类（Builder 模式）
+│       │   │   └── AggressiveLevel.kt       # 能耗等级枚举（新增 v2.2.1）
 │       │   ├── service/
 │       │   │   ├── FwForegroundService.kt   # 主前台服务
 │       │   │   └── DaemonService.kt         # 守护进程服务
@@ -799,6 +852,7 @@ KeepLiveService/
 │       │   │   ├── OnePixelActivity.kt      # 1 像素 Activity
 │       │   │   ├── LockScreenActivity.kt    # 锁屏 Activity（新增）
 │       │   │   ├── FloatWindowManager.kt    # 悬浮窗管理（新增）
+│       │   │   ├── SilentAudioStrategy.kt   # 静默音频保活（新增 v2.2.1）
 │       │   │   ├── BatteryOptimizationManager.kt  # 电池优化管理（新增）
 │       │   │   ├── VendorIntegrationAnalyzer.kt   # 厂商集成分析（新增）
 │       │   │   ├── FwAccessibilityService.kt      # 无障碍服务
@@ -822,6 +876,7 @@ KeepLiveService/
 │       │   │   └── FwNative.kt              # Native 层 JNI 接口
 │       │   └── util/
 │       │       ├── ServiceStarter.kt        # 服务启动器
+│       │       ├── RestartProtection.kt     # 连续重启保护（新增 v2.2.1）
 │       │       └── FwLog.kt                 # 日志工具
 │       ├── cpp/                             # Native C++ 层
 │       │   ├── CMakeLists.txt               # CMake 构建配置
@@ -842,6 +897,8 @@ KeepLiveService/
 │       │       ├── CMakeLists.txt           # CMake 构建配置
 │       │       └── fw_mediaroute_jni.cpp    # JNI 实现（服务状态监控、心跳）
 │       └── res/
+│           ├── raw/
+│           │   └── silent.wav               # 1 秒无声音频（8KB）
 │           └── xml/
 │               ├── authenticator.xml        # 账户认证配置
 │               ├── syncadapter.xml          # 同步适配器配置
@@ -849,6 +906,7 @@ KeepLiveService/
 │               └── accessibility_service_config.xml # 无障碍服务配置
 │
 ├── build.gradle.kts               # 根项目构建脚本
+├── kill_alive.sh                  # 保活测试脚本（循环强杀验证恢复）
 ├── settings.gradle.kts            # 项目设置
 └── gradle/libs.versions.toml      # 依赖版本管理
 ```
@@ -1046,7 +1104,17 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ./test_bluetooth_broadcast.sh noisy
 ```
 
-### 5. 查看日志
+### 5. 保活测试（循环强杀验证）
+
+```bash
+# 默认：强杀 100 次，间隔 5 秒
+./kill_alive.sh
+
+# 自定义参数：强杀 50 次，间隔 3 秒，指定包名
+./kill_alive.sh 50 3 com.your.package
+```
+
+### 6. 查看日志
 
 ```bash
 adb logcat | grep -E "(Fw|BluetoothReceiver|UsbReceiver|NfcReceiver)"
@@ -1112,7 +1180,19 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 
 ## 更新日志
 
-### v2.2.0 (2025-02) 🆕
+### v2.2.1 (2026-02) 🆕
+
+**新增保活策略增强** - 借鉴 KeepAlivePerfect 核心技术
+
+- 新增 `SilentAudioStrategy` - 静默音频播放保活，循环播放无声 WAV 防止 CPU 休眠
+- 新增 `AggressiveLevel` - 三档能耗控制（LOW/MEDIUM/HIGH），平衡保活效果与电量
+- 新增 `RestartProtection` - 连续重启保护机制，60 秒内超过 10 次重启触发 5 分钟冷却期
+- 新增 `BIND_ABOVE_CLIENT` - DaemonService 以最高优先级绑定主服务，提升进程优先级
+- 新增 `kill_alive.sh` - 保活效果自动化测试脚本
+- FwConfig 新增 `enableSilentAudio`、`aggressiveLevel` 配置项
+- ServiceStarter 集成重启保护检查
+
+### v2.2.0 (2025-02)
 
 **新增 MediaRoute 保活策略** - 酷狗音乐核心保活技术
 

@@ -22,10 +22,13 @@ import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -59,6 +62,18 @@ class DaemonService : LifecycleService() {
 
     private var monitoringJob: Job? = null
 
+    /** 与主进程服务的绑定连接，使用 BIND_ABOVE_CLIENT 提升优先级 */
+    private val mainServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            FwLog.d("DaemonService 已绑定到主进程服务 (BIND_ABOVE_CLIENT)")
+        }
+        override fun onServiceDisconnected(name: ComponentName?) {
+            FwLog.w("主进程服务断开连接，尝试重新绑定并拉起...")
+            ServiceStarter.startForegroundService(this@DaemonService, "主服务断开后拉起")
+            bindToMainService() // 重新绑定
+        }
+    }
+
     companion object {
         private const val NOTIFICATION_ID = 10002
         private const val CHANNEL_ID = "fw_daemon_channel"
@@ -70,6 +85,7 @@ class DaemonService : LifecycleService() {
 
         startForegroundWithNotification()
         startMonitoringJob()
+        bindToMainService()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -83,6 +99,7 @@ class DaemonService : LifecycleService() {
         // lifecycleScope 会自动取消 monitoringJob，无需手动停止
         FwLog.w("DaemonService is being destroyed. It will attempt to restart the main service.")
         // 作为最后的保障，在自身被销毁时尝试拉起主服务
+        try { unbindService(mainServiceConnection) } catch (_: Exception) {}
         ServiceStarter.startForegroundService(this, "守护进程被杀后拉起")
     }
 
@@ -136,6 +153,20 @@ class DaemonService : LifecycleService() {
                 delay(Fw.config.dualProcessCheckInterval)
                 checkAndRestartMainProcess()
             }
+        }
+    }
+
+    /**
+     * 绑定到主进程的前台服务，使用 BIND_ABOVE_CLIENT 最高优先级
+     * 告诉系统被绑定的服务比当前客户端更重要
+     */
+    private fun bindToMainService() {
+        try {
+            val intent = Intent(this, FwForegroundService::class.java)
+            bindService(intent, mainServiceConnection, Context.BIND_AUTO_CREATE or Context.BIND_ABOVE_CLIENT)
+            FwLog.d("正在以 BIND_ABOVE_CLIENT 绑定主进程服务...")
+        } catch (e: Exception) {
+            FwLog.e("绑定主进程服务失败", e)
         }
     }
 
