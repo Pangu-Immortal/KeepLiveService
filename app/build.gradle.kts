@@ -38,17 +38,29 @@ android {
     namespace = "com.google.services"
     compileSdk = 36
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = System.getenv("KEYSTORE_FILE")
+            if (keystoreFile != null && file(keystoreFile).exists()) {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+                keyAlias = System.getenv("KEY_ALIAS") ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.google.services"
         minSdk = 24
         targetSdk = 36
-        versionCode = 25122616
-        versionName = "2.1.0"
+        versionCode = 26022001
+        versionName = "2.2.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // 构建配置字段 - 用于运行时获取构建信息
-        buildConfigField("String", "BUILD_TIME", "\"2025-12-09T${System.currentTimeMillis()}\"")
+        buildConfigField("String", "BUILD_TIME", "\"2026-02-20T${System.currentTimeMillis()}\"")
         buildConfigField("String", "AUTHOR", "\"https://github.com/Pangu-Immortal/KeepAlivePerfect\"")
         buildConfigField("String", "AUTHOR_GITHUB", "\"https://github.com/Pangu-Immortal\"")
         buildConfigField("String", "PROJECT_DESC", "\"Android Keep-Alive Security Research Framework\"")
@@ -75,8 +87,12 @@ android {
                 "proguard-rules.pro"
             )
 
-            // 使用 debug 签名以便于测试
-            signingConfig = signingConfigs.getByName("debug")
+            // CI 环境使用环境变量签名，本地开发使用 debug 签名
+            signingConfig = if (System.getenv("KEYSTORE_FILE") != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
 
             // Release 构建信息
             buildConfigField("boolean", "ENABLE_VERBOSE_LOG", "false")
