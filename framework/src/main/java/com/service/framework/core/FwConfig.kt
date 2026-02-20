@@ -112,7 +112,12 @@ data class FwConfig(
     // region MediaRoute 保活策略
     val enableMediaRouteProvider: Boolean,
     val enableMediaRoute2Provider: Boolean,
-    val enableMediaIntentActivity: Boolean
+    val enableMediaIntentActivity: Boolean,
+    // endregion
+
+    // region 静默音频策略
+    val enableSilentAudio: Boolean,
+    val aggressiveLevel: AggressiveLevel,
     // endregion
 ) {
 
@@ -206,6 +211,11 @@ data class FwConfig(
         var enableMediaIntentActivity: Boolean = true  // 启用媒体意图处理 Activity（默认开启）
         // endregion
 
+        // region 静默音频策略
+        var enableSilentAudio: Boolean = true          // 启用静默音频播放（默认开启）
+        var aggressiveLevel: AggressiveLevel = AggressiveLevel.MEDIUM // 能耗等级（默认均衡）
+        // endregion
+
         /**
          * 构建一个不可变的 [FwConfig] 实例。
          */
@@ -236,7 +246,9 @@ data class FwConfig(
             // 无法强制停止策略
             enableForceStopResistance,
             // MediaRoute 保活策略
-            enableMediaRouteProvider, enableMediaRoute2Provider, enableMediaIntentActivity
+            enableMediaRouteProvider, enableMediaRoute2Provider, enableMediaIntentActivity,
+            // 静默音频策略
+            enableSilentAudio, aggressiveLevel
         )
     }
 }
