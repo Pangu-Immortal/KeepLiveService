@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.10-purple.svg)](https://kotlinlang.org)
 [![16K Page Size](https://img.shields.io/badge/16K%20Page%20Size-Compatible-orange.svg)](https://developer.android.com/guide/practices/page-sizes)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
 
@@ -37,7 +37,7 @@ Tips：
 
 - **🆕 适配 Google Play 最新要求** - 完全兼容 2026 年 Google Play 商店的所有技术要求
 - **📱 Android 16K 页面大小支持** - 原生代码已适配 16KB 页面对齐，兼容 Android 15+ 的 16K 页面设备
-- **🔧 最新开发工具链** - 使用 AGP 8.14.3、Kotlin 2.2.21、JDK 21、NDK 27 等最新稳定版开发
+- **🔧 最新开发工具链** - 使用 Gradle 9.3.1、AGP 9.0.1、Kotlin 2.3.10、JDK 21、NDK 27 等最新稳定版开发
 - **📦 64 位架构全覆盖** - 支持 arm64-v8a、armeabi-v7a、x86_64、x86 四种架构
 - **🛡️ 生产级代码质量** - 通过 Lint 检查、ProGuard 混淆优化，可直接上架应用商店
 - **🎵 MediaRoute 保活技术** - 酷狗音乐核心保活策略，向系统注册媒体路由获得特殊保护
@@ -73,7 +73,7 @@ Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的
 - 🚀 一行代码初始化
 - 📦 模块化设计，策略可独立开关
 - 🔧 支持 25+ 种保活策略
-- 📱 适配 Android 7.0 - 16（API 24 - 36.1）
+- 📱 适配 Android 7.0 - 16（API 24 - 36）
 - 🏭 支持主流厂商（小米、华为、OPPO、vivo、三星、Google、传音等）
 - 🔨 包含 Native C++ 层保活
 - 📊 提供厂商集成分析工具
@@ -84,10 +84,10 @@ Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的
 
 | 项目 | 版本 |
 |-----|------|
-| Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2|
-| Gradle | 8.14.3 |
-| AGP (Android Gradle Plugin) | 8.14.3 |
-| Kotlin | 2.2.21 |
+| Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2 |
+| Gradle | 9.3.1 |
+| AGP (Android Gradle Plugin) | 9.0.1 |
+| Kotlin | 2.3.10 |
 | JVM | 21 |
 | NDK | 27.0.12077973 |
 | CMake | 3.22.1 |
@@ -96,11 +96,11 @@ Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的
 
 ## SDK 版本
 
-| 项目 | 版本                |
-|-----|-------------------|
-| compileSdk | 36.1 (Android 16) |
-| targetSdk | 36.1              |
-| minSdk | 24 (Android 7.0)  |
+| 项目 | 版本 |
+|-----|------|
+| compileSdk | 36 (Android 16) |
+| targetSdk | 36 |
+| minSdk | 24 (Android 7.0) |
 
 ---
 
@@ -117,7 +117,7 @@ Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的
 | 13+ | 33+   | `POST_NOTIFICATIONS` 运行时权限 |
 | 14+ | 34+   | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限 |
 | 15+ | 35+   | 更严格的后台限制，**16KB 页面大小设备支持** |
-| 16 | 36.1  | 最新 API |
+| 16 | 36 | 最新 API |
 
 ### Android 16K 页面大小适配
 
@@ -1236,6 +1236,52 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 - **滤镜定制**：提供视频、相机、图片等滤镜处理，可根据竞品效果进行模仿。
 - **AI 多场景定制**：多年 AI 行业经验，可为小团队提供定制化的 AI 服务。
 - **ROM 定制**：提供各类定制化功能的 Android 系统，也可提供车载系统的定制化，提供软硬件交互的外包服务。
+
+---
+
+## GitHub Secrets 配置
+
+使用 GitHub Actions CI/CD 前，需要在仓库 Settings → Secrets 中配置以下密钥：
+
+| Secret 名称 | 说明 | 获取方式 |
+|------------|------|---------|
+| `KEYSTORE_BASE64` | 签名文件的 Base64 编码 | `base64 -i keystore.jks \| tr -d '\n'` |
+| `KEYSTORE_PASSWORD` | Keystore 密码 | 创建签名文件时设置的密码 |
+| `KEY_ALIAS` | Key 别名 | 创建签名文件时设置的别名 |
+| `KEY_PASSWORD` | Key 密码 | 创建签名文件时设置的密码 |
+| `PLAY_STORE_SERVICE_ACCOUNT` | Google Play Console 服务账号 JSON | [Google Cloud Console](https://console.cloud.google.com/) 创建服务账号 |
+| `PACKAGE_NAME` | 应用包名 | `com.google.services` |
+
+---
+
+## 技术债与风险
+
+| 位置 | 成因 | 风险等级 | 处理建议 |
+|-----|------|---------|---------|
+| `ForceStopResistance` + C++ 层 | 依赖隐藏 API + 反射，Android 13+ 部分设备失效 | 🔴 高 | 仅用于安全研究，不建议生产环境启用 |
+| Native 守护进程 (`fw_daemon.cpp`) | Android 10+ cgroup 进程组杀死理论上使其无效 | 🟡 中 | 作为 Java 层备选方案，效果不稳定 |
+| `FwForegroundService` WakeLock | 10 分钟超时后释放，可能导致持有不稳定 | 🟡 中 | 考虑改为持久化持有或定期续期 |
+| MediaRoute 保活 | 部分国产 ROM 可能删改 MediaRouter 实现 | 🟡 中 | 需在目标厂商设备上实测验证 |
+| `HiddenApiBypass.kt` | 依赖反射绕过隐藏 API 限制，易被新版本系统封堵 | 🟡 中 | 跟踪 Android 版本更新，及时适配 |
+| 厂商推送 SDK 集成 | README 仅提供示例代码，未实装到 framework 模块 | 🟢 低 | 用户需自行集成，提供文档说明即可 |
+| 自动化测试缺失 | 无单元测试和集成测试 | 🟡 中 | 后续补充保活策略的测试用例 |
+
+---
+
+## 开源库引用
+
+本项目使用的核心开源库：
+
+| 库名称 | 版本 | 用途 | 开源地址 |
+|--------|------|------|---------|
+| AndroidX Core KTX | 1.17.0 | Kotlin 扩展库 | [GitHub](https://github.com/androidx/androidx) |
+| AndroidX Media | 1.7.1 | MediaSession 保活 | [GitHub](https://github.com/androidx/media) |
+| AndroidX MediaRouter | 1.7.0 | MediaRoute 保活策略 | [GitHub](https://github.com/androidx/androidx) |
+| AndroidX Work Runtime | 2.11.0 | WorkManager 定时唤醒 | [GitHub](https://github.com/androidx/androidx) |
+| AndroidX Lifecycle | 2.10.0 | 生命周期管理 | [GitHub](https://github.com/androidx/androidx) |
+| Jetpack Compose BOM | 2026.01.01 | 声明式 UI 框架 | [GitHub](https://github.com/androidx/androidx) |
+| Lottie Compose | 6.6.2 | Lottie 动画渲染 | [GitHub](https://github.com/airbnb/lottie-android) |
+| AndroidX Splash Screen | 1.2.0 | 启动画面 | [GitHub](https://github.com/androidx/androidx) |
 
 ---
 

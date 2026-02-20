@@ -46,11 +46,11 @@ android {
         consumerProguardFiles("consumer-rules.pro")
 
         // 构建配置字段 - 用于运行时获取构建信息
-        buildConfigField("String", "FW_VERSION", "\"1.0.0\"")
-        buildConfigField("String", "FW_BUILD_TIME", "\"2025-12-09T${System.currentTimeMillis()}\"")
+        buildConfigField("String", "FW_VERSION", "\"2.2.1\"")
+        buildConfigField("String", "FW_BUILD_TIME", "\"2026-02-20T${System.currentTimeMillis()}\"")
         buildConfigField("String", "FW_AUTHOR", "\"Pangu-Immortal\"")
         buildConfigField("String", "FW_GITHUB", "\"https://github.com/Pangu-Immortal\"")
-        buildConfigField("int", "FW_STRATEGY_COUNT", "20")
+        buildConfigField("int", "FW_STRATEGY_COUNT", "25")
 
         // NDK 配置 - 支持所有主流架构
         ndk {
