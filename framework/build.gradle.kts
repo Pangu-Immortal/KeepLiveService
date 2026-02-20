@@ -50,7 +50,7 @@ android {
         buildConfigField("String", "FW_BUILD_TIME", "\"2026-02-20T${System.currentTimeMillis()}\"")
         buildConfigField("String", "FW_AUTHOR", "\"Pangu-Immortal\"")
         buildConfigField("String", "FW_GITHUB", "\"https://github.com/Pangu-Immortal\"")
-        buildConfigField("int", "FW_STRATEGY_COUNT", "25")
+        buildConfigField("int", "FW_STRATEGY_COUNT", "27")
 
         // NDK 配置 - 支持所有主流架构
         ndk {

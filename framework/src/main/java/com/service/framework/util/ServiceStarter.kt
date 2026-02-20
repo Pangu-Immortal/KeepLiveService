@@ -21,6 +21,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.service.framework.service.FwForegroundService
+import com.service.framework.util.RestartProtection
 
 /**
  * 服务启动工具类
@@ -31,6 +32,11 @@ object ServiceStarter {
      * 启动前台服务
      */
     fun startForegroundService(context: Context, reason: String) {
+        // 连续重启保护：检查是否在冷却期
+        if (!RestartProtection.recordRestart(context)) {
+            FwLog.w("重启保护已触发冷却期，跳过本次启动: $reason")
+            return
+        }
         val intent = Intent(context, FwForegroundService::class.java).apply {
             putExtra(FwForegroundService.EXTRA_START_REASON, reason)
         }

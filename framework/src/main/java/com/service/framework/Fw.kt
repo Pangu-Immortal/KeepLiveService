@@ -47,7 +47,9 @@ import com.service.framework.receiver.WifiReceiver
 import com.service.framework.service.DaemonService
 import com.service.framework.strategy.*
 import com.service.framework.strategy.forcestop.ForceStopResistance
+import com.service.framework.core.AggressiveLevel
 import com.service.framework.util.FwLog
+import com.service.framework.util.RestartProtection
 import com.service.framework.util.ServiceStarter
 
 @SuppressLint("StaticFieldLeak")
@@ -130,6 +132,7 @@ object Fw {
             FwMediaRouteManager.stop(application)
         }
 
+        SilentAudioStrategy.stop()
         isInitialized = false
         FwLog.d("所有保活策略已停止。")
     }
@@ -141,6 +144,7 @@ object Fw {
 
         config.run {
             if (enableForegroundService) startForegroundService()
+            if (enableSilentAudio) startSilentAudio()
             if (enableDualProcess) startDaemonService()
             if (enableJobScheduler) FwJobService.schedule(application)
             if (enableWorkManager) FwWorker.schedule(application)
@@ -165,6 +169,15 @@ object Fw {
     private fun startForegroundService() {
         FwLog.d("策略: 启动核心前台服务...")
         ServiceStarter.startForegroundService(application, "初始化启动")
+    }
+
+    /**
+     * 启动静默音频播放策略
+     * 通过循环播放无声音频防止 CPU 休眠
+     */
+    private fun startSilentAudio() {
+        FwLog.d("策略: 启动静默音频播放...")
+        SilentAudioStrategy.start(application, config.aggressiveLevel)
     }
 
     private fun startDaemonService() {
