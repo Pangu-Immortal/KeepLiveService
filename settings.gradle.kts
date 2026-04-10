@@ -16,6 +16,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // mavenLocal()  // 本地测试用
     }
 }
 

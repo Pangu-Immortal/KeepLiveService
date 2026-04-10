@@ -54,8 +54,8 @@ android {
         applicationId = "com.google.services"
         minSdk = 24
         targetSdk = 36
-        versionCode = 26022001
-        versionName = "2.2.1"
+        versionCode = 11156
+        versionName = "1.11.56"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

@@ -1,4 +1,4 @@
-# Fw - Android 保活框架
+# Fw - Android 保活技术百科全书
 
 <div align="center">
 
@@ -8,6 +8,7 @@
   <b>🌟 如果觉得有帮助，请点击 <a href="https://github.com/Pangu-Immortal/KeepLiveService/stargazers">Star</a> 支持一下，关注不迷路！🌟</b>
 </p>
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.pangu-immortal/keeplive-framework.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.pangu-immortal/keeplive-framework)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
@@ -17,10 +18,59 @@
 
 </div>
 
-> 安全研究用途：完整复现市面上所有的保活机制，穷尽展示所有保活手段，适配所有的主流机型和 ROM。
+> **一行代码接入 27+ 种保活策略，覆盖 Android 7.0 - 16 全版本，适配 10+ 厂商 ROM。**
+>
+> 完整复现市面上所有商业应用的保活机制——前台服务、双进程守护、Native C++ fork 守护、MediaRoute 媒体路由（酷狗音乐核心方案）、账户同步、JobScheduler、WorkManager、AlarmManager、1 像素 Activity、静默音频、悬浮窗、无障碍服务、通知监听、蓝牙/WiFi/USB/NFC 广播唤醒、ContentObserver、FileObserver、Binder 直调 AMS 防强停……穷尽展示所有保活手段。
+>
+> 为了拉齐全网共同认知，让小团队开发不再迷茫，开源了全套所有私密函数和私密策略。会长期持续迭代，会陆陆续续的公开所有的隐私策略，ecpm 策略等等，欢迎 star🌟 持续关注。
 > 
-> 为了拉齐全网共同认知，让小团队开发不在迷茫，开源了全套所有私密函数和私密策略。会长期持续迭代，会陆陆续续的公开所有的隐私策略，ecpm 策略等等，欢迎 star🌟 持续关注。
-> 
+
+---
+
+## 快速集成
+
+### Step 1：添加依赖
+
+```kotlin
+// build.gradle.kts
+dependencies {
+    implementation("io.github.pangu-immortal:keeplive-framework:1.11.56")
+}
+```
+
+> 仓库说明：本库已发布到 **Maven Central**，项目默认的 `mavenCentral()` 仓库即可拉取，**无需额外配置仓库地址**。
+
+### Step 2：一行代码启动
+
+```kotlin
+// Application.onCreate()
+Fw.init(this)
+```
+
+搞定。27+ 种保活策略全部自动启用，无需额外配置。
+
+### Step 3（可选）：精细控制
+
+```kotlin
+Fw.init(this) {
+    enableForegroundService = true       // 前台服务（核心）
+    enableDualProcess = true             // 双进程守护
+    enableNativeDaemon = true            // Native C++ 守护进程
+    enableMediaRouteProvider = true      // MediaRoute 保活（酷狗方案）
+    enableSilentAudio = true             // 静默音频
+    aggressiveLevel = AggressiveLevel.MEDIUM  // 能耗等级：LOW/MEDIUM/HIGH
+    enableForceStopResistance = false    // 防强停（侵入性强，按需开启）
+    // ... 40+ 可配置项，详见下方完整配置
+}
+```
+
+### 运行时控制
+
+```kotlin
+Fw.check()           // 手动触发保活检查
+Fw.stop()            // 停止所有保活策略
+Fw.isInitialized()   // 查询框架状态
+```
 
 🔥 **Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
 
@@ -45,8 +95,9 @@
 
 | 章节 | 说明 |
 | ------ | ------ |
+| [快速集成](#快速集成) | **一行依赖 + 一行初始化** |
 | [项目简介](#项目简介) | 框架介绍、特性列表 |
-| [快速开始](#快速开始) | 一行代码初始化、配置示例 |
+| [快速开始](#快速开始) | 详细配置示例 |
 | [保活策略完整列表](#保活策略完整列表) | 27+ 种保活策略详解 |
 | [厂商推送通道复用](#厂商推送通道复用高级策略) | 厂商推送 SDK 集成 |
 | [项目架构](#项目架构) | 目录结构、模块说明 |
@@ -60,17 +111,22 @@
 
 ## 项目简介
 
-Fw（Framework）是一个模块化的 Android 保活框架，复现了所有的商业应用的后台保活技术。当蓝牙设备连接、USB 设备插入、NFC 标签发现等事件发生时，即使应用在后台或进程被杀死，也能自动唤醒并恢复服务。
+Fw（Framework）是一个模块化的 Android 保活框架，也是目前开源社区最完整的 **Android 保活技术百科全书**。项目完整复现了市面上所有商业应用（酷狗音乐、墨迹天气、QQ 音乐等）的后台保活技术，采用 Kotlin + Native C++17 双层架构，通过 `Fw.init()` 一行代码即可启用全部 27+ 种保活策略。
+
+项目覆盖了从 Java 层到 Native 层的全栈保活方案：前台服务 + MediaSession、双进程守护、Native fork 守护进程、MediaRoute 虚拟媒体路由、账户同步、JobScheduler/WorkManager/AlarmManager 定时唤醒、1 像素 Activity、锁屏 Activity、悬浮窗、静默音频、无障碍服务、通知监听服务、8 种系统广播接收器（蓝牙/WiFi/USB/NFC/媒体按键/存储挂载）、ContentObserver 内容观察者、FileObserver 文件监控、进程优先级管理、电池优化白名单、以及最极端的 Binder 直调 AMS 防强停策略。
+
+所有策略通过 `FwConfig` 的 40+ 配置项独立控制开关，`ServiceStarter` 作为唯一拉起汇聚点，`RestartProtection` 防止无限重启耗电。最多同时运行 5 个进程（主进程 + :daemon + :assist1 + :assist2 + :assist3）形成环形互保。
 
 **特性：**
 
-- 🚀 一行代码初始化
-- 📦 模块化设计，策略可独立开关
-- 🔧 支持 27+ 种保活策略
-- 📱 适配 Android 7.0 - 16（API 24 - 36）
-- 🏭 支持主流厂商（小米、华为、OPPO、vivo、三星、Google、传音等）
-- 🔨 包含 Native C++ 层保活
-- 📊 提供厂商集成分析工具
+- 🚀 **一行代码集成** — `implementation("io.github.pangu-immortal:keeplive-framework:1.11.56")`
+- 📦 **模块化设计** — 27+ 种策略独立开关，40+ 配置项精细控制
+- 🔨 **Native C++ 层** — fork 守护进程、Socket 心跳、文件锁互监控、Binder 直调 AMS
+- 📱 **全版本适配** — Android 7.0 - 16（API 24 - 36），包括 16KB 页面大小
+- 🏭 **全厂商覆盖** — 小米、华为、OPPO、vivo、三星、魅族、一加等 10+ 厂商，16 个自启动管理 Intent
+- 🎵 **商业级方案** — 酷狗音乐 MediaRoute、墨迹天气锁屏、QQ 音乐静默音频等核心保活技术
+- 📊 **厂商分析工具** — 检测目标应用的推送 SDK 和保活机制
+- 🛡️ **生产级质量** — 通过 Lint 检查、ProGuard 混淆优化，可直接上架应用商店
 
 ---
 
@@ -1172,7 +1228,17 @@ Native 守护进程（fork）在普通应用中效果有限，因为：
 
 ## 更新日志
 
-### v2.2.1 (2026-02) 🆕
+### v1.11.56 (2026-04) 🆕
+
+**Maven Central 正式发布** — 一行代码引用
+
+- 发布到 **Maven Central**：`implementation("io.github.pangu-immortal:keeplive-framework:1.11.56")`
+- 无需额外配置仓库地址，项目默认的 `mavenCentral()` 即可拉取
+- 附带 Sources JAR 和 Javadoc JAR，IDE 可直接查看源码和文档
+- 丰富 README 文档，新增快速集成指南
+- 完善 POM 元数据、GPG 签名，符合 Maven Central 发布规范
+
+### v2.2.1 (2026-02)
 
 **新增保活策略增强** - 借鉴 KeepAlivePerfect 核心技术
 
