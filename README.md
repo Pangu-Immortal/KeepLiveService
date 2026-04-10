@@ -142,9 +142,9 @@ Fw（Framework）是一个模块化的 Android 保活框架，也是目前开源
 | 项目 | 版本 |
 |-----|------|
 | Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2 |
-| Gradle | 9.3.1 |
-| AGP (Android Gradle Plugin) | 9.0.1 |
-| Kotlin | 2.3.10 |
+| Gradle | 9.4.1 |
+| AGP (Android Gradle Plugin) | 9.1.0 |
+| Kotlin | 2.3.20 |
 | JVM | 21 |
 | NDK | 27.0.12077973 |
 | CMake | 3.22.1 |
