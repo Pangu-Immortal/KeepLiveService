@@ -32,9 +32,16 @@
 ### Step 1：添加依赖
 
 ```kotlin
-// build.gradle.kts
+// build.gradle.kts (Kotlin DSL)
 dependencies {
     implementation("io.github.pangu-immortal:keeplive-framework:1.11.56")
+}
+```
+
+```groovy
+// build.gradle (Groovy DSL)
+dependencies {
+    implementation 'io.github.pangu-immortal:keeplive-framework:1.11.56'
 }
 ```
 
@@ -97,7 +104,7 @@ Fw.isInitialized()   // 查询框架状态
 | ------ | ------ |
 | [快速集成](#快速集成) | **一行依赖 + 一行初始化** |
 | [项目简介](#项目简介) | 框架介绍、特性列表 |
-| [快速开始](#快速开始) | 详细配置示例 |
+| [完整配置参考](#完整配置参考) | 40+ 配置项 + 高级 API |
 | [保活策略完整列表](#保活策略完整列表) | 27+ 种保活策略详解 |
 | [厂商推送通道复用](#厂商推送通道复用高级策略) | 厂商推送 SDK 集成 |
 | [项目架构](#项目架构) | 目录结构、模块说明 |
@@ -195,16 +202,9 @@ llvm-readelf -l libfw_native.so | grep LOAD
 
 ---
 
-## 快速开始
+## 完整配置参考
 
-### 一行代码初始化
-
-```kotlin
-// 在 Application.onCreate() 中
-Fw.init(this)
-```
-
-### 自定义配置
+> 以下为 `FwConfig` 的全部 40+ 配置项，按策略分类。快速上手请看 [快速集成](#快速集成)。
 
 ```kotlin
 Fw.init(this) {
@@ -280,17 +280,13 @@ Fw.init(this) {
 }
 ```
 
-### 控制方法
+### 高级控制 API
 
 ```kotlin
-// 手动触发保活检查
-Fw.check()
-
-// 停止所有保活策略
-Fw.stop()
-
-// 检查是否已初始化
-Fw.isInitialized()
+// 基础控制（也可在快速集成中使用）
+Fw.check()           // 手动触发保活检查
+Fw.stop()            // 停止所有保活策略
+Fw.isInitialized()   // 查询框架状态
 
 // 锁屏 Activity（类似墨迹天气的锁屏天气）
 LockScreenActivity.start(context)
