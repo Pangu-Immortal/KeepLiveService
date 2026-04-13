@@ -1,0 +1,82 @@
+name: Feature Request
+description: Suggest a new feature or improvement for the KeepLiveService framework
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a feature! Please provide as much detail as possible so we can evaluate and prioritize your request.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What type of feature are you requesting?
+      options:
+        - New keep-alive strategy
+        - Vendor/ROM adaptation
+        - Configuration option
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the feature you would like to see
+      placeholder: Describe the feature here...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe the scenario or problem this feature would solve
+      placeholder: |
+        In my application, I need to...
+        Currently, the framework does not support...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: If you have an idea of how this could be implemented, describe it here
+      placeholder: |
+        A possible implementation could be...
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe any alternative solutions or workarounds you have considered
+      placeholder: |
+        I have tried the following alternatives...
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Target Android Version(s)
+      description: Which Android version(s) should this feature target?
+      placeholder: "Android 12+ (API 31+)"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, references, or links related to the feature
+      placeholder: Add any other context here...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues and feature requests to make sure this is not a duplicate
+          required: true
+        - label: I am willing to contribute a pull request for this feature
+          required: false

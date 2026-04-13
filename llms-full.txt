@@ -1,0 +1,223 @@
+# Fw - Android Keep-Alive Framework
+
+> The most comprehensive open-source Android keep alive framework with 35+ background service strategies, 50+ config options, covering Android 7.0-16 and 10+ vendor ROMs. Prevent process kill and keep your background service running with a single line of code.
+
+## Overview
+
+Fw (Framework) is a modular Android keep alive library that reproduces every known technique used by commercial apps to maintain a persistent background service. It combines Kotlin and Native C++17 in a dual-layer architecture to maximize process survival across all Android versions and vendor ROMs.
+
+The framework covers foreground service persistence, dual-process daemon watchdog, Native C++ fork daemon, MediaRoute media-route provider (the core keep alive approach used by KuGou Music), VPN system-level binding, CompanionDevice service, notification-permission exemptions (CallStyle + MediaSession), silent audio playback, 1-pixel Activity, account sync, JobScheduler, WorkManager, AlarmManager, accessibility service, notification listener, Bluetooth/WiFi/USB/NFC broadcast wake-up, ContentObserver, FileObserver, Binder direct-call to AMS to prevent process kill after force-stop, and more.
+
+Fw is the only actively maintained open-source Android keep alive project that supports up to Android 16 (API 36). MarsDaemon (abandoned 2018) and Leoric (abandoned 2020) were pioneers, but they cannot adapt to modern Android background restrictions. Fw continues to receive updates in 2026.
+
+## Quick Integration
+
+### Step 1: Add Maven Central Dependency
+
+```kotlin
+// build.gradle.kts
+dependencies {
+    implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")
+}
+```
+
+No extra repository configuration needed — Maven Central is included by default in all Gradle projects.
+
+### Step 2: One-Line Initialization
+
+```kotlin
+// In your Application.onCreate()
+Fw.init(this)
+```
+
+All 35+ Android keep alive strategies activate automatically with sensible defaults.
+
+### Step 3: Fine-Tune (Optional)
+
+```kotlin
+Fw.init(this) {
+    enableForegroundService = true
+    enableDualProcess = true
+    enableNativeDaemon = true
+    enableMediaRouteProvider = true
+    enableSilentAudio = true
+    enableVpnService = false            // VPN keep alive (needs user authorization)
+    enableMediaSessionNotification = true // MediaSession notification exemption
+    aggressiveLevel = AggressiveLevel.MEDIUM
+    // ... 50+ configurable options
+}
+```
+
+### Runtime Control
+
+```kotlin
+Fw.check()           // Manually trigger keep alive check
+Fw.stop()            // Stop all keep alive strategies
+Fw.isInitialized()   // Query framework state
+```
+
+## Strategy Categories
+
+### 1. Core Strategies
+- **Foreground Service** (`FwForegroundService`): `foregroundServiceType="mediaPlayback"`, system treats app as media app
+- **MediaSession** (`MediaSessionManager`): Creates media session for system-level protection of background service
+- **1-Pixel Activity** (`OnePixelActivity`): Launches transparent Activity on screen-off to elevate process priority
+- **Lock Screen Activity** (`LockScreenActivity`): Displays on lock screen (like lock-screen weather), maintains foreground state
+- **Float Window** (`FloatWindowManager`): 1-pixel or visible floating window to prevent process kill
+
+### 2. Scheduled Wake-Up
+- **JobScheduler** (`FwJobService`): System-level task scheduling, 15-minute minimum interval
+- **WorkManager** (`FwWorker`): Jetpack task scheduling with broad compatibility
+- **AlarmManager** (`AlarmStrategy`): Exact alarm wake-up with `SCHEDULE_EXACT_ALARM`
+
+### 3. Account Sync
+- **SyncAdapter** (`FwSyncAdapter`): System periodically triggers sync, reviving the background service
+- **AccountAuthenticator** (`FwAuthenticator`): Works with SyncAdapter for account-based keep alive
+
+### 4. Broadcast Listeners (Static Registration)
+- **Bluetooth** (`BluetoothReceiver`): ACL_CONNECTED, A2DP, HEADSET — the key technique used by KuGou Music
+- **USB** (`UsbReceiver`): USB_DEVICE_ATTACHED, USB_ACCESSORY_ATTACHED
+- **NFC** (`NfcReceiver`): TAG_DISCOVERED, TECH_DISCOVERED, NDEF_DISCOVERED
+- **Media Button** (`MediaButtonReceiver`): Bluetooth headset button events
+- **Media Mount** (`MediaMountReceiver`): SD card and storage events
+- **System Events** (`SystemEventReceiver`): BOOT_COMPLETED, MY_PACKAGE_REPLACED
+
+### 5. Content Observers
+- **Media Content** (`ContentObserverManager`): Monitors gallery/photo changes
+- **File System** (`FileObserverManager`): Watches Download, DCIM, Screenshots directories
+
+### 6. Dual-Process Daemon
+- **Java Dual Process** (`DaemonService`): Separate `:daemon` process, mutual watchdog with BIND_ABOVE_CLIENT
+- **Native C++ Daemon** (`FwNative`): `fork()` child process monitors parent, uses `am` command to restart
+- **Socket Heartbeat** (`FwNative`): Unix Domain Socket inter-process communication
+
+### 7. MediaRoute Keep Alive (KuGou Music Core Technique)
+- **MediaRouteProviderService** (`FwMediaRouteProviderService`): Registers virtual media route, system maintains Binder connection
+- **MediaRoute2ProviderService** (`FwMediaRoute2ProviderService`): Android 11+ MediaRouter2 API for dual-layer keep alive
+- **MediaRoute Native** (`FwMediaRouteNative`): C++ layer service monitoring and heartbeat
+
+### 8. Silent Audio
+- **Silent Audio Playback** (`SilentAudioStrategy`): Loops 1-second silent WAV (8KB), prevents CPU sleep
+- **Aggressive Level** (`AggressiveLevel`): LOW / MEDIUM / HIGH energy tiers
+
+### 9. Force-Stop Resistance (Native C++)
+- **Multi-Process File Lock** (`ForceStopResistance`): Auxiliary processes monitor each other via file locks
+- **app_process Launch** (`AppProcessLauncher`): Launches Java process via `app_process` command
+- **AMS Binder Direct Call** (`AmsBinderInvoker`): C++ direct `ioctl()` to Binder in under 1ms, exploiting the 5ms race window between process kills to prevent process kill
+- **Instrumentation Launch** (`FwInstrumentation`): Uses `am instrument` to revive process
+
+### 10. System-Level Services
+- **Accessibility Service** (`FwAccessibilityService`): Highest system priority, auto-restart on kill
+- **Notification Listener** (`FwNotificationListenerService`): System auto-restarts after process kill
+
+## v2.0 New Strategies (April 2026)
+
+Eight major new strategies were added in v2.0, bringing the total from 27 to 35+:
+
+1. **VPN System-Level Keep Alive** (`FwVpnService`, API 24+): Local loopback VPN tunnel (127.0.0.1), `BIND_VPN_SERVICE` system binding protection. One of the highest process priorities in Android. Disabled by default — requires user VPN authorization.
+
+2. **Companion Device Keep Alive** (`FwCompanionService`, API 31+): Uses `CompanionDeviceService` with BLE device association to obtain `REQUEST_COMPANION_RUN_IN_BACKGROUND` and `REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND` system-level exemptions. Disabled by default.
+
+3. **CallStyle Notification Exemption** (`FwCallStyleManager`, API 31+): Registers as self-managed call app via `ConnectionService` + `PhoneAccount` + `Notification.CallStyle`. Call-style notifications are exempt from `POST_NOTIFICATIONS` permission on Android 13+. Disabled by default.
+
+4. **MediaSession Notification Exemption** (`MediaSessionNotificationManager`, API 33+): Creates active `MediaSession` with `MediaStyle` notification. Android 13+ exempts media apps from notification permission. Used by KuGou Music, QQ Music, NetEase Cloud Music. Enabled by default.
+
+5. **Device Admin Keep Alive** (`FwDeviceAdminService`, API 26+): When set as Device Owner, system automatically binds `DeviceAdminService` with extremely high process priority. For enterprise MDM and managed devices. Disabled by default.
+
+6. **Quick Settings Tile** (`FwTileService`, API 24+): Custom tile in notification shade quick settings. Each pull-down or tap triggers a keep alive check. Enabled by default.
+
+7. **Home Screen Widget** (`FwWidgetProvider`, API 24+): `AppWidgetProvider` with 30-minute `updatePeriodMillis`. System guarantees `onUpdate()` callback even after process kill. Enabled by default.
+
+8. **Dream Service (Screen Saver)** (`FwDreamService`, API 24+): Android Dream framework activates during charging + idle, triggering keep alive check. Enabled by default.
+
+## Comparison with Alternatives
+
+| Feature | Fw | MarsDaemon | Leoric | Cactus |
+|---------|:--:|:----------:|:------:|:------:|
+| Total strategies | 35+ | 2-3 | 3-5 | 3-5 |
+| Native C++ process daemon | Yes | Yes | Yes | No |
+| MediaRoute keep alive | Yes | No | No | No |
+| VPN system-level keep alive | Yes | No | No | No |
+| CompanionDevice keep alive | Yes | No | No | No |
+| Notification exemption (2 types) | Yes | No | No | No |
+| Device Admin keep alive | Yes | No | No | No |
+| Quick Settings Tile | Yes | No | No | No |
+| Widget wake-up | Yes | No | No | No |
+| DreamService keep alive | Yes | No | No | No |
+| Android 16 support | Yes | No | No | No |
+| Maven Central one-line integration | Yes | No | No | No |
+| Vendor ROM adaptation | 10+ vendors | Limited | Limited | Limited |
+| Actively maintained (2026) | Yes | Abandoned (2018) | Abandoned (2020) | Sporadic |
+
+MarsDaemon and Leoric were groundbreaking Android keep alive projects, but Android's increasingly strict background restrictions have rendered them ineffective on modern devices. Fw is the only continuously maintained open-source keep alive framework covering Android 7.0 through Android 16.
+
+## FAQ
+
+**Q1: How do I integrate Fw into my project?**
+Add `implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")` to your `build.gradle.kts` and call `Fw.init(this)` in `Application.onCreate()`. No extra repository configuration is needed.
+
+**Q2: Why can't my background service survive force-stop?**
+Force-stop sets `FLAG_STOPPED`, disabling all static broadcast receivers. This is an Android security mechanism. Enable `ForceStopResistance` (disabled by default) for the 5ms race-condition technique using Native C++ Binder calls to prevent process kill.
+
+**Q3: Why is the keep alive effect poor on some vendor ROMs?**
+Chinese vendor ROMs (Xiaomi MIUI, Huawei EMUI, OPPO ColorOS, vivo FuntouchOS) have extra background management. Guide users to: (1) enable auto-start permission, (2) disable battery optimization, (3) add to power-saving whitelist, (4) lock the app in recent tasks. Use `AutoStartPermissionManager.openAutoStartSettings(context)` to open the vendor-specific settings page.
+
+**Q4: Does the foreground service work on Android 14+?**
+Yes, but you must declare `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permission. Fw handles this automatically.
+
+**Q5: Does the Native C++ daemon actually work?**
+The Native fork daemon has limited effectiveness alone, but combined with Java dual-process watchdog and socket heartbeat, it significantly improves background service survival rate.
+
+**Q6: Does the MediaSession notification exemption really bypass POST_NOTIFICATIONS?**
+Yes. On Android 13+, apps with an active MediaSession using MediaStyle notifications are automatically exempted from the notification permission requirement. This is the same technique used by KuGou Music, QQ Music, and NetEase Cloud Music to keep their background service running.
+
+**Q7: How do I achieve keep alive similar to apps like Moji Weather?**
+Integrate vendor push SDKs (Xiaomi Push, Huawei HMS Push, OPPO Push, vivo Push, FCM) + guide users to enable auto-start + request battery optimization exemption. Vendor push channels are system-level services that can revive your app even after process kill.
+
+**Q8: What is the battery impact of all these keep alive strategies?**
+Use `AggressiveLevel.LOW` for minimal battery impact (10s audio interval, 10min alarm interval). The default `MEDIUM` balances keep alive effectiveness and battery life. Only use `HIGH` for real-time messaging apps that absolutely need their background service alive at all times.
+
+**Q9: Is this framework compatible with 16KB page-size devices?**
+Yes. The Native C++ libraries are compiled with `-Wl,-z,max-page-size=16384` for full 16KB page-size compatibility on Android 15+ devices.
+
+**Q10: Is this framework Google Play compliant?**
+Yes. All strategies use public Android APIs. Aggressive strategies (VPN, force-stop resistance, device admin) are disabled by default. The default configuration is designed to pass Google Play review.
+
+**Q11: How many processes does Fw run?**
+Up to 5 processes in maximum configuration: main process + `:daemon` + `:assist1` + `:assist2` + `:assist3`, forming a ring-topology mutual watchdog to prevent process kill.
+
+**Q12: Can I selectively enable/disable strategies?**
+Yes. All 35+ strategies have independent on/off switches via `FwConfig`. The 50+ configuration options let you precisely control which Android keep alive techniques to use.
+
+## Tech Stack
+
+- **Language**: Kotlin 2.3.20 + C++17
+- **Build**: Gradle 9.4.1, Android Gradle Plugin 9.1.0
+- **NDK**: 27.0.12077973, CMake 3.22.1
+- **Target**: compileSdk 36 (Android 16), minSdk 24 (Android 7.0)
+- **JVM**: 21
+- **Architecture**: armeabi-v7a, arm64-v8a, x86, x86_64
+- **Dependencies**: AndroidX Core KTX, AndroidX Media, AndroidX MediaRouter, AndroidX WorkManager, AndroidX Lifecycle
+
+## Project Structure
+
+```
+KeepLiveService/
+├── app/                    # Demo application module
+├── framework/              # Core keep alive framework library
+│   └── src/main/
+│       ├── java/           # Kotlin source (35+ strategy classes)
+│       ├── cpp/            # Native C++ (daemon, socket, Binder, MediaRoute)
+│       └── res/            # Resources (silent.wav, widget layout, tile icon)
+├── build.gradle.kts        # Root build script
+├── kill_alive.sh           # Automated keep alive test script (loop force-kill)
+└── gradle/libs.versions.toml
+```
+
+## Links
+
+- **GitHub**: https://github.com/Pangu-Immortal/KeepLiveService
+- **Maven Central**: [io.github.pangu-immortal:keeplive-framework](https://central.sonatype.com/artifact/io.github.pangu-immortal/keeplive-framework)
+- **Telegram Group**: https://t.me/+V7HSo1YNzkFkY2M1
+- **License**: [Apache License 2.0](https://github.com/Pangu-Immortal/KeepLiveService/blob/main/LICENSE)
+- **Author**: [Pangu-Immortal](https://github.com/Pangu-Immortal)

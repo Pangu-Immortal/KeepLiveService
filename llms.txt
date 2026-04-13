@@ -1,0 +1,55 @@
+# Fw - Android Keep-Alive Framework
+
+> The most comprehensive open-source Android keep alive framework with 35+ background service strategies, covering Android 7.0-16 and 10+ vendor ROMs. Prevent process kill with a single line of code.
+
+Fw is a production-grade Android keep alive library that reproduces every known commercial-app technique for keeping a background service running — foreground service, dual-process daemon, Native C++ fork daemon, MediaRoute provider (used by KuGou Music), VPN system-level binding, CompanionDevice, notification-permission exemptions, and more. It is the only actively maintained open-source project that supports up to Android 16 (API 36).
+
+## Quick Start
+
+Add the Maven Central dependency and call `Fw.init()`:
+
+```kotlin
+// build.gradle.kts
+dependencies {
+    implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")
+}
+
+// Application.onCreate()
+Fw.init(this)
+```
+
+All 35+ keep alive strategies activate automatically. Fine-tune with 50+ config options via the `FwConfig` DSL to control each background service strategy independently.
+
+## Strategy Overview
+
+Fw organizes its Android keep alive strategies into categories: **Core** (foreground service, MediaSession, 1-pixel Activity), **Scheduled Wake-Up** (JobScheduler, WorkManager, AlarmManager), **Broadcast Listeners** (Bluetooth, USB, NFC, media button), **Dual-Process Daemon** (Java watchdog + Native C++ fork + socket heartbeat), **MediaRoute** (the KuGou Music core technique for keeping a background service bound by the system), **Silent Audio** (loops inaudible WAV to prevent CPU sleep), **Content Observers** (gallery, file system), **Account Sync**, and **System-Level Services** (accessibility, notification listener).
+
+The v2.0 release (April 2026) added 8 new strategies: VPN system-level keep alive, CompanionDevice background exemption, CallStyle and MediaSession notification-permission bypass, Device Admin binding, Quick Settings Tile, home-screen Widget (30-min system wake-up), and DreamService screen-saver keep alive. These strategies help prevent process kill on the latest Android versions where older techniques have been restricted.
+
+## Docs
+
+- [README & Full Guide](https://github.com/Pangu-Immortal/KeepLiveService#readme): Project overview, integration steps, full config reference, architecture diagram
+- [Strategy List](https://github.com/Pangu-Immortal/KeepLiveService#保活策略完整列表): Complete catalog of all 35+ strategies with class names and effectiveness ratings
+- [v2.0 New Strategies](https://github.com/Pangu-Immortal/KeepLiveService#-v20-重大升级--8-大全新保活策略): VPN, CompanionDevice, CallStyle, MediaSession notification exemption, Device Admin, Quick Settings Tile, Widget, DreamService
+- [Vendor ROM Adaptation](https://github.com/Pangu-Immortal/KeepLiveService#厂商适配): Xiaomi MIUI, Huawei EMUI, OPPO ColorOS, vivo FuntouchOS, Samsung OneUI, Google Pixel, Tecno
+- [Force-Stop Resistance](https://github.com/Pangu-Immortal/KeepLiveService#12-无法强制停止策略): 5ms race-condition technique using Native C++ Binder direct-call to AMS
+- [Comparison](https://github.com/Pangu-Immortal/KeepLiveService#与同类项目对比): Fw vs MarsDaemon vs Leoric vs Cactus
+- [Config Reference](https://github.com/Pangu-Immortal/KeepLiveService#完整配置参考): All 50+ FwConfig options grouped by category
+- [Permissions](https://github.com/Pangu-Immortal/KeepLiveService#权限说明): Manifest and runtime permissions
+- [Changelog](https://github.com/Pangu-Immortal/KeepLiveService#更新日志): Version history from v1.x to v2.0.0
+- [Contributing](https://github.com/Pangu-Immortal/KeepLiveService/blob/main/CONTRIBUTING.md): How to contribute
+
+## Comparison
+
+Fw is the only open-source Android keep alive framework still actively maintained in 2026. MarsDaemon (abandoned 2018) and Leoric (abandoned 2020) support only 2-5 strategies and lack Android 12+ adaptation. Fw provides 35+ strategies, Maven Central distribution, Native C++ process daemon, and full Android 16 compatibility.
+
+## Key Facts
+
+- Maven Central: `io.github.pangu-immortal:keeplive-framework:2.0.0`
+- License: Apache 2.0
+- Tech stack: Kotlin 2.3.20, C++17, NDK 27, Gradle 9.4.1, AGP 9.1.0
+- Android support: API 24-36 (Android 7.0-16), 16KB page-size compatible, Google Play ready
+- Vendor ROMs: Xiaomi, Huawei, OPPO, vivo, Samsung, OnePlus, Meizu, Google Pixel, Tecno, Realme
+- Processes: Up to 5 (main + :daemon + :assist1 + :assist2 + :assist3) forming ring-topology mutual watchdog
+- GitHub: https://github.com/Pangu-Immortal/KeepLiveService
+- Telegram: https://t.me/+V7HSo1YNzkFkY2M1

@@ -48,7 +48,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
 
         // 构建配置字段 - 用于运行时获取构建信息
-        buildConfigField("String", "FW_VERSION", "\"1.11.56\"")
+        buildConfigField("String", "FW_VERSION", "\"2.0.0\"")
         buildConfigField("String", "FW_BUILD_TIME", "\"2026-02-20T${System.currentTimeMillis()}\"")
         buildConfigField("String", "FW_AUTHOR", "\"Pangu-Immortal\"")
         buildConfigField("String", "FW_GITHUB", "\"https://github.com/Pangu-Immortal\"")
@@ -148,7 +148,7 @@ dependencies {
 // 从 gradle.properties 或 ~/.gradle/gradle.properties 读取发布参数
 val libGroupId: String = findProperty("LIB_GROUP_ID") as String? ?: "io.github.pangu-immortal"
 val libArtifactId: String = findProperty("LIB_ARTIFACT_ID") as String? ?: "keeplive-framework"
-val libVersion: String = findProperty("LIB_VERSION") as String? ?: "1.11.56"
+val libVersion: String = findProperty("LIB_VERSION") as String? ?: "2.0.0"
 
 afterEvaluate {
     publishing {
