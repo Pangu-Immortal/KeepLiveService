@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Fw - Android Keep-Alive Framework"
+version: "2.0.0"
+date-released: "2026-04-13"
+url: "https://github.com/Pangu-Immortal/KeepLiveService"
+repository-code: "https://github.com/Pangu-Immortal/KeepLiveService"
+license: Apache-2.0
+authors:
+  - family-names: "Pangu-Immortal"
+    alias: "Pangu-Immortal"
+keywords:
+  - android
+  - keep-alive
+  - background-service
+  - foreground-service
+  - process-daemon
+  - native-daemon
+  - android-library
+  - kotlin
+  - media-route
+  - vpn-service
+abstract: >-
+  The most comprehensive open-source Android keep-alive library with 35+
+  background service strategies, Native C++ daemon process, covering
+  Android 7.0-16, compatible with 10+ vendor ROMs. Implements every known
+  keep-alive strategy used by commercial apps including foreground service,
+  dual-process daemon, MediaRoute provider, silent audio, VPN system-level
+  binding, notification permission bypass, and more.

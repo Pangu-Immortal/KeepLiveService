@@ -1,0 +1,141 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in the KeepLiveService framework
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug. Please fill out the information below so we can investigate and fix the issue as quickly as possible.
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Android Version
+      description: The Android OS version where the issue occurs (e.g., Android 14, API 34)
+      placeholder: "Android 14 (API 34)"
+    validations:
+      required: true
+
+  - type: input
+    id: device-model
+    attributes:
+      label: Device Model
+      description: The specific device model (e.g., Pixel 8 Pro, Samsung Galaxy S24 Ultra)
+      placeholder: "Pixel 8 Pro"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: rom-type
+    attributes:
+      label: ROM Type
+      description: The ROM / OS skin running on the device
+      options:
+        - AOSP / Stock Android
+        - MIUI (Xiaomi)
+        - HyperOS (Xiaomi)
+        - EMUI (Huawei)
+        - HarmonyOS (Huawei)
+        - ColorOS (OPPO)
+        - Funtouch OS (vivo)
+        - OriginOS (vivo)
+        - OneUI (Samsung)
+        - Flyme (Meizu)
+        - OxygenOS (OnePlus)
+        - realme UI
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: input
+    id: framework-version
+    attributes:
+      label: Framework Version
+      description: The version of keeplive-framework you are using (check your build.gradle)
+      placeholder: "2.0.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug
+      placeholder: Describe the bug here...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue
+      placeholder: |
+        1. Initialize framework with `Fw.init(this) { ... }`
+        2. Configure specific strategies...
+        3. Lock the screen / switch to another app...
+        4. Wait for X minutes...
+        5. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: The service should remain alive after locking the screen...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+      placeholder: The service was killed after 5 minutes...
+    validations:
+      required: true
+
+  - type: textarea
+    id: fw-config
+    attributes:
+      label: FwConfig Configuration
+      description: Your Fw.init() configuration (if applicable)
+      render: kotlin
+      placeholder: |
+        Fw.init(this) {
+            enableForegroundService = true
+            enableDualProcess = true
+            // ...
+        }
+
+  - type: textarea
+    id: logcat
+    attributes:
+      label: Logcat Output
+      description: |
+        Paste relevant logcat output here. Filter with:
+        `adb logcat | grep -E "(Fw|ServiceStarter|RestartProtection)"`
+      render: shell
+      placeholder: Paste logcat output here...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information about the problem
+      placeholder: Add any other context here...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have searched existing issues to make sure this is not a duplicate
+          required: true
+        - label: I have tested with the latest version of the framework
+          required: true
+        - label: I have checked the device's battery optimization settings (autostart, background restrictions)
+          required: false
