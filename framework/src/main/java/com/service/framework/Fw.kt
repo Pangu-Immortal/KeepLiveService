@@ -133,6 +133,9 @@ object Fw {
         }
 
         SilentAudioStrategy.stop()
+        FwVpnService.stop(application) // 停止 VPN 保活
+        MediaSessionNotificationManager.dismiss(application) // 停止 MediaSession 通知豁免
+        FwCallStyleManager.dismiss(application) // 停止 CallStyle 通知豁免
         isInitialized = false
         FwLog.d("所有保活策略已停止。")
     }
@@ -161,6 +164,9 @@ object Fw {
             if (enableNativeDaemon || enableNativeSocket) initNativeModule()
             if (enableForceStopResistance) startForceStopResistance() // 无法强制停止策略
             if (enableMediaRouteProvider || enableMediaRoute2Provider) initMediaRouteModule() // MediaRoute 保活策略
+            if (enableVpnService) startVpnService() // VPN 保活策略
+            if (enableMediaSessionNotification) startMediaSessionNotification() // MediaSession 通知豁免
+            if (enableCallStyleNotification) startCallStyleNotification() // CallStyle 通知豁免
         }
 
         FwLog.d("================= 所有策略已启动 ================")
@@ -285,6 +291,33 @@ object Fw {
             return
         }
         FwMediaRouteManager.start(application)
+    }
+
+    /**
+     * 启动 VPN 保活策略
+     * 通过本地回环 VPN 获得系统级绑定保护，进程优先级最高
+     */
+    private fun startVpnService() {
+        FwLog.d("策略: 启动 VPN 保活...")
+        FwVpnService.start(application)
+    }
+
+    /**
+     * 启动 MediaSession 通知豁免
+     * 无需 POST_NOTIFICATIONS 权限即可显示通知（Android 13+ 豁免机制）
+     */
+    private fun startMediaSessionNotification() {
+        FwLog.d("策略: 启动 MediaSession 通知豁免...")
+        MediaSessionNotificationManager.show(application)
+    }
+
+    /**
+     * 启动 CallStyle 通知豁免
+     * 注册为自管理通话应用，通知豁免 POST_NOTIFICATIONS
+     */
+    private fun startCallStyleNotification() {
+        FwLog.d("策略: 启动 CallStyle 通知豁免...")
+        FwCallStyleManager.show(application)
     }
 
     private fun registerReceiver(receiver: BroadcastReceiver, filter: IntentFilter, isExported: Boolean = false) {
