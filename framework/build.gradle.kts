@@ -52,7 +52,7 @@ android {
         buildConfigField("String", "FW_BUILD_TIME", "\"2026-02-20T${System.currentTimeMillis()}\"")
         buildConfigField("String", "FW_AUTHOR", "\"Pangu-Immortal\"")
         buildConfigField("String", "FW_GITHUB", "\"https://github.com/Pangu-Immortal\"")
-        buildConfigField("int", "FW_STRATEGY_COUNT", "27")
+        buildConfigField("int", "FW_STRATEGY_COUNT", "35")
 
         // NDK 配置 - 支持所有主流架构
         ndk {
@@ -162,7 +162,7 @@ afterEvaluate {
 
                 pom {
                     name.set("KeepLive Framework")
-                    description.set("Android 保活技术百科全书 — 27+ 种保活策略，Native C++ 守护进程，适配 Android 7.0-16 全版本，覆盖 10+ 厂商 ROM")
+                    description.set("Android 保活技术百科全书 — 35+ 种保活策略，Native C++ 守护进程，适配 Android 7.0-16 全版本，覆盖 10+ 厂商 ROM")
                     url.set("https://github.com/Pangu-Immortal/KeepLiveService")
                     inceptionYear.set("2024")
 

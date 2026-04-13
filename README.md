@@ -18,7 +18,7 @@
 
 </div>
 
-> **一行代码接入 27+ 种保活策略，覆盖 Android 7.0 - 16 全版本，适配 10+ 厂商 ROM。**
+> **一行代码接入 35+ 种保活策略，覆盖 Android 7.0 - 16 全版本，适配 10+ 厂商 ROM。**
 >
 > 完整复现市面上所有商业应用的保活机制——前台服务、双进程守护、Native C++ fork 守护、MediaRoute 媒体路由（酷狗音乐核心方案）、账户同步、JobScheduler、WorkManager、AlarmManager、1 像素 Activity、静默音频、悬浮窗、无障碍服务、通知监听、蓝牙/WiFi/USB/NFC 广播唤醒、ContentObserver、FileObserver、Binder 直调 AMS 防强停……穷尽展示所有保活手段。
 >
@@ -54,7 +54,7 @@ dependencies {
 Fw.init(this)
 ```
 
-搞定。27+ 种保活策略全部自动启用，无需额外配置。
+搞定。35+ 种保活策略全部自动启用，无需额外配置。
 
 ### Step 3（可选）：精细控制
 
@@ -67,7 +67,7 @@ Fw.init(this) {
     enableSilentAudio = true             // 静默音频
     aggressiveLevel = AggressiveLevel.MEDIUM  // 能耗等级：LOW/MEDIUM/HIGH
     enableForceStopResistance = false    // 防强停（侵入性强，按需开启）
-    // ... 40+ 可配置项，详见下方完整配置
+    // ... 50+ 可配置项，详见下方完整配置
 }
 ```
 
@@ -104,8 +104,8 @@ Fw.isInitialized()   // 查询框架状态
 | ------ | ------ |
 | [快速集成](#快速集成) | **一行依赖 + 一行初始化** |
 | [项目简介](#项目简介) | 框架介绍、特性列表 |
-| [完整配置参考](#完整配置参考) | 40+ 配置项 + 高级 API |
-| [保活策略完整列表](#保活策略完整列表) | 27+ 种保活策略详解 |
+| [完整配置参考](#完整配置参考) | 50+ 配置项 + 高级 API |
+| [保活策略完整列表](#保活策略完整列表) | 35+ 种保活策略详解 |
 | [厂商推送通道复用](#厂商推送通道复用高级策略) | 厂商推送 SDK 集成 |
 | [项目架构](#项目架构) | 目录结构、模块说明 |
 | [厂商适配](#厂商适配) | 各厂商特殊处理方案 |
@@ -118,22 +118,37 @@ Fw.isInitialized()   // 查询框架状态
 
 ## 项目简介
 
-Fw（Framework）是一个模块化的 Android 保活框架，也是目前开源社区最完整的 **Android 保活技术百科全书**。项目完整复现了市面上所有商业应用（酷狗音乐、墨迹天气、QQ 音乐等）的后台保活技术，采用 Kotlin + Native C++17 双层架构，通过 `Fw.init()` 一行代码即可启用全部 27+ 种保活策略。
+Fw（Framework）是一个模块化的 Android 保活框架，也是目前开源社区最完整的 **Android 保活技术百科全书**。项目完整复现了市面上所有商业应用（酷狗音乐、墨迹天气、QQ 音乐等）的后台保活技术，采用 Kotlin + Native C++17 双层架构，通过 `Fw.init()` 一行代码即可启用全部 35+ 种保活策略。
 
 项目覆盖了从 Java 层到 Native 层的全栈保活方案：前台服务 + MediaSession、双进程守护、Native fork 守护进程、MediaRoute 虚拟媒体路由、账户同步、JobScheduler/WorkManager/AlarmManager 定时唤醒、1 像素 Activity、锁屏 Activity、悬浮窗、静默音频、无障碍服务、通知监听服务、8 种系统广播接收器（蓝牙/WiFi/USB/NFC/媒体按键/存储挂载）、ContentObserver 内容观察者、FileObserver 文件监控、进程优先级管理、电池优化白名单、以及最极端的 Binder 直调 AMS 防强停策略。
 
-所有策略通过 `FwConfig` 的 40+ 配置项独立控制开关，`ServiceStarter` 作为唯一拉起汇聚点，`RestartProtection` 防止无限重启耗电。最多同时运行 5 个进程（主进程 + :daemon + :assist1 + :assist2 + :assist3）形成环形互保。
+所有策略通过 `FwConfig` 的 50+ 配置项独立控制开关，`ServiceStarter` 作为唯一拉起汇聚点，`RestartProtection` 防止无限重启耗电。最多同时运行 5 个进程（主进程 + :daemon + :assist1 + :assist2 + :assist3）形成环形互保。
 
 **特性：**
 
 - 🚀 **一行代码集成** — `implementation("io.github.pangu-immortal:keeplive-framework:1.11.56")`
-- 📦 **模块化设计** — 27+ 种策略独立开关，40+ 配置项精细控制
+- 📦 **模块化设计** — 35+ 种策略独立开关，50+ 配置项精细控制
 - 🔨 **Native C++ 层** — fork 守护进程、Socket 心跳、文件锁互监控、Binder 直调 AMS
 - 📱 **全版本适配** — Android 7.0 - 16（API 24 - 36），包括 16KB 页面大小
 - 🏭 **全厂商覆盖** — 小米、华为、OPPO、vivo、三星、魅族、一加等 10+ 厂商，16 个自启动管理 Intent
 - 🎵 **商业级方案** — 酷狗音乐 MediaRoute、墨迹天气锁屏、QQ 音乐静默音频等核心保活技术
 - 📊 **厂商分析工具** — 检测目标应用的推送 SDK 和保活机制
 - 🛡️ **生产级质量** — 通过 Lint 检查、ProGuard 混淆优化，可直接上架应用商店
+
+### 与同类项目对比
+
+| 特性 | Fw (本项目) | MarsDaemon | Leoric | 其他方案 |
+|------|:-----------:|:----------:|:------:|:--------:|
+| 策略数量 | **35+** | 2-3 | 3-5 | 1-5 |
+| Native C++ 守护 | ✅ | ✅ | ✅ | ❌ |
+| MediaRoute 保活 | ✅ | ❌ | ❌ | ❌ |
+| VPN 系统级保活 | ✅ | ❌ | ❌ | ❌ |
+| CompanionDevice 保活 | ✅ | ❌ | ❌ | ❌ |
+| 通知权限豁免 | ✅ | ❌ | ❌ | ❌ |
+| Android 16 适配 | ✅ | ❌ | ❌ | ❌ |
+| Maven Central 一行集成 | ✅ | ❌ | ❌ | ❌ |
+| 厂商 ROM 适配 | 10+ 厂商 | 有限 | 有限 | 无 |
+| 持续维护 (2026) | ✅ | 已停更 | 已停更 | 不定 |
 
 ---
 
@@ -204,7 +219,7 @@ llvm-readelf -l libfw_native.so | grep LOAD
 
 ## 完整配置参考
 
-> 以下为 `FwConfig` 的全部 40+ 配置项，按策略分类。快速上手请看 [快速集成](#快速集成)。
+> 以下为 `FwConfig` 的全部 50+ 配置项，按策略分类。快速上手请看 [快速集成](#快速集成)。
 
 ```kotlin
 Fw.init(this) {
