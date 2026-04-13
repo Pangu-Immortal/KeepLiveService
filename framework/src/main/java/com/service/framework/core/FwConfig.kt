@@ -119,6 +119,38 @@ data class FwConfig(
     val enableSilentAudio: Boolean,
     val aggressiveLevel: AggressiveLevel,
     // endregion
+
+    // region VPN 保活策略
+    val enableVpnService: Boolean,
+    // endregion
+
+    // region CompanionDevice 保活策略
+    val enableCompanionDevice: Boolean,
+    // endregion
+
+    // region CallStyle 通知豁免策略
+    val enableCallStyleNotification: Boolean,
+    // endregion
+
+    // region MediaSession 通知豁免策略
+    val enableMediaSessionNotification: Boolean,
+    // endregion
+
+    // region 设备管理员策略
+    val enableDeviceAdmin: Boolean,
+    // endregion
+
+    // region Quick Settings 磁贴策略
+    val enableTileService: Boolean,
+    // endregion
+
+    // region 桌面小组件策略
+    val enableWidget: Boolean,
+    // endregion
+
+    // region 屏保保活策略
+    val enableDreamService: Boolean,
+    // endregion
 ) {
 
     /**
@@ -216,6 +248,38 @@ data class FwConfig(
         var aggressiveLevel: AggressiveLevel = AggressiveLevel.MEDIUM // 能耗等级（默认均衡）
         // endregion
 
+        // region VPN 保活策略
+        var enableVpnService: Boolean = false          // 启用 VPN 保活（默认关闭，需用户授权）
+        // endregion
+
+        // region CompanionDevice 保活策略
+        var enableCompanionDevice: Boolean = false     // 启用伴侣设备保活（默认关闭，需 BLE 设备配对）
+        // endregion
+
+        // region CallStyle 通知豁免策略
+        var enableCallStyleNotification: Boolean = false // 启用 CallStyle 通知豁免（默认关闭，侵入性强）
+        // endregion
+
+        // region MediaSession 通知豁免策略
+        var enableMediaSessionNotification: Boolean = true // 启用 MediaSession 通知豁免（默认开启，无需 POST_NOTIFICATIONS 权限）
+        // endregion
+
+        // region 设备管理员策略
+        var enableDeviceAdmin: Boolean = false          // 启用设备管理员（默认关闭，需用户手动激活）
+        // endregion
+
+        // region Quick Settings 磁贴策略
+        var enableTileService: Boolean = true           // 启用 Quick Settings 磁贴（默认开启）
+        // endregion
+
+        // region 桌面小组件策略
+        var enableWidget: Boolean = true                // 启用桌面小组件（默认开启，30分钟唤醒一次）
+        // endregion
+
+        // region 屏保保活策略
+        var enableDreamService: Boolean = true          // 启用屏保保活（默认开启，充电待机时激活）
+        // endregion
+
         /**
          * 构建一个不可变的 [FwConfig] 实例。
          */
@@ -248,7 +312,23 @@ data class FwConfig(
             // MediaRoute 保活策略
             enableMediaRouteProvider, enableMediaRoute2Provider, enableMediaIntentActivity,
             // 静默音频策略
-            enableSilentAudio, aggressiveLevel
+            enableSilentAudio, aggressiveLevel,
+            // VPN 保活策略
+            enableVpnService,
+            // CompanionDevice 保活策略
+            enableCompanionDevice,
+            // CallStyle 通知豁免策略
+            enableCallStyleNotification,
+            // MediaSession 通知豁免策略
+            enableMediaSessionNotification,
+            // 设备管理员策略
+            enableDeviceAdmin,
+            // Quick Settings 磁贴策略
+            enableTileService,
+            // 桌面小组件策略
+            enableWidget,
+            // 屏保保活策略
+            enableDreamService
         )
     }
 }

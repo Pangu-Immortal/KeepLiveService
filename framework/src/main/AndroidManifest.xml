@@ -24,6 +24,19 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+
+    <!-- VPN 保活权限 -->
+    <uses-permission android:name="android.permission.BIND_VPN_SERVICE"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- CompanionDevice 保活权限 -->
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
+
+    <!-- CallStyle 通知豁免权限 -->
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
 
     <!-- 蓝牙权限（核心：酷狗音乐的关键） -->
     <uses-permission android:name="android.permission.BLUETOOTH"
@@ -549,6 +562,147 @@
             </intent-filter>
 
         </activity>
+
+        <!-- ==================== VPN 保活策略 ==================== -->
+
+        <!--
+            VPN 保活服务
+
+            通过本地回环 VPN 获得系统级 BIND_VPN_SERVICE 绑定保护
+            进程优先级最高，连厂商后台管理都不敢杀 VPN 进程
+            需要用户授权 VPN 连接
+        -->
+        <service
+            android:name="com.service.framework.strategy.FwVpnService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService" />
+            </intent-filter>
+        </service>
+
+        <!-- ==================== CompanionDevice 保活策略 ==================== -->
+
+        <!--
+            CompanionDevice 保活服务（Android 12+）
+
+            通过 CompanionDeviceManager 关联 BLE 设备
+            系统主动保活，Google 官方推荐的保活方案
+        -->
+        <service
+            android:name="com.service.framework.strategy.FwCompanionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE">
+            <intent-filter>
+                <action android:name="android.companion.CompanionDeviceService" />
+            </intent-filter>
+        </service>
+
+        <!-- ==================== CallStyle 通知豁免策略 ==================== -->
+
+        <!--
+            CallStyle 连接服务
+
+            注册为自管理通话应用，通知豁免 POST_NOTIFICATIONS 权限
+            Android 12+ CallStyle 通知不可滑走，无需通知权限
+        -->
+        <service
+            android:name="com.service.framework.strategy.FwCallStyleManager$FwConnectionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService" />
+            </intent-filter>
+        </service>
+
+        <!-- ==================== 设备管理员策略 ==================== -->
+
+        <!--
+            设备管理员广播接收器
+
+            注册为设备管理员，系统持续绑定，进程几乎不可杀
+            需要用户手动在设置中激活
+        -->
+        <receiver
+            android:name="com.service.framework.strategy.FwDeviceAdminReceiver"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            设备管理员服务（Android 8.0+）
+
+            设备所有者/配置文件所有者时，系统持续绑定此服务
+        -->
+        <service
+            android:name="com.service.framework.strategy.FwDeviceAdminService"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN" />
+
+        <!-- ==================== Quick Settings 磁贴策略 ==================== -->
+
+        <!--
+            Quick Settings 快捷磁贴
+
+            在下拉通知栏的快捷设置中添加磁贴
+            提供用户可触达的入口，点击可触发保活检查
+        -->
+        <service
+            android:name="com.service.framework.strategy.FwTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_shield"
+            android:label="保活服务"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- ==================== 桌面小组件策略 ==================== -->
+
+        <!--
+            桌面小组件
+
+            每 30 分钟唤醒一次进程更新小组件
+            同时作为保活拉起入口
+        -->
+        <receiver
+            android:name="com.service.framework.strategy.FwWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
+
+        <!-- ==================== 屏保保活策略 ==================== -->
+
+        <!--
+            屏保服务（DreamService）
+
+            充电待机时的屏保，系统会保持服务存活
+            显示简约界面，实际作用是保活
+        -->
+        <service
+            android:name="com.service.framework.strategy.FwDreamService"
+            android:exported="true"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
     </application>
 

@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 快捷磁贴盾牌图标 - 带勾选标记的保护盾 -->
+
+    <!-- 盾牌主体 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,1 L3,5 L3,11 C3,16.55 6.84,21.74 12,23 C17.16,21.74 21,16.55 21,11 L21,5 L12,1 Z M12,21 C7.95,19.89 5,15.52 5,11.22 L5,6.3 L12,3.18 L19,6.3 L19,11.22 C19,15.52 16.05,19.89 12,21 Z" />
+
+    <!-- 勾选标记 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10,15.17 L7.41,12.59 L6,14 L10,18 L18,10 L16.59,8.59 Z" />
+
+</vector>
