@@ -49,7 +49,7 @@ android {
         consumerProguardFiles("consumer-rules.pro")
 
         // 构建配置字段 - 用于运行时获取构建信息
-        buildConfigField("String", "FW_VERSION", "\"2.0.0\"")
+        buildConfigField("String", "FW_VERSION", "\"2.0.1\"")
         buildConfigField("String", "FW_BUILD_TIME", "\"2026-02-20T${System.currentTimeMillis()}\"")
         buildConfigField("String", "FW_AUTHOR", "\"Pangu-Immortal\"")
         buildConfigField("String", "FW_GITHUB", "\"https://github.com/Pangu-Immortal\"")
@@ -149,7 +149,7 @@ dependencies {
 // 从 gradle.properties 或 ~/.gradle/gradle.properties 读取发布参数
 val libGroupId: String = findProperty("LIB_GROUP_ID") as String? ?: "io.github.pangu-immortal"
 val libArtifactId: String = findProperty("LIB_ARTIFACT_ID") as String? ?: "keeplive-framework"
-val libVersion: String = findProperty("LIB_VERSION") as String? ?: "2.0.0"
+val libVersion: String = findProperty("LIB_VERSION") as String? ?: "2.0.1"
 
 afterEvaluate {
     publishing {
@@ -163,7 +163,7 @@ afterEvaluate {
 
                 pom {
                     name.set("KeepLive Framework")
-                    description.set("Android 保活技术百科全书 — 35+ 种保活策略，Native C++ 守护进程，适配 Android 7.0-16 全版本，覆盖 10+ 厂商 ROM")
+                    description.set("Android 保活技术百科全书 — 35+ 种保活策略，Native C++ 守护进程，统一体外 Activity / startActivity 策略，适配 Android 7.0-16 全版本，覆盖 10+ 厂商 ROM")
                     url.set("https://github.com/Pangu-Immortal/KeepLiveService")
                     inceptionYear.set("2024")
 
@@ -192,11 +192,11 @@ afterEvaluate {
         }
 
         repositories {
-            // Maven Central（Sonatype OSSRH）
+            // Maven Central 发布地址：使用 Central Portal 兼容 OSSRH Staging API 的新端点。
             maven {
                 name = "sonatype"
-                val releasesUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-                val snapshotsUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+                val releasesUrl = uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
+                val snapshotsUrl = uri("https://central.sonatype.com/repository/maven-snapshots/")
                 url = if (libVersion.endsWith("SNAPSHOT")) snapshotsUrl else releasesUrl
                 credentials {
                     username = findProperty("ossrhUsername") as String? ?: ""
@@ -206,12 +206,13 @@ afterEvaluate {
         }
     }
 
-    // GPG 签名（Maven Central 强制要求，本地测试时可跳过）
-    val hasSigningKey = findProperty("signing.gnupg.keyName") != null
-    if (hasSigningKey) {
-        signing {
-            useGpgCmd()
-            sign(publishing.publications["release"])
+    // GPG 签名：发布任务必须签名，普通本地构建不强制检查签名环境。
+    signing {
+        isRequired = gradle.startParameter.taskNames.any { taskName ->
+            taskName.contains("publish", ignoreCase = true) ||
+                taskName.contains("checkSigningConfiguration", ignoreCase = true)
         }
+        useGpgCmd()
+        sign(publishing.publications)
     }
 }

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-05-26
+
+### Changed
+- Switched the default GitHub README to Simplified Chinese (`README.md`) and added `README-en.md` for English readers.
+- Kept `README-zh.md` as a compatibility entry for old Chinese documentation links.
+- Moved integration steps to the top of both README files and kept detailed capability coverage near the end.
+- Expanded auxiliary documentation, `CITATION.cff`, and Maven POM metadata with unified external startActivity strategy descriptions.
+
 ## [2.0.0] - 2026-04-13
 
 ### Added
@@ -18,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FwDreamService` — Screen saver keep-alive, activates during charging + idle
 - 8 new FwConfig fields for new strategies (50+ total config options)
 - Competitive comparison table (vs MarsDaemon, Leoric, Cactus)
-- 16 GitHub topic tags for SEO optimization
+- 16 GitHub topic tags
 
 ### Changed
 - Upgraded toolchain: Gradle 9.4.1, AGP 9.1.0, Kotlin 2.3.20
@@ -64,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native C++ Binder implementation (open /dev/binder, pre-constructed Parcel, ioctl)
 
 [2.0.0]: https://github.com/Pangu-Immortal/KeepLiveService/releases/tag/v2.0.0
+[2.0.1]: https://github.com/Pangu-Immortal/KeepLiveService/releases/tag/v2.0.1
 [1.11.56]: https://github.com/Pangu-Immortal/KeepLiveService/releases/tag/v1.11.56
 [2.2.1]: https://github.com/Pangu-Immortal/KeepLiveService/releases/tag/v2.2.1
 [2.2.0]: https://github.com/Pangu-Immortal/KeepLiveService/releases/tag/v2.2.0

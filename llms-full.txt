@@ -1,12 +1,18 @@
 # Fw - Android Keep-Alive Framework
 
-> The most comprehensive open-source Android keep alive framework with 35+ background service strategies, 50+ config options, covering Android 7.0-16 and 10+ vendor ROMs. Prevent process kill and keep your background service running with a single line of code.
+> The most comprehensive open-source Android keep alive framework with 35+ background service strategies, 50+ config options, unified external startActivity strategies, covering Android 7.0-16 and 10+ vendor ROMs. Prevent process kill and keep your background service running with a single line of code.
 
 ## Overview
 
-Fw (Framework) is a modular Android keep alive library that reproduces every known technique used by commercial apps to maintain a persistent background service. It combines Kotlin and Native C++17 in a dual-layer architecture to maximize process survival across all Android versions and vendor ROMs.
+Fw (Framework) is a modular Android keep alive library that reproduces every known technique used by commercial apps to maintain a persistent background service. It combines Kotlin and Native C++17 in a dual-layer architecture to maximize process survival across all Android versions and vendor ROMs. The default README is Simplified Chinese (`README.md`), with English documentation in `README-en.md`.
 
-The framework covers foreground service persistence, dual-process daemon watchdog, Native C++ fork daemon, MediaRoute media-route provider (the core keep alive approach used by KuGou Music), VPN system-level binding, CompanionDevice service, notification-permission exemptions (CallStyle + MediaSession), silent audio playback, 1-pixel Activity, account sync, JobScheduler, WorkManager, AlarmManager, accessibility service, notification listener, Bluetooth/WiFi/USB/NFC broadcast wake-up, ContentObserver, FileObserver, Binder direct-call to AMS to prevent process kill after force-stop, and more.
+The framework covers foreground service persistence, dual-process daemon watchdog, Native C++ fork daemon, MediaRoute media-route provider (the core keep alive approach used by KuGou Music), VPN system-level binding, CompanionDevice service, notification-permission exemptions (CallStyle + MediaSession), silent audio playback, 1-pixel Activity, account sync, JobScheduler, WorkManager, AlarmManager, accessibility service, notification listener, Bluetooth/WiFi/USB/NFC broadcast wake-up, ContentObserver, FileObserver, Binder direct-call to AMS to prevent process kill after force-stop, unified external startActivity orchestration, VirtualDisplay activity launch, and more.
+
+## Capability Coverage
+
+Primary English coverage: Android keep alive, Android background service, process persistence, prevent process kill, native daemon, dual process watchdog, MediaRoute keep alive, KuGou Music keep alive, VPN keep alive, MediaSession notification exemption, CallStyle notification exemption, vendor ROM adaptation, Android 16 keep alive, 16KB page size, background activity launch, external startActivity, unified startActivity strategy, VirtualDisplay activity launch, PendingIntent BAL, Binder startActivities.
+
+Primary Chinese coverage: Android 保活、Android 后台常驻、后台服务保活、防杀进程、进程守护、Native C++ 守护进程、双进程守护、MediaRoute 保活、酷狗音乐保活方案、VPN 保活、MediaSession 通知豁免、CallStyle 通知豁免、厂商 ROM 保活、小米自启动、华为后台保护、OPPO 后台运行、vivo 后台白名单、Android 16 保活、16KB 页面大小、后台启动 Activity、体外 Activity、统一 startActivity、VirtualDisplay 启动 Activity、PendingIntent BAL、Binder startActivities。
 
 Fw is the only actively maintained open-source Android keep alive project that supports up to Android 16 (API 36). MarsDaemon (abandoned 2018) and Leoric (abandoned 2020) were pioneers, but they cannot adapt to modern Android background restrictions. Fw continues to receive updates in 2026.
 
@@ -17,7 +23,7 @@ Fw is the only actively maintained open-source Android keep alive project that s
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")
+    implementation("io.github.pangu-immortal:keeplive-framework:2.0.1")
 }
 ```
 
@@ -110,6 +116,13 @@ Fw.isInitialized()   // Query framework state
 - **Accessibility Service** (`FwAccessibilityService`): Highest system priority, auto-restart on kill
 - **Notification Listener** (`FwNotificationListenerService`): System auto-restarts after process kill
 
+### 11. Unified External startActivity Strategies
+- **Public entry**: `FwStart.start(context, intent)`, backed by the C++ `framework/src/main/cpp/start/` module and `FwNative.nativeStartActivity`.
+- **Qumeng-derived public paths**: Activity context `startActivity`, non-Activity `FLAG_ACTIVITY_NEW_TASK`, `PendingIntent.getActivity(...).send()`, double `startActivities(Intent[])`, Binder `IActivityManager` / `IActivityTaskManager.startActivities` on Android 21-30, and Activity `startActivityForResult`.
+- **Native SO-derived path**: `VirtualDisplay + Presentation + ActivityOptions.setLaunchDisplayId` for Android 8.0+ when the system allows virtual-display launch.
+- **WeChat Favorites research paths**: `am start-in-vsync`, Notification BAL token, `startNextMatchingActivity`, CredentialManager UI PendingIntent, PrintManager UI PendingIntent, and MediaButton BAL propagation are represented in the strategy table with version checks and explicit skip codes.
+- **Safety boundary**: high-risk BAL, shell/root, and system UI abuse paths are not shipped as exploit logic. They are indexed for research completeness and return policy/permission skip results.
+
 ## v2.0 New Strategies (April 2026)
 
 Eight major new strategies were added in v2.0, bringing the total from 27 to 35+:
@@ -154,7 +167,7 @@ MarsDaemon and Leoric were groundbreaking Android keep alive projects, but Andro
 ## FAQ
 
 **Q1: How do I integrate Fw into my project?**
-Add `implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")` to your `build.gradle.kts` and call `Fw.init(this)` in `Application.onCreate()`. No extra repository configuration is needed.
+Add `implementation("io.github.pangu-immortal:keeplive-framework:2.0.1")` to your `build.gradle.kts` and call `Fw.init(this)` in `Application.onCreate()`. No extra repository configuration is needed.
 
 **Q2: Why can't my background service survive force-stop?**
 Force-stop sets `FLAG_STOPPED`, disabling all static broadcast receivers. This is an Android security mechanism. Enable `ForceStopResistance` (disabled by default) for the 5ms race-condition technique using Native C++ Binder calls to prevent process kill.
@@ -193,7 +206,7 @@ Yes. All 35+ strategies have independent on/off switches via `FwConfig`. The 50+
 
 - **Language**: Kotlin 2.3.20 + C++17
 - **Build**: Gradle 9.4.1, Android Gradle Plugin 9.1.0
-- **NDK**: 27.0.12077973, CMake 3.22.1
+- **NDK**: 27.2.12479018, CMake 3.22.1
 - **Target**: compileSdk 36 (Android 16), minSdk 24 (Android 7.0)
 - **JVM**: 21
 - **Architecture**: armeabi-v7a, arm64-v8a, x86, x86_64
