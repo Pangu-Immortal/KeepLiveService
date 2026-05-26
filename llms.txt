@@ -1,55 +1,18 @@
-# Fw - Android Keep-Alive Framework
+# Fw - Android 保活 / Android Keep-Alive Framework
 
-> The most comprehensive open-source Android keep alive framework with 35+ background service strategies, covering Android 7.0-16 and 10+ vendor ROMs. Prevent process kill with a single line of code.
+默认文档：简体中文 [README.md](README.md)
+English documentation: [README-en.md](README-en.md)
 
-Fw is a production-grade Android keep alive library that reproduces every known commercial-app technique for keeping a background service running — foreground service, dual-process daemon, Native C++ fork daemon, MediaRoute provider (used by KuGou Music), VPN system-level binding, CompanionDevice, notification-permission exemptions, and more. It is the only actively maintained open-source project that supports up to Android 16 (API 36).
+## 项目概览
 
-## Quick Start
+Fw 是一个 Android 7.0-16 保活技术百科全书 SDK，发布到 Maven Central：`io.github.pangu-immortal:keeplive-framework:2.0.1`。项目核心能力包括前台服务、MediaSession、Native C++ 守护、双进程守护、Socket 心跳、MediaRoute、VPN、CompanionDevice、通知权限豁免、账户同步、JobScheduler、WorkManager、AlarmManager、广播唤醒、ContentObserver、FileObserver、厂商 ROM 跳转和统一体外 Activity 启动策略。
 
-Add the Maven Central dependency and call `Fw.init()`:
+## Unified startActivity / 体外 Activity
 
-```kotlin
-// build.gradle.kts
-dependencies {
-    implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")
-}
+统一入口是 `FwStart.start(context, intent)`，底层接入 C++ `framework/src/main/cpp/start/` 和 `FwNative.nativeStartActivity`。策略包括 Activity 直启、`FLAG_ACTIVITY_NEW_TASK`、`PendingIntent.send`、双 Intent `startActivities`、Binder `startActivities`、`startActivityForResult`、`VirtualDisplay + launchDisplayId`、`startNextMatchingActivity`。BAL、shell/root、CredentialManager、PrintManager、MediaButton 等高风险研究路径只做策略登记、版本判断和安全跳过，不内置漏洞利用代码。
 
-// Application.onCreate()
-Fw.init(this)
-```
+## 能力覆盖
 
-All 35+ keep alive strategies activate automatically. Fine-tune with 50+ config options via the `FwConfig` DSL to control each background service strategy independently.
+Android 保活、Android 后台常驻、后台服务保活、防杀进程、进程守护、Native C++ 守护进程、双进程守护、MediaRoute 保活、VPN 保活、MediaSession 通知豁免、CallStyle 通知豁免、厂商 ROM 保活、Android 16 保活、16KB 页面大小、后台启动 Activity、体外 Activity、统一 startActivity、VirtualDisplay 启动 Activity、PendingIntent BAL、Binder startActivities。
 
-## Strategy Overview
-
-Fw organizes its Android keep alive strategies into categories: **Core** (foreground service, MediaSession, 1-pixel Activity), **Scheduled Wake-Up** (JobScheduler, WorkManager, AlarmManager), **Broadcast Listeners** (Bluetooth, USB, NFC, media button), **Dual-Process Daemon** (Java watchdog + Native C++ fork + socket heartbeat), **MediaRoute** (the KuGou Music core technique for keeping a background service bound by the system), **Silent Audio** (loops inaudible WAV to prevent CPU sleep), **Content Observers** (gallery, file system), **Account Sync**, and **System-Level Services** (accessibility, notification listener).
-
-The v2.0 release (April 2026) added 8 new strategies: VPN system-level keep alive, CompanionDevice background exemption, CallStyle and MediaSession notification-permission bypass, Device Admin binding, Quick Settings Tile, home-screen Widget (30-min system wake-up), and DreamService screen-saver keep alive. These strategies help prevent process kill on the latest Android versions where older techniques have been restricted.
-
-## Docs
-
-- [README & Full Guide](https://github.com/Pangu-Immortal/KeepLiveService#readme): Project overview, integration steps, full config reference, architecture diagram
-- [Strategy List](https://github.com/Pangu-Immortal/KeepLiveService#保活策略完整列表): Complete catalog of all 35+ strategies with class names and effectiveness ratings
-- [v2.0 New Strategies](https://github.com/Pangu-Immortal/KeepLiveService#-v20-重大升级--8-大全新保活策略): VPN, CompanionDevice, CallStyle, MediaSession notification exemption, Device Admin, Quick Settings Tile, Widget, DreamService
-- [Vendor ROM Adaptation](https://github.com/Pangu-Immortal/KeepLiveService#厂商适配): Xiaomi MIUI, Huawei EMUI, OPPO ColorOS, vivo FuntouchOS, Samsung OneUI, Google Pixel, Tecno
-- [Force-Stop Resistance](https://github.com/Pangu-Immortal/KeepLiveService#12-无法强制停止策略): 5ms race-condition technique using Native C++ Binder direct-call to AMS
-- [Comparison](https://github.com/Pangu-Immortal/KeepLiveService#与同类项目对比): Fw vs MarsDaemon vs Leoric vs Cactus
-- [Config Reference](https://github.com/Pangu-Immortal/KeepLiveService#完整配置参考): All 50+ FwConfig options grouped by category
-- [Permissions](https://github.com/Pangu-Immortal/KeepLiveService#权限说明): Manifest and runtime permissions
-- [Changelog](https://github.com/Pangu-Immortal/KeepLiveService#更新日志): Version history from v1.x to v2.0.0
-- [Contributing](https://github.com/Pangu-Immortal/KeepLiveService/blob/main/CONTRIBUTING.md): How to contribute
-
-## Comparison
-
-Fw is the only open-source Android keep alive framework still actively maintained in 2026. MarsDaemon (abandoned 2018) and Leoric (abandoned 2020) support only 2-5 strategies and lack Android 12+ adaptation. Fw provides 35+ strategies, Maven Central distribution, Native C++ process daemon, and full Android 16 compatibility.
-
-## Key Facts
-
-- Maven Central: `io.github.pangu-immortal:keeplive-framework:2.0.0`
-- License: Apache 2.0
-- Tech stack: Kotlin 2.3.20, C++17, NDK 27, Gradle 9.4.1, AGP 9.1.0
-- Android support: API 24-36 (Android 7.0-16), 16KB page-size compatible, Google Play ready
-- Vendor ROMs: Xiaomi, Huawei, OPPO, vivo, Samsung, OnePlus, Meizu, Google Pixel, Tecno, Realme
-- Processes: Up to 5 (main + :daemon + :assist1 + :assist2 + :assist3) forming ring-topology mutual watchdog
-- GitHub: https://github.com/Pangu-Immortal/KeepLiveService
-- Telegram: https://t.me/+V7HSo1YNzkFkY2M1
+Android keep alive, Android background service, process persistence, prevent process kill, native daemon, dual process watchdog, MediaRoute keep alive, VPN keep alive, MediaSession notification exemption, CallStyle notification exemption, vendor ROM adaptation, Android 16 keep alive, 16KB page size, background activity launch, external startActivity, unified startActivity strategy, VirtualDisplay activity launch, PendingIntent BAL, Binder startActivities.
