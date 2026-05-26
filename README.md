@@ -309,6 +309,35 @@ Uses C++ Native Binder direct calls to race against the system's force-stop proc
 | 15+ | 35+ | Stricter background limits, **16KB page size support** |
 | 16 | 36 | Latest API |
 
+### Unified startActivity Strategy
+
+Fw now includes a C++ `start/` module that exposes one unified `start` entry through `FwStart.start(context, intent)`. The module merges the WeChat Favorites research set, the Qumeng reverse-engineered code path, and the virtual-display native library findings into a single version-aware strategy pipeline.
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    Log.d("FwStart", "Started by ${result.strategy?.displayName}")
+}
+```
+
+| Source | Strategy | Android Scope | Runtime Behavior |
+|--------|----------|---------------|------------------|
+| Qumeng | Activity `startActivity` | All versions | Executed when `context` is an `Activity` |
+| Qumeng | `FLAG_ACTIVITY_NEW_TASK` fallback | All versions | Executed for non-Activity contexts |
+| Qumeng | `PendingIntent.getActivity(...).send()` | All versions, BAL options on 10+ | Executed with version-aware `ActivityOptions` |
+| Qumeng | Double `startActivities(Intent[])` | 16+ | Executed as fallback |
+| Qumeng | Binder `startActivities` | 21-30 | Executed with `IActivityManager` / `IActivityTaskManager` selection |
+| Qumeng | `startActivityForResult` | Activity context only | Executed via public API; hidden callback hook is not embedded |
+| Native SO | `VirtualDisplay + Presentation` | 26+ | Executed through `setLaunchDisplayId` when the system allows it |
+| WeChat 830 | `am start-in-vsync` | shell/root only | Registered with version/permission checks; skipped for normal apps |
+| WeChat 831 | Notification BAL token | 29-34 research window | Registered and logged; vulnerability exploitation is not embedded |
+| WeChat 832 | `startNextMatchingActivity` | Activity context only | Executed through public API |
+| WeChat 833 | CredentialManager UI | 34 | Registered and logged; system UI abuse is not embedded |
+| WeChat 834 | PrintManager UI PendingIntent | 23-34 research window | Registered and logged; system UI abuse is not embedded |
+| WeChat 835 | MediaButton BAL propagation | 31-34 research window | Registered and logged; privileged media-key chain is not embedded |
+
+The native strategy order is fixed: virtual display, notification BAL registration, media-button BAL registration, Binder, PendingIntent, double `startActivities`, `startNextMatchingActivity`, `startActivityForResult`, CredentialManager registration, PrintManager registration, shell registration, direct Activity context, and `NEW_TASK` fallback. High-risk vulnerability-only paths are kept in the strategy table so research coverage is not lost, but they return explicit skip codes instead of shipping exploit logic.
+
 ---
 
 ## Vendor ROM Adaptation
@@ -338,7 +367,7 @@ AutoStartPermissionManager.openAutoStartSettings(context)
 | AGP (Android Gradle Plugin) | 9.1.0 |
 | Kotlin | 2.3.20 |
 | JVM | 21 |
-| NDK | 27.0.12077973 |
+| NDK | 27.2.12479018 |
 | compileSdk / targetSdk | 36 (Android 16) |
 | minSdk | 24 (Android 7.0) |
 

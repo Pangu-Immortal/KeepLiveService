@@ -23,6 +23,8 @@
 package com.service.framework.native
 
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import com.service.framework.util.FwLog
 
 /**
@@ -33,6 +35,7 @@ import com.service.framework.util.FwLog
  * 2. 进程优先级管理（OOM adj、nice 值）
  * 3. Socket 保活通道（进程间心跳通信）
  * 4. 系统信息获取（内存、进程数等）
+ * 5. 统一 startActivity（C++ start 文件夹策略编排）
  *
  * 安全研究要点：
  * - Native 层可以绕过部分 Java 层限制
@@ -253,6 +256,57 @@ object FwNative {
     external fun sendHeartbeat(socketFd: Int): Boolean
 
     // ==================== 辅助方法 ====================
+
+    // ==================== 统一 startActivity ====================
+
+    /**
+     * Native 统一 startActivity 入口。
+     *
+     * @param context 调用方上下文
+     * @param intent 目标 Activity Intent
+     * @param modeMask 策略位掩码
+     * @param sdkInt 当前 Android SDK 版本
+     * @return 成功时返回命中的策略 bit，失败时返回负数错误码
+     */
+    @JvmStatic
+    external fun nativeStartActivity(
+        context: Context,
+        intent: Intent,
+        modeMask: Int,
+        sdkInt: Int
+    ): Int
+
+    /**
+     * 对外暴露的 start 函数。
+     *
+     * 调用前自动确保 `fw_native` 已加载，实际策略编排在 C++ `start/` 目录。
+     *
+     * @param context 调用方上下文
+     * @param intent 目标 Activity Intent
+     * @param modeMask 策略位掩码
+     * @return 成功时返回命中的策略 bit，失败时返回负数错误码
+     */
+    @JvmStatic
+    fun start(context: Context, intent: Intent, modeMask: Int): Int {
+        if (!isAvailable() && !init(context.applicationContext)) {
+            FwLog.w("FwNative: Native 模块不可用，统一 startActivity 无法执行")
+            return -2
+        }
+        return try {
+            nativeStartActivity(
+                context = context,
+                intent = intent,
+                modeMask = modeMask,
+                sdkInt = Build.VERSION.SDK_INT
+            )
+        } catch (e: UnsatisfiedLinkError) {
+            FwLog.e("FwNative: nativeStartActivity 符号不可用 - ${e.message}", e)
+            -2
+        } catch (e: RuntimeException) {
+            FwLog.e("FwNative: 统一 startActivity 执行异常 - ${e.message}", e)
+            -2
+        }
+    }
 
     /**
      * 获取可读的内存信息
