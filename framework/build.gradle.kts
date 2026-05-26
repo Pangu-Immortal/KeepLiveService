@@ -40,6 +40,7 @@ plugins {
 android {
     namespace = "com.service.framework"
     compileSdk = 36
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         minSdk = 24

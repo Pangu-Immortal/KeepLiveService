@@ -33,6 +33,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/binder
+    ${CMAKE_CURRENT_SOURCE_DIR}/start
     ${CMAKE_CURRENT_SOURCE_DIR}/utils
 )
 
@@ -44,6 +45,22 @@ set(FW_BASIC_SOURCES
     fw_process.cpp
     fw_socket.cpp
     fw_jni.cpp
+)
+
+# 统一 startActivity 策略源文件
+set(FW_START_SOURCES
+    start/fw_start_api.cpp
+    start/fw_start_jni.cpp
+    start/fw_start_jni_cache.cpp
+    start/fw_start_context.cpp
+    start/fw_start_pending_intent.cpp
+    start/fw_start_binder.cpp
+    start/fw_start_virtual_display.cpp
+    start/fw_start_media_button.cpp
+    start/fw_start_next_matching.cpp
+    start/fw_start_start_for_result.cpp
+    start/fw_start_system_ui.cpp
+    start/fw_start_shell.cpp
 )
 
 # 无法强制停止策略相关源文件（教学用途）
@@ -60,6 +77,7 @@ set(FW_FORCE_STOP_SOURCES
 # 创建共享库
 add_library(fw_native SHARED
     ${FW_BASIC_SOURCES}
+    ${FW_START_SOURCES}
     ${FW_FORCE_STOP_SOURCES}
 )
 

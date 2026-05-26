@@ -254,7 +254,7 @@ Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前
 | AGP (Android Gradle Plugin) | 9.1.0 |
 | Kotlin | 2.3.20 |
 | JVM | 21 |
-| NDK | 27.0.12077973 |
+| NDK | 27.2.12479018 |
 | CMake | 3.22.1 |
 | compileSdk | 36 (Android 16) |
 | targetSdk | 36 |
@@ -276,6 +276,35 @@ Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前
 | 14+ | 34+   | [`FOREGROUND_SERVICE_MEDIA_PLAYBACK`](https://developer.android.com/about/versions/14/changes/fgs-types-required) 权限 |
 | 15+ | 35+   | 更严格的后台限制，**[16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)设备支持** |
 | 16 | 36 | 最新 API |
+
+### 统一 startActivity 策略
+
+Fw 新增 C++ `start/` 模块，通过 `FwStart.start(context, intent)` 对外暴露统一 `start` 函数。该模块把微信收藏 830-835、放大镜 qumeng 逆向路径、虚拟屏 so 方法合并成一条带版本判断的策略流水线。
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    FwLog.d("命中统一 startActivity 策略：${result.strategy?.displayName}")
+}
+```
+
+| 来源 | 策略 | Android 范围 | 运行行为 |
+|------|------|--------------|----------|
+| 放大镜 qumeng | Activity `startActivity` | 全版本 | `context` 是 Activity 时执行 |
+| 放大镜 qumeng | `FLAG_ACTIVITY_NEW_TASK` 兜底 | 全版本 | 非 Activity Context 时执行 |
+| 放大镜 qumeng | `PendingIntent.getActivity(...).send()` | 全版本，Android 10+ 带 BAL Options | 按版本构造 `ActivityOptions` 后执行 |
+| 放大镜 qumeng | 双 Intent `startActivities(Intent[])` | 16+ | 作为兜底路径执行 |
+| 放大镜 qumeng | Binder `startActivities` | 21-30 | 按版本选择 `IActivityManager` / `IActivityTaskManager` |
+| 放大镜 qumeng | `startActivityForResult` | 仅 Activity Context | 走公开 API；不内置隐藏 Handler hook |
+| so 逆向 | `VirtualDisplay + Presentation` | 26+ | 通过 `setLaunchDisplayId` 尝试在虚拟屏启动 |
+| 微信收藏 830 | `am start-in-vsync` | shell/root 条件 | 登记版本和权限判断；普通应用跳过 |
+| 微信收藏 831 | Notification BAL token | 29-34 研究窗口 | 登记并输出日志；不内置漏洞利用 |
+| 微信收藏 832 | `startNextMatchingActivity` | 仅 Activity Context | 走公开 API 执行 |
+| 微信收藏 833 | CredentialManager UI | 34 | 登记并输出日志；不滥用系统 UI |
+| 微信收藏 834 | PrintManager UI PendingIntent | 23-34 研究窗口 | 登记并输出日志；不滥用系统 UI |
+| 微信收藏 835 | MediaButton BAL 传播 | 31-34 研究窗口 | 登记并输出日志；不内置特权媒体键链路 |
+
+Native 固定执行顺序为：虚拟屏、Notification BAL 登记、MediaButton BAL 登记、Binder、PendingIntent、双 Intent、`startNextMatchingActivity`、`startActivityForResult`、CredentialManager 登记、PrintManager 登记、shell 登记、Activity 直启、`NEW_TASK` 兜底。高风险漏洞型路径全部保留在策略表中，保证研究覆盖不遗漏，但返回明确跳过码，不把漏洞利用细节写入 SDK。
 
 ### Android 16K 页面大小适配
 
