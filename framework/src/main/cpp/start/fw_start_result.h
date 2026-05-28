@@ -91,14 +91,16 @@ inline bool fw_start_is_success(const FwStartResult& result) {
  * 构造成功结果。
  */
 inline FwStartResult fw_start_success(int strategyMask, const char* message) {
-    return FwStartResult{FW_START_CODE_SUCCESS, strategyMask, message};
+    (void) message;
+    return FwStartResult{FW_START_CODE_SUCCESS, strategyMask, ""};
 }
 
 /**
  * 构造失败或跳过结果。
  */
 inline FwStartResult fw_start_failure(int code, int strategyMask, const char* message) {
-    return FwStartResult{code, strategyMask, message};
+    (void) message;
+    return FwStartResult{code, strategyMask, ""};
 }
 
 const char* fw_start_code_name(int code);

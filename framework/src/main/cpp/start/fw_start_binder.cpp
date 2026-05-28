@@ -25,19 +25,22 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 
 static jobject fw_start_obtain_parcel(JNIEnv* env) {
-    jclass parcelClass = env->FindClass("android/os/Parcel");
+    jclass parcelClass = env->FindClass(FW_PROTECT_STR("android/os/Parcel").c_str());
     if (parcelClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(Parcel)");
+        fw_start_clear_exception(env, "stage");
         return nullptr;
     }
-    jmethodID obtain = env->GetStaticMethodID(parcelClass, "obtain", "()Landroid/os/Parcel;");
+    jmethodID obtain = env->GetStaticMethodID(
+            parcelClass,
+            FW_PROTECT_STR("obtain").c_str(),
+            FW_PROTECT_STR("()Landroid/os/Parcel;").c_str());
     if (obtain == nullptr) {
-        fw_start_clear_exception(env, "Parcel.obtain");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(parcelClass);
         return nullptr;
     }
     jobject parcel = env->CallStaticObjectMethod(parcelClass, obtain);
-    fw_start_clear_exception(env, "Parcel.obtain()");
+    fw_start_clear_exception(env, "stage");
     env->DeleteLocalRef(parcelClass);
     return parcel;
 }
@@ -47,12 +50,15 @@ static void fw_start_recycle_parcel(JNIEnv* env, jobject parcel) {
         return;
     }
     jclass parcelClass = env->GetObjectClass(parcel);
-    jmethodID recycle = env->GetMethodID(parcelClass, "recycle", "()V");
+    jmethodID recycle = env->GetMethodID(
+            parcelClass,
+            FW_PROTECT_STR("recycle").c_str(),
+            FW_PROTECT_STR("()V").c_str());
     if (recycle != nullptr) {
         env->CallVoidMethod(parcel, recycle);
-        fw_start_clear_exception(env, "Parcel.recycle()");
+        fw_start_clear_exception(env, "stage");
     } else {
-        fw_start_clear_exception(env, "Parcel.recycle lookup");
+        fw_start_clear_exception(env, "stage");
     }
     env->DeleteLocalRef(parcelClass);
 }
@@ -60,22 +66,40 @@ static void fw_start_recycle_parcel(JNIEnv* env, jobject parcel) {
 static bool fw_start_write_binder_parcel(FwStartContext& ctx, jobject dataParcel, jobjectArray intentArray) {
     JNIEnv* env = ctx.env;
     jclass parcelClass = env->GetObjectClass(dataParcel);
-    jmethodID writeInterfaceToken = env->GetMethodID(parcelClass, "writeInterfaceToken", "(Ljava/lang/String;)V");
-    jmethodID writeStrongBinder = env->GetMethodID(parcelClass, "writeStrongBinder", "(Landroid/os/IBinder;)V");
-    jmethodID writeString = env->GetMethodID(parcelClass, "writeString", "(Ljava/lang/String;)V");
-    jmethodID writeTypedArray = env->GetMethodID(parcelClass, "writeTypedArray", "([Landroid/os/Parcelable;I)V");
-    jmethodID writeStringArray = env->GetMethodID(parcelClass, "writeStringArray", "([Ljava/lang/String;)V");
-    jmethodID writeInt = env->GetMethodID(parcelClass, "writeInt", "(I)V");
+    jmethodID writeInterfaceToken = env->GetMethodID(
+            parcelClass,
+            FW_PROTECT_STR("writeInterfaceToken").c_str(),
+            FW_PROTECT_STR("(Ljava/lang/String;)V").c_str());
+    jmethodID writeStrongBinder = env->GetMethodID(
+            parcelClass,
+            FW_PROTECT_STR("writeStrongBinder").c_str(),
+            FW_PROTECT_STR("(Landroid/os/IBinder;)V").c_str());
+    jmethodID writeString = env->GetMethodID(
+            parcelClass,
+            FW_PROTECT_STR("writeString").c_str(),
+            FW_PROTECT_STR("(Ljava/lang/String;)V").c_str());
+    jmethodID writeTypedArray = env->GetMethodID(
+            parcelClass,
+            FW_PROTECT_STR("writeTypedArray").c_str(),
+            FW_PROTECT_STR("([Landroid/os/Parcelable;I)V").c_str());
+    jmethodID writeStringArray = env->GetMethodID(
+            parcelClass,
+            FW_PROTECT_STR("writeStringArray").c_str(),
+            FW_PROTECT_STR("([Ljava/lang/String;)V").c_str());
+    jmethodID writeInt = env->GetMethodID(
+            parcelClass,
+            FW_PROTECT_STR("writeInt").c_str(),
+            FW_PROTECT_STR("(I)V").c_str());
     if (writeInterfaceToken == nullptr || writeStrongBinder == nullptr || writeString == nullptr ||
         writeTypedArray == nullptr || writeStringArray == nullptr || writeInt == nullptr) {
-        fw_start_clear_exception(env, "Parcel write methods");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(parcelClass);
         return false;
     }
-    const char* descriptor = ctx.sdkInt >= 29
-                             ? "android.app.IActivityTaskManager"
-                             : "android.app.IActivityManager";
-    jstring descriptorString = env->NewStringUTF(descriptor);
+    std::string descriptor = ctx.sdkInt >= 29
+                             ? FW_PROTECT_STR("android.app.IActivityTaskManager")
+                             : FW_PROTECT_STR("android.app.IActivityManager");
+    jstring descriptorString = env->NewStringUTF(descriptor.c_str());
     std::string packageName = fw_start_get_context_package(env, ctx.context);
     jstring packageString = env->NewStringUTF(packageName.c_str());
     env->CallVoidMethod(dataParcel, writeInterfaceToken, descriptorString);
@@ -85,13 +109,13 @@ static bool fw_start_write_binder_parcel(FwStartContext& ctx, jobject dataParcel
         env->CallVoidMethod(dataParcel, writeString, nullptr);
     }
     env->CallVoidMethod(dataParcel, writeTypedArray, intentArray, 0);
-    jclass stringClass = env->FindClass("java/lang/String");
+    jclass stringClass = env->FindClass(FW_PROTECT_STR("java/lang/String").c_str());
     jobjectArray resolvedTypes = env->NewObjectArray(2, stringClass, nullptr);
     env->CallVoidMethod(dataParcel, writeStringArray, resolvedTypes);
     env->CallVoidMethod(dataParcel, writeStrongBinder, nullptr);
     env->CallVoidMethod(dataParcel, writeInt, 0);
     env->CallVoidMethod(dataParcel, writeInt, fw_start_get_context_user_id(env, ctx.context));
-    bool failed = fw_start_clear_exception(env, "write startActivities parcel");
+    bool failed = fw_start_clear_exception(env, "stage");
     env->DeleteLocalRef(resolvedTypes);
     env->DeleteLocalRef(stringClass);
     env->DeleteLocalRef(packageString);
@@ -101,14 +125,14 @@ static bool fw_start_write_binder_parcel(FwStartContext& ctx, jobject dataParcel
 }
 
 static int fw_start_get_transaction_start_activities(JNIEnv* env, int sdkInt) {
-    const char* stubClassName = sdkInt >= 29
-                                ? "android/app/IActivityTaskManager$Stub"
-                                : "android/app/IActivityManager$Stub";
+    std::string stubClassName = sdkInt >= 29
+                                ? FW_PROTECT_STR("android/app/IActivityTaskManager$Stub")
+                                : FW_PROTECT_STR("android/app/IActivityManager$Stub");
     int fallbackCode = 0;
     return fw_start_get_static_int_field(
             env,
-            stubClassName,
-            "TRANSACTION_startActivities",
+            stubClassName.c_str(),
+            FW_PROTECT_STR("TRANSACTION_startActivities").c_str(),
             fallbackCode);
 }
 
@@ -135,18 +159,21 @@ FwStartResult fw_start_binder_start_activities(FwStartContext& ctx) {
                 FW_START_BINDER_START_ACTIVITIES,
                 "构造 Binder Intent[] 失败");
     }
-    jclass serviceManagerClass = ctx.env->FindClass("android/os/ServiceManager");
+    jclass serviceManagerClass = ctx.env->FindClass(FW_PROTECT_STR("android/os/ServiceManager").c_str());
     if (serviceManagerClass == nullptr) {
-        fw_start_clear_exception(ctx.env, "FindClass(ServiceManager)");
+        fw_start_clear_exception(ctx.env, "stage");
         ctx.env->DeleteLocalRef(intentArray);
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
                 FW_START_BINDER_START_ACTIVITIES,
                 "ServiceManager 类查找失败");
     }
-    jmethodID getService = ctx.env->GetStaticMethodID(serviceManagerClass, "getService", "(Ljava/lang/String;)Landroid/os/IBinder;");
+    jmethodID getService = ctx.env->GetStaticMethodID(
+            serviceManagerClass,
+            FW_PROTECT_STR("getService").c_str(),
+            FW_PROTECT_STR("(Ljava/lang/String;)Landroid/os/IBinder;").c_str());
     if (getService == nullptr) {
-        fw_start_clear_exception(ctx.env, "ServiceManager.getService");
+        fw_start_clear_exception(ctx.env, "stage");
         ctx.env->DeleteLocalRef(serviceManagerClass);
         ctx.env->DeleteLocalRef(intentArray);
         return fw_start_failure(
@@ -154,12 +181,12 @@ FwStartResult fw_start_binder_start_activities(FwStartContext& ctx) {
                 FW_START_BINDER_START_ACTIVITIES,
                 "ServiceManager.getService 方法查找失败");
     }
-    const char* serviceName = ctx.sdkInt >= 29 ? "activity_task" : "activity";
-    jstring serviceString = ctx.env->NewStringUTF(serviceName);
+    std::string serviceName = ctx.sdkInt >= 29 ? FW_PROTECT_STR("activity_task") : FW_PROTECT_STR("activity");
+    jstring serviceString = ctx.env->NewStringUTF(serviceName.c_str());
     jobject activityBinder = ctx.env->CallStaticObjectMethod(serviceManagerClass, getService, serviceString);
     ctx.env->DeleteLocalRef(serviceString);
     ctx.env->DeleteLocalRef(serviceManagerClass);
-    if (fw_start_clear_exception(ctx.env, "ServiceManager.getService()") || activityBinder == nullptr) {
+    if (fw_start_clear_exception(ctx.env, "stage") || activityBinder == nullptr) {
         ctx.env->DeleteLocalRef(intentArray);
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
@@ -179,8 +206,11 @@ FwStartResult fw_start_binder_start_activities(FwStartContext& ctx) {
                 FW_START_BINDER_START_ACTIVITIES,
                 "写入 startActivities Parcel 失败");
     }
-    jclass binderClass = ctx.env->FindClass("android/os/IBinder");
-    jmethodID transact = ctx.env->GetMethodID(binderClass, "transact", "(ILandroid/os/Parcel;Landroid/os/Parcel;I)Z");
+    jclass binderClass = ctx.env->FindClass(FW_PROTECT_STR("android/os/IBinder").c_str());
+    jmethodID transact = ctx.env->GetMethodID(
+            binderClass,
+            FW_PROTECT_STR("transact").c_str(),
+            FW_PROTECT_STR("(ILandroid/os/Parcel;Landroid/os/Parcel;I)Z").c_str());
     int transactionCode = fw_start_get_transaction_start_activities(ctx.env, ctx.sdkInt);
     if (transactionCode <= 0) {
         fw_start_recycle_parcel(ctx.env, dataParcel);
@@ -196,17 +226,20 @@ FwStartResult fw_start_binder_start_activities(FwStartContext& ctx) {
     if (transact != nullptr) {
         transactOk = ctx.env->CallBooleanMethod(activityBinder, transact, transactionCode, dataParcel, replyParcel, 0);
     } else {
-        fw_start_clear_exception(ctx.env, "IBinder.transact lookup");
+        fw_start_clear_exception(ctx.env, "stage");
     }
-    bool failed = fw_start_clear_exception(ctx.env, "IBinder.transact(startActivities)");
+    bool failed = fw_start_clear_exception(ctx.env, "stage");
     if (!failed && transactOk == JNI_TRUE) {
         jclass parcelClass = ctx.env->GetObjectClass(replyParcel);
-        jmethodID readException = ctx.env->GetMethodID(parcelClass, "readException", "()V");
+        jmethodID readException = ctx.env->GetMethodID(
+                parcelClass,
+                FW_PROTECT_STR("readException").c_str(),
+                FW_PROTECT_STR("()V").c_str());
         if (readException != nullptr) {
             ctx.env->CallVoidMethod(replyParcel, readException);
-            failed = fw_start_clear_exception(ctx.env, "Parcel.readException(startActivities)");
+            failed = fw_start_clear_exception(ctx.env, "stage");
         } else {
-            fw_start_clear_exception(ctx.env, "Parcel.readException lookup");
+            fw_start_clear_exception(ctx.env, "stage");
         }
         ctx.env->DeleteLocalRef(parcelClass);
     }
@@ -221,6 +254,6 @@ FwStartResult fw_start_binder_start_activities(FwStartContext& ctx) {
                 FW_START_BINDER_START_ACTIVITIES,
                 "Binder startActivities transact 失败或被系统拦截");
     }
-    LOGI("Binder startActivities transact 已发送，service=%s, code=%d", serviceName, transactionCode);
+    LOGI("start strategy executed: mask=%d, code=%d", FW_START_BINDER_START_ACTIVITIES, transactionCode);
     return fw_start_success(FW_START_BINDER_START_ACTIVITIES, "Binder startActivities transact 成功");
 }

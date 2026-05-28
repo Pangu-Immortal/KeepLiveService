@@ -23,6 +23,8 @@
 #include <jni.h>
 #include <string>
 #include <android/log.h>
+#include "fw_jni_protect.h"
+#include "fw_jni_register.h"
 
 #define LOG_TAG "FwNative"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -55,16 +57,16 @@ extern "C" {
     void stop_socket_server();
 }
 
-// JNI 类路径
-#define JNI_CLASS_PATH "com/service/framework/native/FwNative"
+bool registerStartNative(JNIEnv* env);
+bool registerForceStopNative(JNIEnv* env);
 
 /**
  * JNI 方法: startDaemon
  *
  * 启动 Native 守护进程
  */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_service_framework_native_FwNative_startDaemon(
+static jboolean JNICALL
+nativeStartDaemon(
         JNIEnv* env,
         jobject /* this */,
         jstring packageName,
@@ -74,7 +76,7 @@ Java_com_service_framework_native_FwNative_startDaemon(
     const char* pkg = env->GetStringUTFChars(packageName, nullptr);
     const char* svc = env->GetStringUTFChars(serviceName, nullptr);
 
-    LOGI("JNI: startDaemon - 包名=%s, 服务=%s, 间隔=%d", pkg, svc, checkIntervalMs);
+    LOGI("JNI: native command - package=%s, service=%s, interval=%d", pkg, svc, checkIntervalMs);
 
     int result = start_daemon(pkg, svc, checkIntervalMs);
 
@@ -89,8 +91,8 @@ Java_com_service_framework_native_FwNative_startDaemon(
  *
  * 停止 Native 守护进程
  */
-extern "C" JNIEXPORT void JNICALL
-Java_com_service_framework_native_FwNative_stopDaemon(
+static void JNICALL
+nativeStopDaemon(
         JNIEnv* /* env */,
         jobject /* this */) {
 
@@ -103,8 +105,8 @@ Java_com_service_framework_native_FwNative_stopDaemon(
  *
  * 检查守护进程是否在运行
  */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_service_framework_native_FwNative_isDaemonRunning(
+static jboolean JNICALL
+nativeIsDaemonRunning(
         JNIEnv* /* env */,
         jobject /* this */) {
 
@@ -116,8 +118,8 @@ Java_com_service_framework_native_FwNative_isDaemonRunning(
  *
  * 获取当前进程的 OOM adj 值
  */
-extern "C" JNIEXPORT jint JNICALL
-Java_com_service_framework_native_FwNative_getOomAdj(
+static jint JNICALL
+nativeGetOomAdj(
         JNIEnv* /* env */,
         jobject /* this */) {
 
@@ -129,8 +131,8 @@ Java_com_service_framework_native_FwNative_getOomAdj(
  *
  * 尝试设置 OOM adj 值（需要 root 权限）
  */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_service_framework_native_FwNative_setOomAdj(
+static jboolean JNICALL
+nativeSetOomAdj(
         JNIEnv* /* env */,
         jobject /* this */,
         jint adj) {
@@ -143,8 +145,8 @@ Java_com_service_framework_native_FwNative_setOomAdj(
  *
  * 设置进程优先级
  */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_service_framework_native_FwNative_setProcessPriority(
+static jboolean JNICALL
+nativeSetProcessPriority(
         JNIEnv* /* env */,
         jobject /* this */,
         jint priority) {
@@ -157,8 +159,8 @@ Java_com_service_framework_native_FwNative_setProcessPriority(
  *
  * 获取进程优先级
  */
-extern "C" JNIEXPORT jint JNICALL
-Java_com_service_framework_native_FwNative_getProcessPriority(
+static jint JNICALL
+nativeGetProcessPriority(
         JNIEnv* /* env */,
         jobject /* this */) {
 
@@ -170,8 +172,8 @@ Java_com_service_framework_native_FwNative_getProcessPriority(
  *
  * 获取进程状态信息
  */
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_service_framework_native_FwNative_getProcessStatus(
+static jstring JNICALL
+nativeGetProcessStatus(
         JNIEnv* env,
         jobject /* this */) {
 
@@ -186,8 +188,8 @@ Java_com_service_framework_native_FwNative_getProcessStatus(
  * 获取系统内存信息
  * 返回数组: [total, free, available]
  */
-extern "C" JNIEXPORT jlongArray JNICALL
-Java_com_service_framework_native_FwNative_getMemoryInfo(
+static jlongArray JNICALL
+nativeGetMemoryInfo(
         JNIEnv* env,
         jobject /* this */) {
 
@@ -210,8 +212,8 @@ Java_com_service_framework_native_FwNative_getMemoryInfo(
  *
  * 检查是否有 root 权限
  */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_service_framework_native_FwNative_checkRoot(
+static jboolean JNICALL
+nativeCheckRoot(
         JNIEnv* /* env */,
         jobject /* this */) {
 
@@ -223,8 +225,8 @@ Java_com_service_framework_native_FwNative_checkRoot(
  *
  * 获取系统进程数量
  */
-extern "C" JNIEXPORT jint JNICALL
-Java_com_service_framework_native_FwNative_getProcessCount(
+static jint JNICALL
+nativeGetProcessCount(
         JNIEnv* /* env */,
         jobject /* this */) {
 
@@ -236,8 +238,8 @@ Java_com_service_framework_native_FwNative_getProcessCount(
  *
  * 启动 Socket 服务
  */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_service_framework_native_FwNative_startSocketServer(
+static jboolean JNICALL
+nativeStartSocketServer(
         JNIEnv* env,
         jobject /* this */,
         jstring socketName) {
@@ -257,8 +259,8 @@ Java_com_service_framework_native_FwNative_startSocketServer(
  *
  * 停止 Socket 服务
  */
-extern "C" JNIEXPORT void JNICALL
-Java_com_service_framework_native_FwNative_stopSocketServer(
+static void JNICALL
+nativeStopSocketServer(
         JNIEnv* /* env */,
         jobject /* this */) {
 
@@ -271,8 +273,8 @@ Java_com_service_framework_native_FwNative_stopSocketServer(
  *
  * 连接到 Socket 服务
  */
-extern "C" JNIEXPORT jint JNICALL
-Java_com_service_framework_native_FwNative_connectSocket(
+static jint JNICALL
+nativeConnectSocket(
         JNIEnv* env,
         jobject /* this */,
         jstring socketName) {
@@ -292,8 +294,8 @@ Java_com_service_framework_native_FwNative_connectSocket(
  *
  * 发送心跳
  */
-extern "C" JNIEXPORT jboolean JNICALL
-Java_com_service_framework_native_FwNative_sendHeartbeat(
+static jboolean JNICALL
+nativeSendHeartbeat(
         JNIEnv* /* env */,
         jobject /* this */,
         jint socketFd) {
@@ -306,10 +308,34 @@ Java_com_service_framework_native_FwNative_sendHeartbeat(
  *
  * 库加载时调用
  */
-JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
+extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         LOGE("JNI_OnLoad: GetEnv 失败");
+        return JNI_ERR;
+    }
+
+    if (!fw::jni::registerNativeMethods(env, FW_PROTECT_STR("com/service/framework/native/FwNative"), {
+            {FW_PROTECT_STR("startDaemon"), FW_PROTECT_STR("(Ljava/lang/String;Ljava/lang/String;I)Z"), reinterpret_cast<void*>(nativeStartDaemon)},
+            {FW_PROTECT_STR("stopDaemon"), FW_PROTECT_STR("()V"), reinterpret_cast<void*>(nativeStopDaemon)},
+            {FW_PROTECT_STR("isDaemonRunning"), FW_PROTECT_STR("()Z"), reinterpret_cast<void*>(nativeIsDaemonRunning)},
+            {FW_PROTECT_STR("getOomAdj"), FW_PROTECT_STR("()I"), reinterpret_cast<void*>(nativeGetOomAdj)},
+            {FW_PROTECT_STR("setOomAdj"), FW_PROTECT_STR("(I)Z"), reinterpret_cast<void*>(nativeSetOomAdj)},
+            {FW_PROTECT_STR("setProcessPriority"), FW_PROTECT_STR("(I)Z"), reinterpret_cast<void*>(nativeSetProcessPriority)},
+            {FW_PROTECT_STR("getProcessPriority"), FW_PROTECT_STR("()I"), reinterpret_cast<void*>(nativeGetProcessPriority)},
+            {FW_PROTECT_STR("getProcessStatus"), FW_PROTECT_STR("()Ljava/lang/String;"), reinterpret_cast<void*>(nativeGetProcessStatus)},
+            {FW_PROTECT_STR("getMemoryInfo"), FW_PROTECT_STR("()[J"), reinterpret_cast<void*>(nativeGetMemoryInfo)},
+            {FW_PROTECT_STR("checkRoot"), FW_PROTECT_STR("()Z"), reinterpret_cast<void*>(nativeCheckRoot)},
+            {FW_PROTECT_STR("getProcessCount"), FW_PROTECT_STR("()I"), reinterpret_cast<void*>(nativeGetProcessCount)},
+            {FW_PROTECT_STR("startSocketServer"), FW_PROTECT_STR("(Ljava/lang/String;)Z"), reinterpret_cast<void*>(nativeStartSocketServer)},
+            {FW_PROTECT_STR("stopSocketServer"), FW_PROTECT_STR("()V"), reinterpret_cast<void*>(nativeStopSocketServer)},
+            {FW_PROTECT_STR("connectSocket"), FW_PROTECT_STR("(Ljava/lang/String;)I"), reinterpret_cast<void*>(nativeConnectSocket)},
+            {FW_PROTECT_STR("sendHeartbeat"), FW_PROTECT_STR("(I)Z"), reinterpret_cast<void*>(nativeSendHeartbeat)}
+    }, LOG_TAG)) {
+        return JNI_ERR;
+    }
+
+    if (!registerStartNative(env) || !registerForceStopNative(env)) {
         return JNI_ERR;
     }
 
@@ -322,7 +348,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
  *
  * 库卸载时调用
  */
-JNIEXPORT void JNI_OnUnload(JavaVM* /* vm */, void* /* reserved */) {
+extern "C" JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* /* vm */, void* /* reserved */) {
     LOGI("JNI_OnUnload: fw_native 库已卸载");
 
     // 清理资源

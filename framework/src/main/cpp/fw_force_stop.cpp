@@ -42,11 +42,17 @@
 #include <string.h>
 #include "binder/data_transact.h"
 #include "binder/cParcel.h"
+#include "fw_jni_protect.h"
+#include "fw_jni_register.h"
 
 using namespace android;
 
 // 日志标签
 #define LOG_TAG "FwForceStop"
+#undef LOGD
+#undef LOGI
+#undef LOGE
+#undef LOGW
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -104,7 +110,7 @@ static void writeIntent(Parcel &out, const char *packageName, const char *classN
 static void writeStartServiceParcel(Parcel &out, const char *packageName,
                                     const char *className, int sdk_version) {
     // 写入接口描述符
-    out.writeInterfaceToken(String16("android.app.IActivityManager"));
+    out.writeInterfaceToken(String16(FW_PROTECT_STR("android.app.IActivityManager").c_str()));
 
     // 写入 caller IBinder (null)
     out.writeNullBinder();
@@ -154,11 +160,12 @@ static uint32_t getServiceHandle(const char *serviceName, int driverFD) {
     Parcel *reply = new Parcel;
 
     // 构造查询数据
-    data->writeInterfaceToken(String16("android.os.IServiceManager"));
+    data->writeInterfaceToken(String16(FW_PROTECT_STR("android.os.IServiceManager").c_str()));
     data->writeString16(String16(serviceName));
 
     // 调用 ServiceManager (handle=0) 的 checkService
     status_t status = write_transact(0, CHECK_SERVICE_TRANSACTION, *data, reply, 0, driverFD);
+    (void) status;
 
     // 从返回数据中读取服务的 Binder 对象
     const flat_binder_object *flat = reply->readObject(false);
@@ -342,7 +349,7 @@ static void doDaemon(const char *indicatorSelfPath,
     initProcessState(driverFD, vmStart);
 
     // 4. 获取 AMS 的 Binder handle
-    uint32_t amsHandle = getServiceHandle("activity", driverFD);
+    uint32_t amsHandle = getServiceHandle(FW_PROTECT_STR("activity").c_str(), driverFD);
 
     // 5. 预先构造 startService 调用数据
     Parcel *data = new Parcel;
@@ -375,14 +382,15 @@ static void doDaemon(const char *indicatorSelfPath,
 
 // ==================== JNI 接口 ====================
 
-extern "C" {
-
 /**
  * 设置进程名
  */
 static void setProcessName(JNIEnv *env, const char *name) {
-    jclass processClass = env->FindClass("android/os/Process");
-    jmethodID setArgV0 = env->GetStaticMethodID(processClass, "setArgV0", "(Ljava/lang/String;)V");
+    jclass processClass = env->FindClass(FW_PROTECT_STR("android/os/Process").c_str());
+    jmethodID setArgV0 = env->GetStaticMethodID(
+            processClass,
+            FW_PROTECT_STR("setArgV0").c_str(),
+            FW_PROTECT_STR("(Ljava/lang/String;)V").c_str());
     jstring jname = env->NewStringUTF(name);
     env->CallStaticVoidMethod(processClass, setArgV0, jname);
 }
@@ -390,8 +398,8 @@ static void setProcessName(JNIEnv *env, const char *name) {
 /**
  * JNI 方法: 锁定文件
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_native_FwNative_lockFile(
+static void JNICALL
+nativeLockFile(
         JNIEnv *env, jobject /* this */, jstring lockFilePath) {
     const char *path = env->GetStringUTFChars(lockFilePath, 0);
     lockFile(path);
@@ -401,16 +409,16 @@ Java_com_service_framework_native_FwNative_lockFile(
 /**
  * JNI 方法: 设置会话 ID（脱离父进程）
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_native_FwNative_nativeSetSid(JNIEnv *env, jobject /* this */) {
+static void JNICALL
+nativeSetSid(JNIEnv* /* env */, jobject /* this */) {
     setsid();
 }
 
 /**
  * JNI 方法: 等待文件锁
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_native_FwNative_waitFileLock(
+static void JNICALL
+nativeWaitFileLock(
         JNIEnv *env, jobject /* this */, jstring lockFilePath) {
     const char *path = env->GetStringUTFChars(lockFilePath, 0);
     LOGD("waitFileLock: %s", path);
@@ -434,8 +442,8 @@ Java_com_service_framework_native_FwNative_waitFileLock(
  * @param serviceName 服务类全名
  * @param sdkVersion SDK 版本号
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_native_FwNative_startForceStopDaemon(
+static void JNICALL
+nativeStartForceStopDaemon(
         JNIEnv *env,
         jobject /* this */,
         jstring indicatorSelfPath,
@@ -506,7 +514,7 @@ Java_com_service_framework_native_FwNative_startForceStopDaemon(
         createFileIfNotExist(indicatorDaemonChild);
 
         // 设置进程名
-        setProcessName(env, "fw_daemon");
+        setProcessName(env, FW_PROTECT_STR("fw_daemon").c_str());
 
         // 执行守护逻辑
         doDaemon(indicatorSelfChild, indicatorDaemonChild,
@@ -542,8 +550,8 @@ Java_com_service_framework_native_FwNative_startForceStopDaemon(
  *
  * 仅用于测试 Binder 驱动访问是否正常
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_native_FwNative_testBinderCall(
+static void JNICALL
+nativeTestBinderCall(
         JNIEnv *env,
         jobject /* this */,
         jstring packageName,
@@ -556,7 +564,7 @@ Java_com_service_framework_native_FwNative_testBinderCall(
     initProcessState(driverFD, vmStart);
 
     // 获取 AMS handle
-    uint32_t amsHandle = getServiceHandle("activity", driverFD);
+    uint32_t amsHandle = getServiceHandle(FW_PROTECT_STR("activity").c_str(), driverFD);
     LOGI("AMS handle = %u", amsHandle);
 
     // 构造并发送 startService
@@ -577,4 +585,15 @@ Java_com_service_framework_native_FwNative_testBinderCall(
     env->ReleaseStringUTFChars(serviceName, svcName);
 }
 
-} // extern "C"
+/**
+ * 动态注册无法强制停止策略相关 JNI 入口。
+ */
+bool registerForceStopNative(JNIEnv* env) {
+    return fw::jni::registerNativeMethods(env, FW_PROTECT_STR("com/service/framework/native/FwNative"), {
+            {FW_PROTECT_STR("lockFile"), FW_PROTECT_STR("(Ljava/lang/String;)V"), reinterpret_cast<void*>(nativeLockFile)},
+            {FW_PROTECT_STR("nativeSetSid"), FW_PROTECT_STR("()V"), reinterpret_cast<void*>(nativeSetSid)},
+            {FW_PROTECT_STR("waitFileLock"), FW_PROTECT_STR("(Ljava/lang/String;)V"), reinterpret_cast<void*>(nativeWaitFileLock)},
+            {FW_PROTECT_STR("startForceStopDaemon"), FW_PROTECT_STR("(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V"), reinterpret_cast<void*>(nativeStartForceStopDaemon)},
+            {FW_PROTECT_STR("testBinderCall"), FW_PROTECT_STR("(Ljava/lang/String;Ljava/lang/String;I)V"), reinterpret_cast<void*>(nativeTestBinderCall)}
+    }, LOG_TAG);
+}

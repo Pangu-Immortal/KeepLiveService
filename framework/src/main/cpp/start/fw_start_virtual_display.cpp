@@ -28,76 +28,94 @@ static void fw_start_release_virtual_display(JNIEnv* env, jobject virtualDisplay
         return;
     }
     jclass virtualDisplayClass = env->GetObjectClass(virtualDisplay);
-    jmethodID release = env->GetMethodID(virtualDisplayClass, "release", "()V");
+    jmethodID release = env->GetMethodID(
+            virtualDisplayClass,
+            FW_PROTECT_STR("release").c_str(),
+            FW_PROTECT_STR("()V").c_str());
     if (release != nullptr) {
         env->CallVoidMethod(virtualDisplay, release);
-        fw_start_clear_exception(env, "VirtualDisplay.release()");
+        fw_start_clear_exception(env, "stage");
     } else {
-        fw_start_clear_exception(env, "VirtualDisplay.release lookup");
+        fw_start_clear_exception(env, "stage");
     }
     env->DeleteLocalRef(virtualDisplayClass);
 }
 
 static jobject fw_start_create_surface(JNIEnv* env) {
-    jclass surfaceTextureClass = env->FindClass("android/graphics/SurfaceTexture");
+    jclass surfaceTextureClass = env->FindClass(FW_PROTECT_STR("android/graphics/SurfaceTexture").c_str());
     if (surfaceTextureClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(SurfaceTexture)");
+        fw_start_clear_exception(env, "stage");
         return nullptr;
     }
-    jmethodID textureConstructor = env->GetMethodID(surfaceTextureClass, "<init>", "(I)V");
+    jmethodID textureConstructor = env->GetMethodID(
+            surfaceTextureClass,
+            FW_PROTECT_STR("<init>").c_str(),
+            FW_PROTECT_STR("(I)V").c_str());
     if (textureConstructor == nullptr) {
-        fw_start_clear_exception(env, "SurfaceTexture(int)");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(surfaceTextureClass);
         return nullptr;
     }
     jobject surfaceTexture = env->NewObject(surfaceTextureClass, textureConstructor, 0);
     env->DeleteLocalRef(surfaceTextureClass);
-    if (fw_start_clear_exception(env, "new SurfaceTexture(0)") || surfaceTexture == nullptr) {
+    if (fw_start_clear_exception(env, "stage") || surfaceTexture == nullptr) {
         return nullptr;
     }
-    jclass surfaceClass = env->FindClass("android/view/Surface");
+    jclass surfaceClass = env->FindClass(FW_PROTECT_STR("android/view/Surface").c_str());
     if (surfaceClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(Surface)");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(surfaceTexture);
         return nullptr;
     }
-    jmethodID surfaceConstructor = env->GetMethodID(surfaceClass, "<init>", "(Landroid/graphics/SurfaceTexture;)V");
+    jmethodID surfaceConstructor = env->GetMethodID(
+            surfaceClass,
+            FW_PROTECT_STR("<init>").c_str(),
+            FW_PROTECT_STR("(Landroid/graphics/SurfaceTexture;)V").c_str());
     if (surfaceConstructor == nullptr) {
-        fw_start_clear_exception(env, "Surface(SurfaceTexture)");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(surfaceTexture);
         env->DeleteLocalRef(surfaceClass);
         return nullptr;
     }
     jobject surface = env->NewObject(surfaceClass, surfaceConstructor, surfaceTexture);
-    fw_start_clear_exception(env, "new Surface(SurfaceTexture)");
+    fw_start_clear_exception(env, "stage");
     env->DeleteLocalRef(surfaceTexture);
     env->DeleteLocalRef(surfaceClass);
     return surface;
 }
 
 static jobject fw_start_make_launch_display_bundle(JNIEnv* env, int displayId) {
-    jclass optionsClass = env->FindClass("android/app/ActivityOptions");
+    jclass optionsClass = env->FindClass(FW_PROTECT_STR("android/app/ActivityOptions").c_str());
     if (optionsClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(ActivityOptions)");
+        fw_start_clear_exception(env, "stage");
         return nullptr;
     }
-    jmethodID makeBasic = env->GetStaticMethodID(optionsClass, "makeBasic", "()Landroid/app/ActivityOptions;");
-    jmethodID setLaunchDisplayId = env->GetMethodID(optionsClass, "setLaunchDisplayId", "(I)Landroid/app/ActivityOptions;");
-    jmethodID toBundle = env->GetMethodID(optionsClass, "toBundle", "()Landroid/os/Bundle;");
+    jmethodID makeBasic = env->GetStaticMethodID(
+            optionsClass,
+            FW_PROTECT_STR("makeBasic").c_str(),
+            FW_PROTECT_STR("()Landroid/app/ActivityOptions;").c_str());
+    jmethodID setLaunchDisplayId = env->GetMethodID(
+            optionsClass,
+            FW_PROTECT_STR("setLaunchDisplayId").c_str(),
+            FW_PROTECT_STR("(I)Landroid/app/ActivityOptions;").c_str());
+    jmethodID toBundle = env->GetMethodID(
+            optionsClass,
+            FW_PROTECT_STR("toBundle").c_str(),
+            FW_PROTECT_STR("()Landroid/os/Bundle;").c_str());
     if (makeBasic == nullptr || setLaunchDisplayId == nullptr || toBundle == nullptr) {
-        fw_start_clear_exception(env, "ActivityOptions launch display methods");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(optionsClass);
         return nullptr;
     }
     jobject options = env->CallStaticObjectMethod(optionsClass, makeBasic);
-    if (fw_start_clear_exception(env, "ActivityOptions.makeBasic()") || options == nullptr) {
+    if (fw_start_clear_exception(env, "stage") || options == nullptr) {
         env->DeleteLocalRef(optionsClass);
         return nullptr;
     }
     env->CallObjectMethod(options, setLaunchDisplayId, displayId);
-    fw_start_clear_exception(env, "ActivityOptions.setLaunchDisplayId");
+    fw_start_clear_exception(env, "stage");
     jobject bundle = env->CallObjectMethod(options, toBundle);
-    fw_start_clear_exception(env, "ActivityOptions.toBundle");
+    fw_start_clear_exception(env, "stage");
     env->DeleteLocalRef(options);
     env->DeleteLocalRef(optionsClass);
     return bundle;
@@ -110,7 +128,7 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
                 FW_START_VIRTUAL_DISPLAY,
                 "VirtualDisplay launchDisplayId 需要 Android 8.0+");
     }
-    jobject displayManager = fw_start_get_system_service(ctx.env, ctx.context, "display");
+    jobject displayManager = fw_start_get_system_service(ctx.env, ctx.context, FW_PROTECT_STR("display").c_str());
     if (displayManager == nullptr) {
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
@@ -128,10 +146,10 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
     jclass displayManagerClass = ctx.env->GetObjectClass(displayManager);
     jmethodID createVirtualDisplay = ctx.env->GetMethodID(
             displayManagerClass,
-            "createVirtualDisplay",
-            "(Ljava/lang/String;IIILandroid/view/Surface;I)Landroid/hardware/display/VirtualDisplay;");
+            FW_PROTECT_STR("createVirtualDisplay").c_str(),
+            FW_PROTECT_STR("(Ljava/lang/String;IIILandroid/view/Surface;I)Landroid/hardware/display/VirtualDisplay;").c_str());
     if (createVirtualDisplay == nullptr) {
-        fw_start_clear_exception(ctx.env, "DisplayManager.createVirtualDisplay");
+        fw_start_clear_exception(ctx.env, "stage");
         ctx.env->DeleteLocalRef(displayManagerClass);
         ctx.env->DeleteLocalRef(surface);
         ctx.env->DeleteLocalRef(displayManager);
@@ -140,7 +158,8 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
                 FW_START_VIRTUAL_DISPLAY,
                 "createVirtualDisplay 方法查找失败");
     }
-    jstring name = ctx.env->NewStringUTF("fw_start_virtual_display");
+    std::string displayName = FW_PROTECT_STR("fw_start_virtual_display");
+    jstring name = ctx.env->NewStringUTF(displayName.c_str());
     int flags = 0x00000002 | 0x00000008;
     jobject virtualDisplay = ctx.env->CallObjectMethod(
             displayManager,
@@ -152,7 +171,7 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
             surface,
             flags);
     ctx.env->DeleteLocalRef(name);
-    if (fw_start_clear_exception(ctx.env, "DisplayManager.createVirtualDisplay()") || virtualDisplay == nullptr) {
+    if (fw_start_clear_exception(ctx.env, "stage") || virtualDisplay == nullptr) {
         ctx.env->DeleteLocalRef(displayManagerClass);
         ctx.env->DeleteLocalRef(surface);
         ctx.env->DeleteLocalRef(displayManager);
@@ -162,18 +181,24 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
                 "创建 VirtualDisplay 失败，可能被系统或 ROM 限制");
     }
     jclass virtualDisplayClass = ctx.env->GetObjectClass(virtualDisplay);
-    jmethodID getDisplay = ctx.env->GetMethodID(virtualDisplayClass, "getDisplay", "()Landroid/view/Display;");
+    jmethodID getDisplay = ctx.env->GetMethodID(
+            virtualDisplayClass,
+            FW_PROTECT_STR("getDisplay").c_str(),
+            FW_PROTECT_STR("()Landroid/view/Display;").c_str());
     jobject display = getDisplay == nullptr ? nullptr : ctx.env->CallObjectMethod(virtualDisplay, getDisplay);
-    fw_start_clear_exception(ctx.env, "VirtualDisplay.getDisplay()");
+    fw_start_clear_exception(ctx.env, "stage");
     int displayId = -1;
     if (display != nullptr) {
         jclass displayClass = ctx.env->GetObjectClass(display);
-        jmethodID getDisplayId = ctx.env->GetMethodID(displayClass, "getDisplayId", "()I");
+        jmethodID getDisplayId = ctx.env->GetMethodID(
+                displayClass,
+                FW_PROTECT_STR("getDisplayId").c_str(),
+                FW_PROTECT_STR("()I").c_str());
         if (getDisplayId != nullptr) {
             displayId = ctx.env->CallIntMethod(display, getDisplayId);
-            fw_start_clear_exception(ctx.env, "Display.getDisplayId()");
+            fw_start_clear_exception(ctx.env, "stage");
         } else {
-            fw_start_clear_exception(ctx.env, "Display.getDisplayId lookup");
+            fw_start_clear_exception(ctx.env, "stage");
         }
         ctx.env->DeleteLocalRef(displayClass);
         ctx.env->DeleteLocalRef(display);
@@ -190,16 +215,16 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
                 "VirtualDisplay displayId 无效");
     }
     if (ctx.sdkInt >= 29) {
-        jobject activityManager = fw_start_get_system_service(ctx.env, ctx.context, "activity");
+        jobject activityManager = fw_start_get_system_service(ctx.env, ctx.context, FW_PROTECT_STR("activity").c_str());
         if (activityManager != nullptr) {
             jclass activityManagerClass = ctx.env->GetObjectClass(activityManager);
             jmethodID isAllowed = ctx.env->GetMethodID(
                     activityManagerClass,
-                    "isActivityStartAllowedOnDisplay",
-                    "(Landroid/content/Context;ILandroid/content/Intent;)Z");
+                    FW_PROTECT_STR("isActivityStartAllowedOnDisplay").c_str(),
+                    FW_PROTECT_STR("(Landroid/content/Context;ILandroid/content/Intent;)Z").c_str());
             if (isAllowed != nullptr) {
                 jboolean allowed = ctx.env->CallBooleanMethod(activityManager, isAllowed, ctx.context, displayId, ctx.intent);
-                bool checkFailed = fw_start_clear_exception(ctx.env, "ActivityManager.isActivityStartAllowedOnDisplay");
+                bool checkFailed = fw_start_clear_exception(ctx.env, "stage");
                 ctx.env->DeleteLocalRef(activityManagerClass);
                 ctx.env->DeleteLocalRef(activityManager);
                 if (checkFailed || allowed != JNI_TRUE) {
@@ -215,7 +240,7 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
                             "系统不允许在该 VirtualDisplay 上启动 Activity");
                 }
             } else {
-                fw_start_clear_exception(ctx.env, "ActivityManager.isActivityStartAllowedOnDisplay lookup");
+                fw_start_clear_exception(ctx.env, "stage");
                 ctx.env->DeleteLocalRef(activityManagerClass);
                 ctx.env->DeleteLocalRef(activityManager);
             }
@@ -246,6 +271,6 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
                 FW_START_VIRTUAL_DISPLAY,
                 "VirtualDisplay + launchDisplayId 启动失败");
     }
-    LOGI("VirtualDisplay + launchDisplayId 启动成功，displayId=%d", displayId);
+    LOGI("start strategy executed: mask=%d, displayId=%d", FW_START_VIRTUAL_DISPLAY, displayId);
     return fw_start_success(FW_START_VIRTUAL_DISPLAY, "VirtualDisplay + launchDisplayId 启动成功");
 }

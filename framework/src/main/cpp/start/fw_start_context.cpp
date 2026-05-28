@@ -37,7 +37,7 @@ FwStartResult fw_start_context_direct(FwStartContext& ctx) {
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
                 FW_START_CONTEXT_DIRECT,
-                "Activity.startActivity 抛出异常");
+                "stage failed");
     }
     return fw_start_success(FW_START_CONTEXT_DIRECT, "Activity Context 直启成功");
 }
@@ -57,7 +57,7 @@ FwStartResult fw_start_context_new_task(FwStartContext& ctx) {
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
                 FW_START_CONTEXT_NEW_TASK,
-                "Context.startActivity + NEW_TASK 抛出异常");
+                "stage failed");
     }
     return fw_start_success(FW_START_CONTEXT_NEW_TASK, "Context + FLAG_ACTIVITY_NEW_TASK 启动成功");
 }
@@ -74,7 +74,7 @@ FwStartResult fw_start_context_new_task_exclude_recents(FwStartContext& ctx) {
             ctx.env,
             clonedIntent,
             0x10000000 | 0x00800000 | 0x00010000,
-            "Intent.addFlags(NEW_TASK|EXCLUDE_FROM_RECENTS|NO_ANIMATION)");
+            "stage");
     if (!flagsAdded) {
         ctx.env->DeleteLocalRef(clonedIntent);
         return fw_start_failure(
@@ -88,7 +88,7 @@ FwStartResult fw_start_context_new_task_exclude_recents(FwStartContext& ctx) {
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
                 FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS,
-                "Context.startActivity + 隐藏标志抛出异常");
+                "stage failed");
     }
     return fw_start_success(
             FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS,
@@ -122,9 +122,12 @@ FwStartResult fw_start_double_start_activities(FwStartContext& ctx) {
                 "构造 Intent[] 失败");
     }
     jclass contextClass = ctx.env->GetObjectClass(ctx.context);
-    jmethodID startActivities = ctx.env->GetMethodID(contextClass, "startActivities", "([Landroid/content/Intent;)V");
+    jmethodID startActivities = ctx.env->GetMethodID(
+            contextClass,
+            FW_PROTECT_STR("startActivities").c_str(),
+            FW_PROTECT_STR("([Landroid/content/Intent;)V").c_str());
     if (startActivities == nullptr) {
-        fw_start_clear_exception(ctx.env, "Context.startActivities(Intent[])");
+        fw_start_clear_exception(ctx.env, "stage");
         ctx.env->DeleteLocalRef(intentArray);
         ctx.env->DeleteLocalRef(contextClass);
         return fw_start_failure(
@@ -133,7 +136,7 @@ FwStartResult fw_start_double_start_activities(FwStartContext& ctx) {
                 "Context.startActivities 方法查找失败");
     }
     ctx.env->CallVoidMethod(ctx.context, startActivities, intentArray);
-    bool failed = fw_start_clear_exception(ctx.env, "Context.startActivities(Intent[])");
+    bool failed = fw_start_clear_exception(ctx.env, "stage");
     ctx.env->DeleteLocalRef(intentArray);
     ctx.env->DeleteLocalRef(contextClass);
     if (failed) {
@@ -142,6 +145,6 @@ FwStartResult fw_start_double_start_activities(FwStartContext& ctx) {
                 FW_START_DOUBLE_START_ACTIVITIES,
                 "双 Intent startActivities 抛出异常");
     }
-    LOGI("双 Intent startActivities 执行成功");
+    LOGI("start strategy executed: mask=%d", FW_START_DOUBLE_START_ACTIVITIES);
     return fw_start_success(FW_START_DOUBLE_START_ACTIVITIES, "双 Intent startActivities 启动成功");
 }

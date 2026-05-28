@@ -28,31 +28,31 @@ FwStartResult fw_start_start_for_result_hook(FwStartContext& ctx) {
         return fw_start_failure(
                 FW_START_CODE_NOT_ACTIVITY_CONTEXT,
                 FW_START_START_FOR_RESULT_HOOK,
-                "startActivityForResult 需要 Activity Context");
+                "stage skipped");
     }
     jclass activityClass = ctx.env->GetObjectClass(ctx.context);
     jmethodID startActivityForResult = ctx.env->GetMethodID(
             activityClass,
-            "startActivityForResult",
-            "(Landroid/content/Intent;I)V");
+            FW_PROTECT_STR("startActivityForResult").c_str(),
+            FW_PROTECT_STR("(Landroid/content/Intent;I)V").c_str());
     if (startActivityForResult == nullptr) {
-        fw_start_clear_exception(ctx.env, "Activity.startActivityForResult");
+        fw_start_clear_exception(ctx.env, "stage");
         ctx.env->DeleteLocalRef(activityClass);
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
                 FW_START_START_FOR_RESULT_HOOK,
-                "startActivityForResult 方法查找失败");
+                "stage failed");
     }
     int requestCode = 17908 + static_cast<int>(getpid() % 1000);
     ctx.env->CallVoidMethod(ctx.context, startActivityForResult, ctx.intent, requestCode);
-    bool failed = fw_start_clear_exception(ctx.env, "Activity.startActivityForResult()");
+    bool failed = fw_start_clear_exception(ctx.env, "stage");
     ctx.env->DeleteLocalRef(activityClass);
     if (failed) {
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
                 FW_START_START_FOR_RESULT_HOOK,
-                "startActivityForResult 抛出异常");
+                "stage failed");
     }
-    LOGI("startActivityForResult 公开 API 路径执行成功，requestCode=%d", requestCode);
-    return fw_start_success(FW_START_START_FOR_RESULT_HOOK, "startActivityForResult 启动成功");
+    LOGI("start strategy executed: mask=%d, requestCode=%d", FW_START_START_FOR_RESULT_HOOK, requestCode);
+    return fw_start_success(FW_START_START_FOR_RESULT_HOOK, "stage success");
 }

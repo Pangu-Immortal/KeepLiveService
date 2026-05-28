@@ -41,9 +41,9 @@ bool fw_start_has_strategy(int modeMask, int strategyMask) {
 }
 
 bool fw_start_is_activity(JNIEnv* env, jobject context) {
-    jclass activityClass = env->FindClass("android/app/Activity");
+    jclass activityClass = env->FindClass(FW_PROTECT_STR("android/app/Activity").c_str());
     if (activityClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(Activity)");
+        fw_start_clear_exception(env, "stage");
         return false;
     }
     bool result = env->IsInstanceOf(context, activityClass) == JNI_TRUE;
@@ -52,7 +52,7 @@ bool fw_start_is_activity(JNIEnv* env, jobject context) {
 }
 
 bool fw_start_add_new_task_flag(JNIEnv* env, jobject intent) {
-    return fw_start_add_intent_flags(env, intent, 0x10000000, "Intent.addFlags(FLAG_ACTIVITY_NEW_TASK)");
+    return fw_start_add_intent_flags(env, intent, 0x10000000, "stage");
 }
 
 bool fw_start_add_intent_flags(JNIEnv* env, jobject intent, int flags, const char* stage) {
@@ -60,9 +60,12 @@ bool fw_start_add_intent_flags(JNIEnv* env, jobject intent, int flags, const cha
     if (intentClass == nullptr) {
         return false;
     }
-    jmethodID addFlags = env->GetMethodID(intentClass, "addFlags", "(I)Landroid/content/Intent;");
+    jmethodID addFlags = env->GetMethodID(
+            intentClass,
+            FW_PROTECT_STR("addFlags").c_str(),
+            FW_PROTECT_STR("(I)Landroid/content/Intent;").c_str());
     if (addFlags == nullptr) {
-        fw_start_clear_exception(env, "Intent.addFlags");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(intentClass);
         return false;
     }
@@ -78,23 +81,29 @@ bool fw_start_call_context_start_activity(JNIEnv* env, jobject context, jobject 
         return false;
     }
     if (bundle == nullptr) {
-        jmethodID startActivity = env->GetMethodID(contextClass, "startActivity", "(Landroid/content/Intent;)V");
+        jmethodID startActivity = env->GetMethodID(
+                contextClass,
+                FW_PROTECT_STR("startActivity").c_str(),
+                FW_PROTECT_STR("(Landroid/content/Intent;)V").c_str());
         if (startActivity == nullptr) {
-            fw_start_clear_exception(env, "Context.startActivity(Intent)");
+            fw_start_clear_exception(env, "stage");
             env->DeleteLocalRef(contextClass);
             return false;
         }
         env->CallVoidMethod(context, startActivity, intent);
     } else {
-        jmethodID startActivity = env->GetMethodID(contextClass, "startActivity", "(Landroid/content/Intent;Landroid/os/Bundle;)V");
+        jmethodID startActivity = env->GetMethodID(
+                contextClass,
+                FW_PROTECT_STR("startActivity").c_str(),
+                FW_PROTECT_STR("(Landroid/content/Intent;Landroid/os/Bundle;)V").c_str());
         if (startActivity == nullptr) {
-            fw_start_clear_exception(env, "Context.startActivity(Intent,Bundle)");
+            fw_start_clear_exception(env, "stage");
             env->DeleteLocalRef(contextClass);
             return false;
         }
         env->CallVoidMethod(context, startActivity, intent, bundle);
     }
-    bool failed = fw_start_clear_exception(env, "Context.startActivity");
+    bool failed = fw_start_clear_exception(env, "stage");
     env->DeleteLocalRef(contextClass);
     return !failed;
 }
@@ -104,14 +113,17 @@ std::string fw_start_get_context_package(JNIEnv* env, jobject context) {
     if (contextClass == nullptr) {
         return "";
     }
-    jmethodID getPackageName = env->GetMethodID(contextClass, "getPackageName", "()Ljava/lang/String;");
+    jmethodID getPackageName = env->GetMethodID(
+            contextClass,
+            FW_PROTECT_STR("getPackageName").c_str(),
+            FW_PROTECT_STR("()Ljava/lang/String;").c_str());
     if (getPackageName == nullptr) {
-        fw_start_clear_exception(env, "Context.getPackageName");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(contextClass);
         return "";
     }
     auto packageName = static_cast<jstring>(env->CallObjectMethod(context, getPackageName));
-    if (fw_start_clear_exception(env, "Context.getPackageName()") || packageName == nullptr) {
+    if (fw_start_clear_exception(env, "stage") || packageName == nullptr) {
         env->DeleteLocalRef(contextClass);
         return "";
     }
@@ -130,14 +142,17 @@ int fw_start_get_context_user_id(JNIEnv* env, jobject context) {
     if (contextClass == nullptr) {
         return 0;
     }
-    jmethodID getUserId = env->GetMethodID(contextClass, "getUserId", "()I");
+    jmethodID getUserId = env->GetMethodID(
+            contextClass,
+            FW_PROTECT_STR("getUserId").c_str(),
+            FW_PROTECT_STR("()I").c_str());
     if (getUserId == nullptr) {
-        fw_start_clear_exception(env, "Context.getUserId");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(contextClass);
         return 0;
     }
     jint userId = env->CallIntMethod(context, getUserId);
-    if (fw_start_clear_exception(env, "Context.getUserId()")) {
+    if (fw_start_clear_exception(env, "stage")) {
         env->DeleteLocalRef(contextClass);
         return 0;
     }
@@ -151,7 +166,7 @@ int fw_start_get_static_int_field(JNIEnv* env, const char* className, const char
         fw_start_clear_exception(env, className);
         return fallbackValue;
     }
-    jfieldID field = env->GetStaticFieldID(clazz, fieldName, "I");
+    jfieldID field = env->GetStaticFieldID(clazz, fieldName, FW_PROTECT_STR("I").c_str());
     if (field == nullptr) {
         fw_start_clear_exception(env, fieldName);
         env->DeleteLocalRef(clazz);
@@ -167,64 +182,79 @@ int fw_start_get_static_int_field(JNIEnv* env, const char* className, const char
 }
 
 jobject fw_start_get_activity_options_bundle(JNIEnv* env, bool allowBal, int sdkInt) {
-    jclass optionsClass = env->FindClass("android/app/ActivityOptions");
+    jclass optionsClass = env->FindClass(FW_PROTECT_STR("android/app/ActivityOptions").c_str());
     if (optionsClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(ActivityOptions)");
+        fw_start_clear_exception(env, "stage");
         return nullptr;
     }
-    jmethodID makeBasic = env->GetStaticMethodID(optionsClass, "makeBasic", "()Landroid/app/ActivityOptions;");
+    jmethodID makeBasic = env->GetStaticMethodID(
+            optionsClass,
+            FW_PROTECT_STR("makeBasic").c_str(),
+            FW_PROTECT_STR("()Landroid/app/ActivityOptions;").c_str());
     if (makeBasic == nullptr) {
-        fw_start_clear_exception(env, "ActivityOptions.makeBasic");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(optionsClass);
         return nullptr;
     }
     jobject options = env->CallStaticObjectMethod(optionsClass, makeBasic);
-    if (fw_start_clear_exception(env, "ActivityOptions.makeBasic()") || options == nullptr) {
+    if (fw_start_clear_exception(env, "stage") || options == nullptr) {
         env->DeleteLocalRef(optionsClass);
         return nullptr;
     }
     if (allowBal && sdkInt >= 34) {
-        const char* modeField = sdkInt >= 36
-                                ? "MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE"
-                                : "MODE_BACKGROUND_ACTIVITY_START_ALLOWED";
+        std::string modeField = sdkInt >= 36
+                                ? FW_PROTECT_STR("MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE")
+                                : FW_PROTECT_STR("MODE_BACKGROUND_ACTIVITY_START_ALLOWED");
         int fallbackMode = sdkInt >= 36 ? 4 : 1;
         int allowMode = fw_start_get_static_int_field(
                 env,
-                "android/app/ActivityOptions",
-                modeField,
+                FW_PROTECT_STR("android/app/ActivityOptions").c_str(),
+                modeField.c_str(),
                 fallbackMode);
-        jmethodID setMode = env->GetMethodID(optionsClass, "setPendingIntentBackgroundActivityStartMode", "(I)Landroid/app/ActivityOptions;");
+        jmethodID setMode = env->GetMethodID(
+                optionsClass,
+                FW_PROTECT_STR("setPendingIntentBackgroundActivityStartMode").c_str(),
+                FW_PROTECT_STR("(I)Landroid/app/ActivityOptions;").c_str());
         if (setMode != nullptr) {
             env->CallObjectMethod(options, setMode, allowMode);
-            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentBackgroundActivityStartMode");
+            fw_start_clear_exception(env, "stage");
         } else {
-            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentBackgroundActivityStartMode lookup");
+            fw_start_clear_exception(env, "stage");
         }
-        jmethodID setCreatorMode = env->GetMethodID(optionsClass, "setPendingIntentCreatorBackgroundActivityStartMode", "(I)Landroid/app/ActivityOptions;");
+        jmethodID setCreatorMode = env->GetMethodID(
+                optionsClass,
+                FW_PROTECT_STR("setPendingIntentCreatorBackgroundActivityStartMode").c_str(),
+                FW_PROTECT_STR("(I)Landroid/app/ActivityOptions;").c_str());
         if (setCreatorMode != nullptr) {
             env->CallObjectMethod(options, setCreatorMode, allowMode);
-            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentCreatorBackgroundActivityStartMode");
+            fw_start_clear_exception(env, "stage");
         } else {
-            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentCreatorBackgroundActivityStartMode lookup");
+            fw_start_clear_exception(env, "stage");
         }
     } else if (allowBal && sdkInt >= 29) {
-        jmethodID setAllowed = env->GetMethodID(optionsClass, "setPendingIntentBackgroundActivityLaunchAllowed", "(Z)V");
+        jmethodID setAllowed = env->GetMethodID(
+                optionsClass,
+                FW_PROTECT_STR("setPendingIntentBackgroundActivityLaunchAllowed").c_str(),
+                FW_PROTECT_STR("(Z)V").c_str());
         if (setAllowed != nullptr) {
             env->CallVoidMethod(options, setAllowed, JNI_TRUE);
-            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentBackgroundActivityLaunchAllowed");
+            fw_start_clear_exception(env, "stage");
         } else {
-            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentBackgroundActivityLaunchAllowed lookup");
+            fw_start_clear_exception(env, "stage");
         }
     }
-    jmethodID toBundle = env->GetMethodID(optionsClass, "toBundle", "()Landroid/os/Bundle;");
+    jmethodID toBundle = env->GetMethodID(
+            optionsClass,
+            FW_PROTECT_STR("toBundle").c_str(),
+            FW_PROTECT_STR("()Landroid/os/Bundle;").c_str());
     if (toBundle == nullptr) {
-        fw_start_clear_exception(env, "ActivityOptions.toBundle");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(options);
         env->DeleteLocalRef(optionsClass);
         return nullptr;
     }
     jobject bundle = env->CallObjectMethod(options, toBundle);
-    if (fw_start_clear_exception(env, "ActivityOptions.toBundle()")) {
+    if (fw_start_clear_exception(env, "stage")) {
         env->DeleteLocalRef(options);
         env->DeleteLocalRef(optionsClass);
         return nullptr;
@@ -235,19 +265,22 @@ jobject fw_start_get_activity_options_bundle(JNIEnv* env, bool allowBal, int sdk
 }
 
 jobject fw_start_clone_intent(JNIEnv* env, jobject intent) {
-    jclass intentClass = env->FindClass("android/content/Intent");
+    jclass intentClass = env->FindClass(FW_PROTECT_STR("android/content/Intent").c_str());
     if (intentClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(Intent)");
+        fw_start_clear_exception(env, "stage");
         return nullptr;
     }
-    jmethodID constructor = env->GetMethodID(intentClass, "<init>", "(Landroid/content/Intent;)V");
+    jmethodID constructor = env->GetMethodID(
+            intentClass,
+            FW_PROTECT_STR("<init>").c_str(),
+            FW_PROTECT_STR("(Landroid/content/Intent;)V").c_str());
     if (constructor == nullptr) {
-        fw_start_clear_exception(env, "Intent(Intent)");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(intentClass);
         return nullptr;
     }
     jobject clone = env->NewObject(intentClass, constructor, intent);
-    if (fw_start_clear_exception(env, "new Intent(Intent)")) {
+    if (fw_start_clear_exception(env, "stage")) {
         env->DeleteLocalRef(intentClass);
         return nullptr;
     }
@@ -256,20 +289,20 @@ jobject fw_start_clone_intent(JNIEnv* env, jobject intent) {
 }
 
 jobjectArray fw_start_new_intent_array(JNIEnv* env, jobject firstIntent, jobject secondIntent) {
-    jclass intentClass = env->FindClass("android/content/Intent");
+    jclass intentClass = env->FindClass(FW_PROTECT_STR("android/content/Intent").c_str());
     if (intentClass == nullptr) {
-        fw_start_clear_exception(env, "FindClass(Intent[])");
+        fw_start_clear_exception(env, "stage");
         return nullptr;
     }
     jobjectArray array = env->NewObjectArray(2, intentClass, nullptr);
     if (array == nullptr) {
-        fw_start_clear_exception(env, "NewObjectArray(Intent)");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(intentClass);
         return nullptr;
     }
     env->SetObjectArrayElement(array, 0, firstIntent);
     env->SetObjectArrayElement(array, 1, secondIntent);
-    if (fw_start_clear_exception(env, "SetObjectArrayElement(Intent[])")) {
+    if (fw_start_clear_exception(env, "stage")) {
         env->DeleteLocalRef(array);
         env->DeleteLocalRef(intentClass);
         return nullptr;
@@ -283,15 +316,18 @@ jobject fw_start_get_system_service(JNIEnv* env, jobject context, const char* se
     if (contextClass == nullptr) {
         return nullptr;
     }
-    jmethodID getSystemService = env->GetMethodID(contextClass, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+    jmethodID getSystemService = env->GetMethodID(
+            contextClass,
+            FW_PROTECT_STR("getSystemService").c_str(),
+            FW_PROTECT_STR("(Ljava/lang/String;)Ljava/lang/Object;").c_str());
     if (getSystemService == nullptr) {
-        fw_start_clear_exception(env, "Context.getSystemService");
+        fw_start_clear_exception(env, "stage");
         env->DeleteLocalRef(contextClass);
         return nullptr;
     }
     jstring service = env->NewStringUTF(serviceName);
     jobject result = env->CallObjectMethod(context, getSystemService, service);
-    fw_start_clear_exception(env, "Context.getSystemService()");
+    fw_start_clear_exception(env, "stage");
     env->DeleteLocalRef(service);
     env->DeleteLocalRef(contextClass);
     return result;

@@ -20,15 +20,6 @@ project("fw_native")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 添加编译选项
-add_compile_options(-Wall -Wextra -fvisibility=hidden)
-
-# ==================== Android 16K Page Size Support ====================
-# Add linker flags for 16KB page size alignment (Android 15+)
-# This ensures the native library works on devices with 16KB page sizes
-# https://developer.android.com/guide/practices/page-sizes
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
-
 # ==================== 头文件包含路径 ====================
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -89,6 +80,28 @@ find_library(android-lib android)
 target_link_libraries(fw_native
     ${log-lib}
     ${android-lib}
+)
+
+# ==================== Native 防护配置 ====================
+# Release/RelWithDebInfo 构建隐藏 JNI 业务符号、裁剪无用段并剥离符号表。
+target_compile_options(fw_native PRIVATE
+    -Wall
+    -Wextra
+    -fvisibility=hidden
+    -fvisibility-inlines-hidden
+    -ffunction-sections
+    -fdata-sections
+    $<$<NOT:$<CONFIG:Debug>>:-O2>
+    $<$<NOT:$<CONFIG:Debug>>:-flto>
+)
+
+target_link_options(fw_native PRIVATE
+    -Wl,-z,max-page-size=16384
+    -Wl,--gc-sections
+    -Wl,--exclude-libs,ALL
+    -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/fw_native.exports
+    $<$<NOT:$<CONFIG:Debug>>:-flto>
+    $<$<NOT:$<CONFIG:Debug>>:-Wl,--strip-all>
 )
 
 # ==================== MediaRoute 子模块 ====================
