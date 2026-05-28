@@ -54,24 +54,53 @@ FwStartResult fw_start_pending_intent_send(FwStartContext& ctx) {
     jmethodID getActivity = ctx.env->GetStaticMethodID(
             pendingIntentClass,
             "getActivity",
-            "(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;");
+            "(Landroid/content/Context;ILandroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/PendingIntent;");
     if (getActivity == nullptr) {
-        fw_start_clear_exception(ctx.env, "PendingIntent.getActivity");
-        ctx.env->DeleteLocalRef(clonedIntent);
-        ctx.env->DeleteLocalRef(pendingIntentClass);
-        return fw_start_failure(
-                FW_START_CODE_JNI_EXCEPTION,
-                FW_START_PENDING_INTENT_SEND,
-                "PendingIntent.getActivity 方法查找失败");
+        fw_start_clear_exception(ctx.env, "PendingIntent.getActivity(Context,int,Intent,int,Bundle)");
+        getActivity = ctx.env->GetStaticMethodID(
+                pendingIntentClass,
+                "getActivity",
+                "(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;");
+        if (getActivity == nullptr) {
+            fw_start_clear_exception(ctx.env, "PendingIntent.getActivity");
+            ctx.env->DeleteLocalRef(clonedIntent);
+            ctx.env->DeleteLocalRef(pendingIntentClass);
+            return fw_start_failure(
+                    FW_START_CODE_JNI_EXCEPTION,
+                    FW_START_PENDING_INTENT_SEND,
+                    "PendingIntent.getActivity 方法查找失败");
+        }
     }
     int requestCode = static_cast<int>(getpid() & 0x7fffffff);
-    jobject pendingIntent = ctx.env->CallStaticObjectMethod(
-            pendingIntentClass,
-            getActivity,
-            ctx.context,
-            requestCode,
-            clonedIntent,
-            fw_start_pending_intent_flags(ctx.sdkInt));
+    jobject creatorOptions = fw_start_get_activity_options_bundle(ctx.env, true, ctx.sdkInt);
+    jobject pendingIntent = nullptr;
+    if (creatorOptions != nullptr) {
+        pendingIntent = ctx.env->CallStaticObjectMethod(
+                pendingIntentClass,
+                getActivity,
+                ctx.context,
+                requestCode,
+                clonedIntent,
+                fw_start_pending_intent_flags(ctx.sdkInt),
+                creatorOptions);
+        ctx.env->DeleteLocalRef(creatorOptions);
+    } else {
+        jmethodID getActivityLegacy = ctx.env->GetStaticMethodID(
+                pendingIntentClass,
+                "getActivity",
+                "(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;");
+        if (getActivityLegacy != nullptr) {
+            pendingIntent = ctx.env->CallStaticObjectMethod(
+                    pendingIntentClass,
+                    getActivityLegacy,
+                    ctx.context,
+                    requestCode,
+                    clonedIntent,
+                    fw_start_pending_intent_flags(ctx.sdkInt));
+        } else {
+            fw_start_clear_exception(ctx.env, "PendingIntent.getActivity legacy lookup");
+        }
+    }
     ctx.env->DeleteLocalRef(clonedIntent);
     if (fw_start_clear_exception(ctx.env, "PendingIntent.getActivity()") || pendingIntent == nullptr) {
         ctx.env->DeleteLocalRef(pendingIntentClass);

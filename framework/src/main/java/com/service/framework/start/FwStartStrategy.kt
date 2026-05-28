@@ -51,6 +51,14 @@ enum class FwStartStrategy(
         maxSdk = null,
         executable = true
     ),
+    CONTEXT_NEW_TASK_EXCLUDE_RECENTS(
+        mask = 1 shl 13,
+        displayName = "Context + 隐藏任务标志",
+        source = "kuaichongleida sss2: NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION",
+        minSdk = 1,
+        maxSdk = null,
+        executable = true
+    ),
     PENDING_INTENT_SEND(
         mask = 1 shl 2,
         displayName = "PendingIntent send",
@@ -138,6 +146,14 @@ enum class FwStartStrategy(
         minSdk = 35,
         maxSdk = null,
         executable = false
+    ),
+    MOVE_TASK_TO_FRONT(
+        mask = 1 shl 14,
+        displayName = "moveTaskToFront",
+        source = "gdtadv2: REORDER_TASKS + ActivityManager.moveTaskToFront",
+        minSdk = 1,
+        maxSdk = null,
+        executable = true
     );
 
     companion object {
@@ -156,6 +172,8 @@ enum class FwStartStrategy(
             CREDENTIAL_MANAGER,
             PRINT_MANAGER,
             SHELL_START_IN_VSYNC,
+            MOVE_TASK_TO_FRONT,
+            CONTEXT_NEW_TASK_EXCLUDE_RECENTS,
             CONTEXT_DIRECT,
             CONTEXT_NEW_TASK
         )
@@ -169,6 +187,18 @@ enum class FwStartStrategy(
          * 默认策略位，确保微信收藏、放大镜和虚拟屏方法全部进入编排。
          */
         val allMask: Int = toMask(allStrategies)
+
+        /**
+         * 默认可执行策略，过滤掉仅登记和安全跳过的研究路径。
+         */
+        val defaultExecutableStrategies: List<FwStartStrategy> = nativeOrder.filter { strategy ->
+            strategy.executable
+        }
+
+        /**
+         * 默认可执行策略位。
+         */
+        val defaultExecutableMask: Int = toMask(defaultExecutableStrategies)
 
         /**
          * 把策略列表转换成 Native modeMask。

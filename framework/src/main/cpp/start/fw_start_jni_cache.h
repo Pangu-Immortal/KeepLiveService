@@ -26,6 +26,7 @@ bool fw_start_clear_exception(JNIEnv* env, const char* stage);
 bool fw_start_has_strategy(int modeMask, int strategyMask);
 bool fw_start_is_activity(JNIEnv* env, jobject context);
 bool fw_start_add_new_task_flag(JNIEnv* env, jobject intent);
+bool fw_start_add_intent_flags(JNIEnv* env, jobject intent, int flags, const char* stage);
 bool fw_start_call_context_start_activity(JNIEnv* env, jobject context, jobject intent, jobject bundle);
 std::string fw_start_get_context_package(JNIEnv* env, jobject context);
 int fw_start_get_context_user_id(JNIEnv* env, jobject context);

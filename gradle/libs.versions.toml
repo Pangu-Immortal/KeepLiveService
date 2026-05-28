@@ -1,6 +1,6 @@
 [versions]
-agp = "9.1.0"
-kotlin = "2.3.20"
+agp = "9.2.1"
+kotlin = "2.3.21"
 coreKtx = "1.18.0"
 splashScreen = "1.2.0"
 lottie = "6.7.1"
@@ -9,11 +9,11 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
-composeBom = "2026.03.00"
+composeBom = "2026.05.01"
 lifecycleService = "2.10.0"
-media = "1.7.1"
+media = "1.8.0"
 mediarouter = "1.8.1"
-workRuntimeKtx = "2.11.1"
+workRuntimeKtx = "2.11.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -41,5 +41,4 @@ androidx-compose-material-icons = { group = "androidx.compose.material", name = 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

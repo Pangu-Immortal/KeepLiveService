@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-purple.svg)](https://kotlinlang.org)
 [![16K Page Size](https://img.shields.io/badge/16K%20Page%20Size-Compatible-orange.svg)](https://developer.android.com/guide/practices/page-sizes)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
 
@@ -53,7 +53,7 @@ dependencies {
 Fw.init(this)
 ```
 
-搞定。35+ 种后台保持运行策略全部自动启用，无需额外配置。
+搞定。低侵入策略会自动启用；1 像素 Activity、联系人/短信观察、VPN、伴侣设备、CallStyle、设备管理员、锁屏、悬浮窗、防强停等需要授权或侵入性较强的策略默认关闭，可按业务场景手动开启。
 
 ### Step 3（可选）：精细控制
 
@@ -65,6 +65,7 @@ Fw.init(this) {
     enableMediaRouteProvider = true      // MediaRoute 保活（酷狗方案）
     enableSilentAudio = true             // 静默音频
     aggressiveLevel = AggressiveLevel.MEDIUM  // 能耗等级：LOW/MEDIUM/HIGH
+    enableOnePixelActivity = false       // 1 像素 Activity（默认关闭）
     enableForceStopResistance = false    // 防强停（侵入性强，按需开启）
     // ... 50+ 可配置项，详见下方完整配置
 }
@@ -73,9 +74,30 @@ Fw.init(this) {
 ### 运行时控制
 
 ```kotlin
-Fw.check()           // 手动触发防杀进程检查
-Fw.stop()            // 停止所有后台常驻策略
-Fw.isInitialized()   // 查询框架状态
+val report = Fw.check() // 手动巡检并自动补偿可恢复策略
+Fw.stop()               // 停止所有后台常驻策略
+Fw.isInitialized()      // 查询框架状态
+```
+
+### Step 4（可选）：体外 Activity 启动
+
+```kotlin
+val result = FwStart.start(context, targetIntent) // 默认只执行可落地策略
+if (result.success) {
+    FwLog.d("命中策略：${result.strategy?.displayName}")
+}
+
+val audit = FwStart.startAuditAll(context, targetIntent) // 需要全量审计时显式调用
+```
+
+### Step 5（可选）：需要系统授权的策略
+
+```kotlin
+// VPN 策略默认关闭；开启前应先由 Activity 发起系统授权。
+val vpnIntent = FwVpnService.prepareIntent(this)
+if (vpnIntent != null) {
+    startActivityForResult(vpnIntent, 1001)
+}
 ```
 
 ![Pangu-Immortal 微信二维码](https://github.com/Pangu-Immortal/Pangu-Immortal/blob/main/getqrcode.png)
@@ -222,7 +244,7 @@ Fw.isInitialized()   // 查询框架状态
 
 ## 项目简介
 
-Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前开源社区最完整的 **Android 保活技术百科全书**。项目完整复现了市面上所有商业应用（酷狗音乐、墨迹天气、QQ 音乐等）的后台保持运行技术，采用 Kotlin + Native C++17 双层架构，通过 `Fw.init()` 一行代码即可启用全部 35+ 种防杀进程策略。
+Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前开源社区最完整的 **Android 保活技术百科全书**。项目完整复现了市面上所有商业应用（酷狗音乐、墨迹天气、QQ 音乐等）的后台保持运行技术，采用 Kotlin + Native C++17 双层架构，通过 `Fw.init()` 启动默认安全策略，并可按需开启 35+ 种防杀进程策略。
 
 所有策略通过 `FwConfig` 的 50+ 配置项独立控制开关，`ServiceStarter` 作为唯一拉起汇聚点，`RestartProtection` 防止无限重启耗电。最多同时运行 5 个进程（主进程 + :daemon + :assist1 + :assist2 + :assist3）形成环形互保。
 
@@ -248,9 +270,9 @@ Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前
 | 项目 | 版本 |
 |-----|------|
 | Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2 |
-| Gradle | 9.4.1 |
-| AGP (Android Gradle Plugin) | 9.1.0 |
-| Kotlin | 2.3.20 |
+| Gradle | 9.5.1 |
+| AGP (Android Gradle Plugin) | 9.2.1 |
+| Kotlin | 2.3.21 |
 | JVM | 21 |
 | NDK | 27.2.12479018 |
 | CMake | 3.22.1 |
@@ -271,30 +293,34 @@ Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前
 | 11+ | 30+   | [前台服务类型必须声明](https://developer.android.com/about/versions/11/privacy/foreground-services) |
 | 12+ | 31+   | `BLUETOOTH_CONNECT` 运行时权限，[精确闹钟权限](https://developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission)，CompanionDeviceService 可用 |
 | 13+ | 33+   | [`POST_NOTIFICATIONS` 运行时权限](https://developer.android.com/develop/ui/views/notifications/notification-permission)，**MediaSession 通知豁免生效** |
-| 14+ | 34+   | [`FOREGROUND_SERVICE_MEDIA_PLAYBACK`](https://developer.android.com/about/versions/14/changes/fgs-types-required) 权限 |
+| 14+ | 34+   | [`FOREGROUND_SERVICE_MEDIA_PLAYBACK`](https://developer.android.com/about/versions/14/changes/fgs-types-required) 权限；PendingIntent 后台启动需发送方显式允许 |
 | 15+ | 35+   | 更严格的后台限制，**[16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)设备支持** |
-| 16 | 36 | 最新 API |
+| 16 | 36 | PendingIntent 后台启动增加创建方/发送方双侧模式，默认采用可见时允许分支 |
 
 ### 统一 startActivity 策略
 
-Fw 新增 C++ `start/` 模块，通过 `FwStart.start(context, intent)` 对外暴露统一 `start` 函数。该模块把微信收藏 830-835、放大镜 qumeng 逆向路径、虚拟屏 so 方法合并成一条带版本判断的策略流水线。
+Fw 新增 C++ `start/` 模块，通过 `FwStart.start(context, intent)` 对外暴露统一 `start` 函数。默认入口只执行可落地策略；`FwStart.startAuditAll(context, intent)` 会把仅登记/安全跳过的研究路径也纳入日志审计。该模块把微信收藏 830-835、放大镜 qumeng 逆向路径、虚拟屏 so 方法合并成一条带版本判断的策略流水线。
 
 ```kotlin
 val result = FwStart.start(context, targetIntent)
 if (result.success) {
     FwLog.d("命中统一 startActivity 策略：${result.strategy?.displayName}")
 }
+
+val auditResult = FwStart.startAuditAll(context, targetIntent)
 ```
 
 | 来源 | 策略 | Android 范围 | 运行行为 |
 |------|------|--------------|----------|
 | 放大镜 qumeng | Activity `startActivity` | 全版本 | `context` 是 Activity 时执行 |
 | 放大镜 qumeng | `FLAG_ACTIVITY_NEW_TASK` 兜底 | 全版本 | 非 Activity Context 时执行 |
+| 快充雷达 sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | 全版本 | 默认可执行兜底，减少最近任务展示并取消切换动画 |
 | 放大镜 qumeng | `PendingIntent.getActivity(...).send()` | 全版本，Android 10+ 带 BAL Options | 按版本构造 `ActivityOptions` 后执行 |
 | 放大镜 qumeng | 双 Intent `startActivities(Intent[])` | 16+ | 作为兜底路径执行 |
 | 放大镜 qumeng | Binder `startActivities` | 21-30 | 按版本选择 `IActivityManager` / `IActivityTaskManager` |
 | 放大镜 qumeng | `startActivityForResult` | 仅 Activity Context | 走公开 API；不内置隐藏 Handler hook |
 | so 逆向 | `VirtualDisplay + Presentation` | 26+ | 通过 `setLaunchDisplayId` 尝试在虚拟屏启动 |
+| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity Context | 需要当前 Activity 的 taskId 和 `REORDER_TASKS` 权限 |
 | 微信收藏 830 | `am start-in-vsync` | shell/root 条件 | 登记版本和权限判断；普通应用跳过 |
 | 微信收藏 831 | Notification BAL token | 29-34 研究窗口 | 登记并输出日志；不内置漏洞利用 |
 | 微信收藏 832 | `startNextMatchingActivity` | 仅 Activity Context | 走公开 API 执行 |
@@ -302,7 +328,7 @@ if (result.success) {
 | 微信收藏 834 | PrintManager UI PendingIntent | 23-34 研究窗口 | 登记并输出日志；不滥用系统 UI |
 | 微信收藏 835 | MediaButton BAL 传播 | 31-34 研究窗口 | 登记并输出日志；不内置特权媒体键链路 |
 
-Native 固定执行顺序为：虚拟屏、Notification BAL 登记、MediaButton BAL 登记、Binder、PendingIntent、双 Intent、`startNextMatchingActivity`、`startActivityForResult`、CredentialManager 登记、PrintManager 登记、shell 登记、Activity 直启、`NEW_TASK` 兜底。高风险漏洞型路径全部保留在策略表中，保证研究覆盖不遗漏，但返回明确跳过码，不把漏洞利用细节写入 SDK。
+Native 固定执行顺序为：虚拟屏、Notification BAL 登记、MediaButton BAL 登记、Binder、PendingIntent、双 Intent、`startNextMatchingActivity`、`startActivityForResult`、CredentialManager 登记、PrintManager 登记、shell 登记、`moveTaskToFront`、`NEW_TASK + EXCLUDE_FROM_RECENTS`、Activity 直启、`NEW_TASK` 兜底。高风险漏洞型路径全部保留在策略表中，保证研究覆盖不遗漏，但默认入口不执行这些路径；只有 `startAuditAll()` 会进入全量审计并返回明确跳过码。
 
 ### Android 16K 页面大小适配
 
@@ -330,7 +356,7 @@ Fw.init(this) {
     // ==================== 基础策略 ====================
     enableForegroundService = true      // 前台服务（核心）
     enableMediaSession = true           // MediaSession（让系统认为是媒体应用）
-    enableOnePixelActivity = true       // 1像素Activity
+    enableOnePixelActivity = false      // 1像素Activity（默认关闭）
 
     // ==================== 定时唤醒策略 ====================
     enableJobScheduler = true           // JobScheduler
@@ -375,6 +401,7 @@ Fw.init(this) {
     enableMediaRouteProvider = true     // MediaRouteProviderService
     enableMediaRoute2Provider = true    // MediaRoute2ProviderService (Android 11+)
     enableMediaIntentActivity = true    // 媒体意图处理 Activity
+    enableMediaBrowserService = true    // MediaBrowserServiceCompat（媒体浏览服务绑定）
 
     // ==================== 静默音频策略 ====================
     enableSilentAudio = true            // 静默音频播放（防止 CPU 休眠）
@@ -413,9 +440,13 @@ Fw.init(this) {
 
 ```kotlin
 // 基础控制
-Fw.check()           // 手动触发后台常驻检查
-Fw.stop()            // 停止所有进程保护策略
-Fw.isInitialized()   // 查询框架状态
+val report = Fw.check() // 手动触发巡检，返回 FwHealthReport，并自动补偿可恢复策略
+Fw.stop()               // 停止所有进程保护策略
+Fw.isInitialized()      // 查询框架状态
+
+// 体外 Activity 启动
+FwStart.start(context, targetIntent)     // 默认可执行策略
+FwStart.startAuditAll(context, targetIntent) // 全量审计策略，包含安全跳过路径
 
 // 锁屏 Activity（类似墨迹天气的锁屏天气）
 LockScreenActivity.start(context)
@@ -426,6 +457,11 @@ FloatWindowManager.showVisibleFloat(context)    // 可见的悬浮球
 
 // 电池优化豁免
 BatteryOptimizationManager.requestIgnoreBatteryOptimizations(context)
+
+// VPN 授权（授权成功后再开启 enableVpnService）
+FwVpnService.prepareIntent(activity)?.let { intent ->
+    activity.startActivityForResult(intent, 1001)
+}
 
 // 打开厂商自启动设置
 AutoStartPermissionManager.openAutoStartSettings(context)
@@ -942,11 +978,12 @@ AutoStartPermissionManager.openAutoStartSettings(context)
 <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
 <!-- v2.0 新增权限 -->
-<uses-permission android:name="android.permission.BIND_VPN_SERVICE" />
 <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
 <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
 <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
 ```
+
+> VPN 使用 service 级 `android.permission.BIND_VPN_SERVICE` 绑定声明，不需要在宿主应用顶层声明 `uses-permission`。
 
 ### 运行时权限（需用户授予）
 
@@ -972,6 +1009,8 @@ Settings.canDrawOverlays(context)
 // VPN 权限（v2.0 新增）
 VpnService.prepare(context)
 ```
+
+如果开启 `enableContactsContentObserver` 或 `enableSmsContentObserver`，宿主应用需要在自身 Manifest 中显式声明联系人或短信权限；Fw 默认不合并这两类敏感权限，避免普通接入携带不必要的权限。
 
 ---
 
@@ -1247,7 +1286,7 @@ Native 守护进程（C++ fork）在普通应用中效果有限——Android 5.0
 - 新增 `FwWidgetProvider` — 桌面小组件保活，30 分钟定时唤醒
 - 新增 `FwDreamService` — 屏保保活，充电待机时自动激活
 - FwConfig 新增 8 个配置项，总配置项数量超过 50+
-- 全面升级工具链：Gradle 9.4.1 + AGP 9.1.0 + Kotlin 2.3.20
+- 全面升级工具链：Gradle 9.5.1 + AGP 9.2.1 + Kotlin 2.3.21
 - 增加项目主题标签和竞品对比表
 - 发布到 Maven Central：`implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")`
 
@@ -1284,16 +1323,6 @@ Native 守护进程（C++ fork）在普通应用中效果有限——Android 5.0
 - 新增 `ForceStopResistance` - 多进程文件锁监控
 - 新增 `AppProcessLauncher` - app_process 命令拉活
 - 新增 `AmsBinderInvoker` - C++ 直接调用 AMS Binder
-
----
-
-## 技术覆盖范围
-
-中文覆盖：Android 保活、Android 后台常驻、后台服务保活、防杀进程、进程守护、Native C++ 守护进程、双进程守护、MediaRoute 保活、酷狗音乐保活方案、VPN 保活、MediaSession 通知豁免、CallStyle 通知豁免、厂商 ROM 保活、小米自启动、华为后台保护、OPPO 后台运行、vivo 后台白名单、Android 16 保活、16KB 页面大小、后台启动 Activity、体外 Activity、统一 startActivity、VirtualDisplay 启动 Activity、PendingIntent BAL、Binder startActivities。
-
-English coverage: Android keep alive, Android background service, process persistence, prevent process kill, native daemon, dual process watchdog, MediaRoute keep alive, KuGou Music keep alive, VPN keep alive, MediaSession notification exemption, CallStyle notification exemption, vendor ROM adaptation, Android 16 keep alive, 16KB page size, background activity launch, external startActivity, unified startActivity strategy, VirtualDisplay activity launch, PendingIntent BAL, Binder startActivities.
-
-Fw 面向 Android 7.0-16，核心能力包括前台服务、MediaSession、Native C++ 守护、双进程守护、MediaRoute、VPN、伴侣设备、通知权限豁免、账户同步、JobScheduler、WorkManager、AlarmManager、广播唤醒、ContentObserver、FileObserver、厂商 ROM 跳转和统一体外 Activity 启动策略。统一 startActivity 模块通过 `FwStart.start(context, intent)` 暴露，内部按版本编排 Activity 直启、`NEW_TASK`、`PendingIntent.send`、双 Intent `startActivities`、Binder `startActivities`、`startActivityForResult`、`VirtualDisplay + launchDisplayId`、`startNextMatchingActivity` 等路径；高风险漏洞型 BAL / shell / 系统 UI 路径保留策略登记和安全跳过，不内置漏洞利用代码。
 
 ---
 

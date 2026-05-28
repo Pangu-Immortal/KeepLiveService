@@ -29,10 +29,12 @@
         tools:targetApi="31">
 
         <!-- ==================== 启动页 ==================== -->
+        <!-- ComponentActivity 的 AndroidX 继承链由编译验证，Lint 在当前 AGP 下会误报 Instantiatable。 -->
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.KeepLiveService.Splash">
+            android:theme="@style/Theme.KeepLiveService.Splash"
+            tools:ignore="Instantiatable">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -40,10 +42,12 @@
         </activity>
 
         <!-- ==================== 主界面 ==================== -->
+        <!-- ComponentActivity 的 AndroidX 继承链由编译验证，Lint 在当前 AGP 下会误报 Instantiatable。 -->
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:theme="@style/Theme.KeepLiveService" />
+            android:theme="@style/Theme.KeepLiveService"
+            tools:ignore="Instantiatable" />
 
         <!--
             其他组件说明：

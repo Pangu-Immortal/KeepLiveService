@@ -32,6 +32,8 @@ import androidx.lifecycle.LifecycleService
 import android.support.v4.media.session.MediaSessionCompat
 import com.service.framework.Fw
 import com.service.framework.R
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 
@@ -83,14 +85,34 @@ class FwForegroundService : LifecycleService() {
         val notification = buildNotification()
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                startForeground(NOTIFICATION_ID, notification, resolveForegroundServiceType())
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
+            FwStrategyStateManager.markStarted(FwStrategyKey.FOREGROUND_SERVICE, "startForeground")
             FwLog.d("Service promoted to foreground successfully.")
         } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.FOREGROUND_SERVICE, e.message ?: "startForeground 失败", e)
             FwLog.e("Failed to start foreground service", e)
         }
+    }
+
+    /**
+     * 按当前启用策略和系统版本选择前台服务类型。
+     */
+    private fun resolveForegroundServiceType(): Int {
+        var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Fw.config.enableWorkManager) {
+            type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Fw.config.enableJobScheduler) {
+            type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Fw.config.enableCallStyleNotification) {
+            type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
+        }
+        FwLog.d("前台服务类型矩阵: sdk=${Build.VERSION.SDK_INT}, type=$type")
+        return type
     }
 
     private fun createNotificationChannel() {

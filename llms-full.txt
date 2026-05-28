@@ -8,13 +8,9 @@ Fw (Framework) is a modular Android keep alive library that reproduces every kno
 
 The framework covers foreground service persistence, dual-process daemon watchdog, Native C++ fork daemon, MediaRoute media-route provider (the core keep alive approach used by KuGou Music), VPN system-level binding, CompanionDevice service, notification-permission exemptions (CallStyle + MediaSession), silent audio playback, 1-pixel Activity, account sync, JobScheduler, WorkManager, AlarmManager, accessibility service, notification listener, Bluetooth/WiFi/USB/NFC broadcast wake-up, ContentObserver, FileObserver, Binder direct-call to AMS to prevent process kill after force-stop, unified external startActivity orchestration, VirtualDisplay activity launch, and more.
 
-## Capability Coverage
+## Runtime Boundaries
 
-Primary English coverage: Android keep alive, Android background service, process persistence, prevent process kill, native daemon, dual process watchdog, MediaRoute keep alive, KuGou Music keep alive, VPN keep alive, MediaSession notification exemption, CallStyle notification exemption, vendor ROM adaptation, Android 16 keep alive, 16KB page size, background activity launch, external startActivity, unified startActivity strategy, VirtualDisplay activity launch, PendingIntent BAL, Binder startActivities.
-
-Primary Chinese coverage: Android 保活、Android 后台常驻、后台服务保活、防杀进程、进程守护、Native C++ 守护进程、双进程守护、MediaRoute 保活、酷狗音乐保活方案、VPN 保活、MediaSession 通知豁免、CallStyle 通知豁免、厂商 ROM 保活、小米自启动、华为后台保护、OPPO 后台运行、vivo 后台白名单、Android 16 保活、16KB 页面大小、后台启动 Activity、体外 Activity、统一 startActivity、VirtualDisplay 启动 Activity、PendingIntent BAL、Binder startActivities。
-
-Fw is the only actively maintained open-source Android keep alive project that supports up to Android 16 (API 36). MarsDaemon (abandoned 2018) and Leoric (abandoned 2020) were pioneers, but they cannot adapt to modern Android background restrictions. Fw continues to receive updates in 2026.
+Low-intrusion strategies are enabled by default. User-authorized, privacy-sensitive, or invasive strategies such as 1-pixel Activity, contacts/SMS observers, VPN, CompanionDevice, CallStyle, Device Admin, lock-screen Activity, floating window, and force-stop resistance remain off until explicitly enabled. `Fw.check()` returns `FwHealthReport`, audits each configured strategy, and auto-recovers restartable pieces such as foreground service, JobScheduler, WorkManager, AlarmManager, account sync, observers, Native daemon/socket, MediaRoute, MediaBrowser, VPN, and companion-device observation.
 
 ## Quick Integration
 
@@ -36,7 +32,7 @@ No extra repository configuration needed — Maven Central is included by defaul
 Fw.init(this)
 ```
 
-All 35+ Android keep alive strategies activate automatically with sensible defaults.
+Low-intrusion strategies activate automatically with sensible defaults; user-authorized and invasive strategies stay opt-in.
 
 ### Step 3: Fine-Tune (Optional)
 
@@ -46,7 +42,9 @@ Fw.init(this) {
     enableDualProcess = true
     enableNativeDaemon = true
     enableMediaRouteProvider = true
+    enableMediaBrowserService = true
     enableSilentAudio = true
+    enableOnePixelActivity = false       // 1-pixel Activity is opt-in
     enableVpnService = false            // VPN keep alive (needs user authorization)
     enableMediaSessionNotification = true // MediaSession notification exemption
     aggressiveLevel = AggressiveLevel.MEDIUM
@@ -57,9 +55,9 @@ Fw.init(this) {
 ### Runtime Control
 
 ```kotlin
-Fw.check()           // Manually trigger keep alive check
-Fw.stop()            // Stop all keep alive strategies
-Fw.isInitialized()   // Query framework state
+val report = Fw.check() // Run health check and recover restartable strategies
+Fw.stop()               // Stop all keep alive strategies
+Fw.isInitialized()      // Query framework state
 ```
 
 ## Strategy Categories
@@ -117,11 +115,12 @@ Fw.isInitialized()   // Query framework state
 - **Notification Listener** (`FwNotificationListenerService`): System auto-restarts after process kill
 
 ### 11. Unified External startActivity Strategies
-- **Public entry**: `FwStart.start(context, intent)`, backed by the C++ `framework/src/main/cpp/start/` module and `FwNative.nativeStartActivity`.
+- **Public entry**: `FwStart.start(context, intent)`, backed by the C++ `framework/src/main/cpp/start/` module and `FwNative.nativeStartActivity`. The default entry runs executable strategies only.
+- **Full audit entry**: `FwStart.startAuditAll(context, intent)` also includes registration-only and safe-skip research paths in native logs.
 - **Qumeng-derived public paths**: Activity context `startActivity`, non-Activity `FLAG_ACTIVITY_NEW_TASK`, `PendingIntent.getActivity(...).send()`, double `startActivities(Intent[])`, Binder `IActivityManager` / `IActivityTaskManager.startActivities` on Android 21-30, and Activity `startActivityForResult`.
-- **Native SO-derived path**: `VirtualDisplay + Presentation + ActivityOptions.setLaunchDisplayId` for Android 8.0+ when the system allows virtual-display launch.
+- **Native and reverse-derived paths**: `VirtualDisplay + Presentation + ActivityOptions.setLaunchDisplayId`, `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION`, and `ActivityManager.moveTaskToFront` are represented with version/context checks.
 - **WeChat Favorites research paths**: `am start-in-vsync`, Notification BAL token, `startNextMatchingActivity`, CredentialManager UI PendingIntent, PrintManager UI PendingIntent, and MediaButton BAL propagation are represented in the strategy table with version checks and explicit skip codes.
-- **Safety boundary**: high-risk BAL, shell/root, and system UI abuse paths are not shipped as exploit logic. They are indexed for research completeness and return policy/permission skip results.
+- **Safety boundary**: high-risk BAL, shell/root, and system UI abuse paths are not shipped as exploit logic. They return policy/permission skip results.
 
 ## v2.0 New Strategies (April 2026)
 

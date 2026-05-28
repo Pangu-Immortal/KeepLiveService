@@ -28,8 +28,8 @@ import android.app.Activity
 /**
  * Fw保活框架的配置类。
  *
- * 通过此类可以精細化控制每项保活策略的开关和参数。
- * 所有 `enable` 前缀的属性默认为 `true`，除了侵入性较强的 [enableLockScreenActivity] 和 [enableFloatWindow]。
+ * 通过此类可以精细化控制每项保活策略的开关和参数。
+ * 低侵入策略默认开启；1 像素 Activity、联系人/短信观察、VPN、伴侣设备、CallStyle、设备管理员、锁屏、悬浮窗、防强停等需要用户授权或侵入性较强的策略默认关闭。
  *
  * 建议使用 [com.service.framework.Fw.init] 的 DSL 写法进行配置。
  *
@@ -113,6 +113,7 @@ data class FwConfig(
     val enableMediaRouteProvider: Boolean,
     val enableMediaRoute2Provider: Boolean,
     val enableMediaIntentActivity: Boolean,
+    val enableMediaBrowserService: Boolean,
     // endregion
 
     // region 静默音频策略
@@ -168,7 +169,7 @@ data class FwConfig(
         // region 基础策略
         var enableForegroundService: Boolean = true
         var enableMediaSession: Boolean = true
-        var enableOnePixelActivity: Boolean = true
+        var enableOnePixelActivity: Boolean = false // 默认关闭（会在息屏时拉起透明 Activity）
         // endregion
 
         // region 定时唤醒策略
@@ -197,8 +198,8 @@ data class FwConfig(
 
         // region 内容观察者策略
         var enableMediaContentObserver: Boolean = true
-        var enableContactsContentObserver: Boolean = true
-        var enableSmsContentObserver: Boolean = true
+        var enableContactsContentObserver: Boolean = false // 默认关闭（需要联系人权限）
+        var enableSmsContentObserver: Boolean = false      // 默认关闭（需要短信权限）
         var enableSettingsContentObserver: Boolean = true
         var enableFileObserver: Boolean = true
         // endregion
@@ -241,6 +242,7 @@ data class FwConfig(
         var enableMediaRouteProvider: Boolean = true   // 启用 MediaRouteProviderService（默认开启）
         var enableMediaRoute2Provider: Boolean = true  // 启用 MediaRoute2ProviderService（Android 11+，默认开启）
         var enableMediaIntentActivity: Boolean = true  // 启用媒体意图处理 Activity（默认开启）
+        var enableMediaBrowserService: Boolean = true  // 启用 MediaBrowserService（默认开启）
         // endregion
 
         // region 静默音频策略
@@ -311,6 +313,7 @@ data class FwConfig(
             enableForceStopResistance,
             // MediaRoute 保活策略
             enableMediaRouteProvider, enableMediaRoute2Provider, enableMediaIntentActivity,
+            enableMediaBrowserService,
             // 静默音频策略
             enableSilentAudio, aggressiveLevel,
             // VPN 保活策略

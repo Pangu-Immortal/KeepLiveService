@@ -27,10 +27,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
 
-    <!-- VPN 保活权限 -->
-    <uses-permission android:name="android.permission.BIND_VPN_SERVICE"
-        tools:ignore="ProtectedPermissions" />
-
     <!-- CompanionDevice 保活权限 -->
     <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
@@ -94,18 +90,13 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-    <!-- 联系人权限（用于 ContentObserver） -->
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
-
-    <!-- 短信权限（用于 ContentObserver） -->
-    <uses-permission android:name="android.permission.READ_SMS" />
-
     <!-- 悬浮窗权限（用于悬浮球保活） -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <!-- 锁屏显示权限 -->
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
 
     <application>
 
@@ -115,22 +106,26 @@
             主保活服务
             foregroundServiceType="mediaPlayback" 是关键
             让系统认为这是媒体播放服务，获得特殊后台权限
+            Lint 会误判 AndroidX LifecycleService 继承链，编译已验证其为 Service 子类。
         -->
         <service
             android:name="com.service.framework.service.FwForegroundService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback|dataSync|phoneCall"
+            tools:ignore="Instantiatable" />
 
         <!--
             守护进程服务
             运行在独立进程 :daemon
             与主进程互相守护
+            Lint 会误判 AndroidX LifecycleService 继承链，编译已验证其为 Service 子类。
         -->
         <service
             android:name="com.service.framework.service.DaemonService"
             android:exported="false"
             android:process=":daemon"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="dataSync"
+            tools:ignore="Instantiatable" />
 
         <!-- ==================== JobScheduler 服务 ==================== -->
 
@@ -138,6 +133,16 @@
             android:name="com.service.framework.strategy.FwJobService"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <!-- MediaBrowserService 保活策略，AndroidX MediaBrowserServiceCompat 继承链由编译验证。 -->
+        <service
+            android:name="com.service.framework.strategy.FwMediaBrowserService"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
 
         <!-- ==================== 账户同步服务 ==================== -->
 
@@ -495,10 +500,12 @@
             1. 声明 android.media.MediaRouteProviderService intent-filter
             2. 系统 MediaRouter 会自动发现并连接此服务
             3. 连接建立后，服务进程优先级提升
+            Lint 会误判 AndroidX MediaRouteProviderService 继承链，编译已验证其为 Service 子类。
         -->
         <service
             android:name="com.service.framework.mediaroute.FwMediaRouteProviderService"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="Instantiatable">
             <intent-filter>
                 <action android:name="android.media.MediaRouteProviderService" />
             </intent-filter>
@@ -577,6 +584,12 @@
             android:exported="false"
             android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_VPN_SERVICE">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="user_authorized_local_vpn_placeholder_keep_alive_no_traffic_routing" />
+            <meta-data
+                android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON"
+                android:value="false" />
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>

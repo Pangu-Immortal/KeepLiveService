@@ -37,6 +37,10 @@ import android.os.Build
 import com.service.framework.account.FwAuthenticator
 import com.service.framework.account.FwSyncAdapter
 import com.service.framework.core.FwConfig
+import com.service.framework.health.FwHealthMonitor
+import com.service.framework.health.FwHealthReport
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.mediaroute.FwMediaRouteManager
 import com.service.framework.native.FwNative
 import com.service.framework.observer.ContentObserverManager
@@ -67,10 +71,7 @@ object Fw {
     private val receivers = mutableListOf<BroadcastReceiver>()
 
     fun init(app: Application) {
-        val builder = FwConfig.Builder().apply {
-            enableLockScreenActivity = true
-            enableFloatWindow = true
-        }
+        val builder = FwConfig.Builder()
         init(app, builder.build())
     }
 
@@ -96,10 +97,10 @@ object Fw {
         }
     }
 
-    fun check() {
+    fun check(): FwHealthReport {
         ensureInitialized()
         FwLog.d("手动触发保活检查...")
-        ServiceStarter.startForegroundService(application, "手动检查")
+        return FwHealthMonitor.check(application, config, autoRecover = true)
     }
 
     fun stop() {
@@ -121,6 +122,7 @@ object Fw {
         OnePixelActivity.finish()
         LockScreenActivity.finish()
         FloatWindowManager.hide()
+        FwMediaBrowserService.stop(application)
 
         if (FwNative.isAvailable()) {
             FwNative.stopDaemon()
@@ -136,6 +138,7 @@ object Fw {
         FwVpnService.stop(application) // 停止 VPN 保活
         MediaSessionNotificationManager.dismiss(application) // 停止 MediaSession 通知豁免
         FwCallStyleManager.dismiss(application) // 停止 CallStyle 通知豁免
+        FwStrategyStateManager.clear()
         isInitialized = false
         FwLog.d("所有保活策略已停止。")
     }
@@ -164,7 +167,9 @@ object Fw {
             if (enableNativeDaemon || enableNativeSocket) initNativeModule()
             if (enableForceStopResistance) startForceStopResistance() // 无法强制停止策略
             if (enableMediaRouteProvider || enableMediaRoute2Provider) initMediaRouteModule() // MediaRoute 保活策略
+            if (enableMediaBrowserService) startMediaBrowserService() // MediaBrowserService 保活策略
             if (enableVpnService) startVpnService() // VPN 保活策略
+            if (enableCompanionDevice) startCompanionDevice() // CompanionDevice 保活策略
             if (enableMediaSessionNotification) startMediaSessionNotification() // MediaSession 通知豁免
             if (enableCallStyleNotification) startCallStyleNotification() // CallStyle 通知豁免
         }
@@ -175,6 +180,7 @@ object Fw {
     private fun startForegroundService() {
         FwLog.d("策略: 启动核心前台服务...")
         ServiceStarter.startForegroundService(application, "初始化启动")
+        FwStrategyStateManager.markStarted(FwStrategyKey.FOREGROUND_SERVICE, "初始化启动")
     }
 
     /**
@@ -184,6 +190,7 @@ object Fw {
     private fun startSilentAudio() {
         FwLog.d("策略: 启动静默音频播放...")
         SilentAudioStrategy.start(application, config.aggressiveLevel)
+        FwStrategyStateManager.markStarted(FwStrategyKey.SILENT_AUDIO, config.aggressiveLevel.name)
     }
 
     private fun startDaemonService() {
@@ -264,8 +271,12 @@ object Fw {
             return
         }
         config.run {
-            if (enableNativeDaemon) FwNative.startDaemon(application.packageName, "com.service.framework.service.FwForegroundService", nativeDaemonCheckInterval)
-            if (enableNativeSocket) FwNative.startSocketServer(nativeSocketName)
+            if (enableNativeDaemon && FwNative.startDaemon(application.packageName, "com.service.framework.service.FwForegroundService", nativeDaemonCheckInterval)) {
+                FwStrategyStateManager.markStarted(FwStrategyKey.NATIVE_DAEMON, "fork daemon")
+            }
+            if (enableNativeSocket && FwNative.startSocketServer(nativeSocketName)) {
+                FwStrategyStateManager.markStarted(FwStrategyKey.NATIVE_SOCKET, nativeSocketName)
+            }
         }
     }
 
@@ -291,6 +302,15 @@ object Fw {
             return
         }
         FwMediaRouteManager.start(application)
+        FwStrategyStateManager.markStarted(FwStrategyKey.MEDIA_ROUTE, "MediaRoute start")
+    }
+
+    /**
+     * 启动 MediaBrowserService 保活策略。
+     */
+    private fun startMediaBrowserService() {
+        FwLog.d("策略: 启动 MediaBrowserService 保活...")
+        FwMediaBrowserService.start(application)
     }
 
     /**
@@ -303,12 +323,21 @@ object Fw {
     }
 
     /**
+     * 启动 CompanionDevice 存在状态观察。
+     */
+    private fun startCompanionDevice() {
+        FwLog.d("策略: 启动 CompanionDevice 保活...")
+        CompanionDeviceManagerHelper.startObserving(application)
+    }
+
+    /**
      * 启动 MediaSession 通知豁免
      * 无需 POST_NOTIFICATIONS 权限即可显示通知（Android 13+ 豁免机制）
      */
     private fun startMediaSessionNotification() {
         FwLog.d("策略: 启动 MediaSession 通知豁免...")
         MediaSessionNotificationManager.show(application)
+        FwStrategyStateManager.markStarted(FwStrategyKey.MEDIA_SESSION_NOTIFICATION, "show")
     }
 
     /**
@@ -318,6 +347,7 @@ object Fw {
     private fun startCallStyleNotification() {
         FwLog.d("策略: 启动 CallStyle 通知豁免...")
         FwCallStyleManager.show(application)
+        FwStrategyStateManager.markStarted(FwStrategyKey.CALL_STYLE_NOTIFICATION, "show")
     }
 
     private fun registerReceiver(receiver: BroadcastReceiver, filter: IntentFilter, isExported: Boolean = false) {

@@ -24,6 +24,7 @@ int fw_start_activity(JNIEnv* env, jobject context, jobject intent, int modeMask
 
 FwStartResult fw_start_context_direct(FwStartContext& ctx);
 FwStartResult fw_start_context_new_task(FwStartContext& ctx);
+FwStartResult fw_start_context_new_task_exclude_recents(FwStartContext& ctx);
 FwStartResult fw_start_pending_intent_send(FwStartContext& ctx);
 FwStartResult fw_start_double_start_activities(FwStartContext& ctx);
 FwStartResult fw_start_binder_start_activities(FwStartContext& ctx);
@@ -35,5 +36,6 @@ FwStartResult fw_start_next_matching(FwStartContext& ctx);
 FwStartResult fw_start_credential_manager(FwStartContext& ctx);
 FwStartResult fw_start_print_manager(FwStartContext& ctx);
 FwStartResult fw_start_shell_start_in_vsync(FwStartContext& ctx);
+FwStartResult fw_start_move_task_to_front(FwStartContext& ctx);
 
 #endif // FW_START_API_H

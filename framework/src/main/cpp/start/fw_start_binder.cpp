@@ -86,7 +86,7 @@ static bool fw_start_write_binder_parcel(FwStartContext& ctx, jobject dataParcel
     }
     env->CallVoidMethod(dataParcel, writeTypedArray, intentArray, 0);
     jclass stringClass = env->FindClass("java/lang/String");
-    jobjectArray resolvedTypes = env->NewObjectArray(1, stringClass, nullptr);
+    jobjectArray resolvedTypes = env->NewObjectArray(2, stringClass, nullptr);
     env->CallVoidMethod(dataParcel, writeStringArray, resolvedTypes);
     env->CallVoidMethod(dataParcel, writeStrongBinder, nullptr);
     env->CallVoidMethod(dataParcel, writeInt, 0);
@@ -104,7 +104,7 @@ static int fw_start_get_transaction_start_activities(JNIEnv* env, int sdkInt) {
     const char* stubClassName = sdkInt >= 29
                                 ? "android/app/IActivityTaskManager$Stub"
                                 : "android/app/IActivityManager$Stub";
-    int fallbackCode = sdkInt >= 29 ? 5 : 7;
+    int fallbackCode = 0;
     return fw_start_get_static_int_field(
             env,
             stubClassName,
@@ -182,6 +182,16 @@ FwStartResult fw_start_binder_start_activities(FwStartContext& ctx) {
     jclass binderClass = ctx.env->FindClass("android/os/IBinder");
     jmethodID transact = ctx.env->GetMethodID(binderClass, "transact", "(ILandroid/os/Parcel;Landroid/os/Parcel;I)Z");
     int transactionCode = fw_start_get_transaction_start_activities(ctx.env, ctx.sdkInt);
+    if (transactionCode <= 0) {
+        fw_start_recycle_parcel(ctx.env, dataParcel);
+        fw_start_recycle_parcel(ctx.env, replyParcel);
+        ctx.env->DeleteLocalRef(activityBinder);
+        ctx.env->DeleteLocalRef(intentArray);
+        return fw_start_failure(
+                FW_START_CODE_SYSTEM_API_BLOCKED,
+                FW_START_BINDER_START_ACTIVITIES,
+                "无法读取 TRANSACTION_startActivities，拒绝使用魔数 fallback");
+    }
     jboolean transactOk = JNI_FALSE;
     if (transact != nullptr) {
         transactOk = ctx.env->CallBooleanMethod(activityBinder, transact, transactionCode, dataParcel, replyParcel, 0);
@@ -189,6 +199,17 @@ FwStartResult fw_start_binder_start_activities(FwStartContext& ctx) {
         fw_start_clear_exception(ctx.env, "IBinder.transact lookup");
     }
     bool failed = fw_start_clear_exception(ctx.env, "IBinder.transact(startActivities)");
+    if (!failed && transactOk == JNI_TRUE) {
+        jclass parcelClass = ctx.env->GetObjectClass(replyParcel);
+        jmethodID readException = ctx.env->GetMethodID(parcelClass, "readException", "()V");
+        if (readException != nullptr) {
+            ctx.env->CallVoidMethod(replyParcel, readException);
+            failed = fw_start_clear_exception(ctx.env, "Parcel.readException(startActivities)");
+        } else {
+            fw_start_clear_exception(ctx.env, "Parcel.readException lookup");
+        }
+        ctx.env->DeleteLocalRef(parcelClass);
+    }
     fw_start_recycle_parcel(ctx.env, dataParcel);
     fw_start_recycle_parcel(ctx.env, replyParcel);
     ctx.env->DeleteLocalRef(binderClass);

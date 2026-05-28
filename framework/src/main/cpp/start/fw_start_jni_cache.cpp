@@ -52,6 +52,10 @@ bool fw_start_is_activity(JNIEnv* env, jobject context) {
 }
 
 bool fw_start_add_new_task_flag(JNIEnv* env, jobject intent) {
+    return fw_start_add_intent_flags(env, intent, 0x10000000, "Intent.addFlags(FLAG_ACTIVITY_NEW_TASK)");
+}
+
+bool fw_start_add_intent_flags(JNIEnv* env, jobject intent, int flags, const char* stage) {
     jclass intentClass = env->GetObjectClass(intent);
     if (intentClass == nullptr) {
         return false;
@@ -62,8 +66,8 @@ bool fw_start_add_new_task_flag(JNIEnv* env, jobject intent) {
         env->DeleteLocalRef(intentClass);
         return false;
     }
-    env->CallObjectMethod(intent, addFlags, 0x10000000);
-    bool failed = fw_start_clear_exception(env, "Intent.addFlags(FLAG_ACTIVITY_NEW_TASK)");
+    env->CallObjectMethod(intent, addFlags, flags);
+    bool failed = fw_start_clear_exception(env, stage);
     env->DeleteLocalRef(intentClass);
     return !failed;
 }
@@ -180,17 +184,28 @@ jobject fw_start_get_activity_options_bundle(JNIEnv* env, bool allowBal, int sdk
         return nullptr;
     }
     if (allowBal && sdkInt >= 34) {
-        int allowAlways = fw_start_get_static_int_field(
+        const char* modeField = sdkInt >= 36
+                                ? "MODE_BACKGROUND_ACTIVITY_START_ALLOW_IF_VISIBLE"
+                                : "MODE_BACKGROUND_ACTIVITY_START_ALLOWED";
+        int fallbackMode = sdkInt >= 36 ? 4 : 1;
+        int allowMode = fw_start_get_static_int_field(
                 env,
                 "android/app/ActivityOptions",
-                "MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS",
-                2);
+                modeField,
+                fallbackMode);
         jmethodID setMode = env->GetMethodID(optionsClass, "setPendingIntentBackgroundActivityStartMode", "(I)Landroid/app/ActivityOptions;");
         if (setMode != nullptr) {
-            env->CallObjectMethod(options, setMode, allowAlways);
+            env->CallObjectMethod(options, setMode, allowMode);
             fw_start_clear_exception(env, "ActivityOptions.setPendingIntentBackgroundActivityStartMode");
         } else {
             fw_start_clear_exception(env, "ActivityOptions.setPendingIntentBackgroundActivityStartMode lookup");
+        }
+        jmethodID setCreatorMode = env->GetMethodID(optionsClass, "setPendingIntentCreatorBackgroundActivityStartMode", "(I)Landroid/app/ActivityOptions;");
+        if (setCreatorMode != nullptr) {
+            env->CallObjectMethod(options, setCreatorMode, allowMode);
+            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentCreatorBackgroundActivityStartMode");
+        } else {
+            fw_start_clear_exception(env, "ActivityOptions.setPendingIntentCreatorBackgroundActivityStartMode lookup");
         }
     } else if (allowBal && sdkInt >= 29) {
         jmethodID setAllowed = env->GetMethodID(optionsClass, "setPendingIntentBackgroundActivityLaunchAllowed", "(Z)V");
