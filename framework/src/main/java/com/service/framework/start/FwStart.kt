@@ -7,7 +7,8 @@
  *   对外暴露 start 函数，内部调用 C++ start 文件夹的统一策略编排。
  *
  * 主要函数：
- *   - start: 全量策略启动 Activity
+ *   - start: 默认可执行策略启动 Activity
+ *   - startAuditAll: 全量策略审计启动 Activity
  *   - startWithStrategies: 指定策略集合启动 Activity
  *
  * @author Pangu-Immortal
@@ -24,12 +25,12 @@ import com.service.framework.util.FwLog
 /**
  * 统一 startActivity 入口。
  *
- * 默认 modeMask 包含所有策略；Native 层会按版本、权限和安全边界逐项执行。
+ * 默认 modeMask 只包含可执行策略；全量策略可通过 startAuditAll 显式进入审计编排。
  */
 object FwStart {
 
     /**
-     * 全量策略启动 Activity。
+     * 默认可执行策略启动 Activity。
      *
      * @param context 调用方上下文
      * @param intent 目标 Activity Intent
@@ -37,6 +38,24 @@ object FwStart {
      */
     @JvmStatic
     fun start(context: Context, intent: Intent): FwStartResult {
+        return startWithStrategies(
+            context = context,
+            intent = intent,
+            strategies = FwStartStrategy.defaultExecutableStrategies
+        )
+    }
+
+    /**
+     * 全量策略审计启动 Activity。
+     *
+     * 该入口会把仅登记/安全跳过的研究路径也交给 Native 层记录版本判断和跳过原因。
+     *
+     * @param context 调用方上下文
+     * @param intent 目标 Activity Intent
+     * @return 统一结果
+     */
+    @JvmStatic
+    fun startAuditAll(context: Context, intent: Intent): FwStartResult {
         return startWithStrategies(
             context = context,
             intent = intent,

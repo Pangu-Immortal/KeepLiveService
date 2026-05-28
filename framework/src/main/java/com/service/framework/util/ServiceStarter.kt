@@ -20,8 +20,9 @@ package com.service.framework.util
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.service.FwForegroundService
-import com.service.framework.util.RestartProtection
 
 /**
  * 服务启动工具类
@@ -50,12 +51,20 @@ object ServiceStarter {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
+                FwStrategyStateManager.markTriggered(FwStrategyKey.FOREGROUND_SERVICE, "startForegroundService")
                 FwLog.d("通过 startForegroundService 启动服务")
             } else {
                 context.startService(intent)
+                FwStrategyStateManager.markTriggered(FwStrategyKey.FOREGROUND_SERVICE, "startService")
                 FwLog.d("通过 startService 启动服务")
             }
         } catch (e: Exception) {
+            val reason = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                "Android 12+ 后台启动前台服务可能被系统限制: ${e.message}"
+            } else {
+                e.message ?: "未知错误"
+            }
+            FwStrategyStateManager.markError(FwStrategyKey.FOREGROUND_SERVICE, reason, e)
             FwLog.e("启动服务失败: ${e.message}", e)
         }
     }
@@ -67,8 +76,10 @@ object ServiceStarter {
         try {
             val intent = Intent(context, FwForegroundService::class.java)
             context.stopService(intent)
+            FwStrategyStateManager.markStopped(FwStrategyKey.FOREGROUND_SERVICE, "stopService")
             FwLog.d("停止前台服务")
         } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.FOREGROUND_SERVICE, e.message ?: "停止失败", e)
             FwLog.e("停止服务失败: ${e.message}", e)
         }
     }

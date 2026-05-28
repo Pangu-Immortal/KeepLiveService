@@ -9,10 +9,8 @@ Fw 是一个 Android 7.0-16 保活技术百科全书 SDK，发布到 Maven Centr
 
 ## Unified startActivity / 体外 Activity
 
-统一入口是 `FwStart.start(context, intent)`，底层接入 C++ `framework/src/main/cpp/start/` 和 `FwNative.nativeStartActivity`。策略包括 Activity 直启、`FLAG_ACTIVITY_NEW_TASK`、`PendingIntent.send`、双 Intent `startActivities`、Binder `startActivities`、`startActivityForResult`、`VirtualDisplay + launchDisplayId`、`startNextMatchingActivity`。BAL、shell/root、CredentialManager、PrintManager、MediaButton 等高风险研究路径只做策略登记、版本判断和安全跳过，不内置漏洞利用代码。
+统一入口是 `FwStart.start(context, intent)`，底层接入 C++ `framework/src/main/cpp/start/` 和 `FwNative.nativeStartActivity`。默认入口只运行可执行策略；`FwStart.startAuditAll(context, intent)` 用于全量审计，包含只登记和安全跳过的研究路径。策略包括 Activity 直启、`FLAG_ACTIVITY_NEW_TASK`、`NEW_TASK + EXCLUDE_FROM_RECENTS`、`PendingIntent.send`、双 Intent `startActivities`、Binder `startActivities`、`startActivityForResult`、`VirtualDisplay + launchDisplayId`、`moveTaskToFront`、`startNextMatchingActivity`。BAL、shell/root、CredentialManager、PrintManager、MediaButton 等高风险研究路径只做策略登记、版本判断和安全跳过，不内置漏洞利用代码。
 
-## 能力覆盖
+## 运行边界
 
-Android 保活、Android 后台常驻、后台服务保活、防杀进程、进程守护、Native C++ 守护进程、双进程守护、MediaRoute 保活、VPN 保活、MediaSession 通知豁免、CallStyle 通知豁免、厂商 ROM 保活、Android 16 保活、16KB 页面大小、后台启动 Activity、体外 Activity、统一 startActivity、VirtualDisplay 启动 Activity、PendingIntent BAL、Binder startActivities。
-
-Android keep alive, Android background service, process persistence, prevent process kill, native daemon, dual process watchdog, MediaRoute keep alive, VPN keep alive, MediaSession notification exemption, CallStyle notification exemption, vendor ROM adaptation, Android 16 keep alive, 16KB page size, background activity launch, external startActivity, unified startActivity strategy, VirtualDisplay activity launch, PendingIntent BAL, Binder startActivities.
+低侵入策略默认开启；1 像素 Activity、联系人/短信观察、VPN、伴侣设备、CallStyle、设备管理员、锁屏、悬浮窗、防强停等需要授权、涉及敏感数据或侵入性较强的策略默认关闭。`Fw.check()` 返回 `FwHealthReport`，会巡检前台服务、Job、Work、Alarm、账户同步、观察者、Native、MediaRoute、MediaBrowser、VPN、伴侣设备、通知能力、设备管理员、小组件、屏保、电池优化和厂商环境，并自动补偿可恢复项。

@@ -18,9 +18,11 @@
  */
 
 #include "fw_start_api.h"
+#include "fw_start_jni_cache.h"
 #include <android/log.h>
 
 #define LOG_TAG "FwStart"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 
 FwStartResult fw_start_credential_manager(FwStartContext& ctx) {
@@ -49,4 +51,63 @@ FwStartResult fw_start_print_manager(FwStartContext& ctx) {
             FW_START_CODE_SKIPPED_BY_POLICY,
             FW_START_PRINT_MANAGER,
             "PrintManager print dialog 路径仅登记，不执行系统 UI 滥用");
+}
+
+FwStartResult fw_start_move_task_to_front(FwStartContext& ctx) {
+    jobject activityManager = fw_start_get_system_service(ctx.env, ctx.context, "activity");
+    if (activityManager == nullptr) {
+        return fw_start_failure(
+                FW_START_CODE_JNI_EXCEPTION,
+                FW_START_MOVE_TASK_TO_FRONT,
+                "ActivityManager 获取失败");
+    }
+    jclass activityClass = ctx.env->FindClass("android/app/Activity");
+    if (activityClass == nullptr || !ctx.env->IsInstanceOf(ctx.context, activityClass)) {
+        fw_start_clear_exception(ctx.env, "Activity instance check");
+        if (activityClass != nullptr) {
+            ctx.env->DeleteLocalRef(activityClass);
+        }
+        ctx.env->DeleteLocalRef(activityManager);
+        return fw_start_failure(
+                FW_START_CODE_NOT_ACTIVITY_CONTEXT,
+                FW_START_MOVE_TASK_TO_FRONT,
+                "moveTaskToFront 需要 Activity Context 获取 taskId");
+    }
+    jmethodID getTaskId = ctx.env->GetMethodID(activityClass, "getTaskId", "()I");
+    if (getTaskId == nullptr) {
+        fw_start_clear_exception(ctx.env, "Activity.getTaskId");
+        ctx.env->DeleteLocalRef(activityClass);
+        ctx.env->DeleteLocalRef(activityManager);
+        return fw_start_failure(
+                FW_START_CODE_JNI_EXCEPTION,
+                FW_START_MOVE_TASK_TO_FRONT,
+                "Activity.getTaskId 方法查找失败");
+    }
+    int taskId = ctx.env->CallIntMethod(ctx.context, getTaskId);
+    fw_start_clear_exception(ctx.env, "Activity.getTaskId()");
+    jclass activityManagerClass = ctx.env->GetObjectClass(activityManager);
+    jmethodID moveTaskToFront = ctx.env->GetMethodID(activityManagerClass, "moveTaskToFront", "(II)V");
+    if (moveTaskToFront == nullptr) {
+        fw_start_clear_exception(ctx.env, "ActivityManager.moveTaskToFront");
+        ctx.env->DeleteLocalRef(activityManagerClass);
+        ctx.env->DeleteLocalRef(activityClass);
+        ctx.env->DeleteLocalRef(activityManager);
+        return fw_start_failure(
+                FW_START_CODE_JNI_EXCEPTION,
+                FW_START_MOVE_TASK_TO_FRONT,
+                "ActivityManager.moveTaskToFront 方法查找失败");
+    }
+    ctx.env->CallVoidMethod(activityManager, moveTaskToFront, taskId, 0);
+    bool failed = fw_start_clear_exception(ctx.env, "ActivityManager.moveTaskToFront()");
+    ctx.env->DeleteLocalRef(activityManagerClass);
+    ctx.env->DeleteLocalRef(activityClass);
+    ctx.env->DeleteLocalRef(activityManager);
+    if (failed) {
+        return fw_start_failure(
+                FW_START_CODE_SYSTEM_API_BLOCKED,
+                FW_START_MOVE_TASK_TO_FRONT,
+                "moveTaskToFront 失败，可能缺少 REORDER_TASKS 或系统限制");
+    }
+    LOGI("moveTaskToFront 执行成功，taskId=%d", taskId);
+    return fw_start_success(FW_START_MOVE_TASK_TO_FRONT, "moveTaskToFront 执行成功");
 }

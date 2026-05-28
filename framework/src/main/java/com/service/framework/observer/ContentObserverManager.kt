@@ -88,6 +88,11 @@ object ContentObserverManager {
     }
 
     /**
+     * 检查是否存在已注册的内容观察者。
+     */
+    fun isRegistered(): Boolean = observers.isNotEmpty()
+
+    /**
      * 注册相册变化观察者
      *
      * 监听相册数据变化（拍照、截图、保存图片等）

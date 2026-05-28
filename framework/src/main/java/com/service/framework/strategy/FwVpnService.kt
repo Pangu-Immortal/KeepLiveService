@@ -26,12 +26,18 @@
  */
 package com.service.framework.strategy
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import com.service.framework.Fw
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 
@@ -55,6 +61,8 @@ class FwVpnService : VpnService() {
 
     companion object {
         private const val TAG = "FwVpnService" // 日志子标签
+        private const val NOTIFICATION_ID = 12001 // VPN 前台通知 ID
+        private const val CHANNEL_ID = "fw_vpn_channel" // VPN 通知渠道
         @Volatile
         private var isRunning = false // 服务运行状态标记
 
@@ -68,6 +76,11 @@ class FwVpnService : VpnService() {
                 FwLog.w("$TAG: 当前系统版本低于 API 24，跳过 VPN 保活策略")
                 return
             }
+            if (!isPrepared(context)) {
+                FwStrategyStateManager.markError(FwStrategyKey.VPN_SERVICE, "VPN 未授权，需先调用 VpnService.prepare()")
+                FwLog.w("$TAG: VPN 未授权，跳过启动；请先通过 Activity 发起 VpnService.prepare() 授权")
+                return
+            }
             FwLog.d("$TAG: 请求启动 VPN 保活服务")
             try {
                 val intent = Intent(context, FwVpnService::class.java) // 构建服务启动意图
@@ -76,7 +89,9 @@ class FwVpnService : VpnService() {
                 } else {
                     context.startService(intent) // 低版本直接启动
                 }
+                FwStrategyStateManager.markStarted(FwStrategyKey.VPN_SERVICE, "startService")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.VPN_SERVICE, e.message ?: "启动失败", e)
                 FwLog.e("$TAG: 启动 VPN 服务失败: ${e.message}", e)
             }
         }
@@ -90,7 +105,9 @@ class FwVpnService : VpnService() {
             try {
                 val intent = Intent(context, FwVpnService::class.java) // 构建服务停止意图
                 context.stopService(intent) // 停止服务
+                FwStrategyStateManager.markStopped(FwStrategyKey.VPN_SERVICE, "stopService")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.VPN_SERVICE, e.message ?: "停止失败", e)
                 FwLog.e("$TAG: 停止 VPN 服务失败: ${e.message}", e)
             }
         }
@@ -100,6 +117,32 @@ class FwVpnService : VpnService() {
          * @return 是否运行中
          */
         fun isRunning(): Boolean = isRunning
+
+        /**
+         * 检查当前应用是否已经获得 VPN 授权。
+         */
+        fun isPrepared(context: Context): Boolean {
+            if (Build.VERSION.SDK_INT < 24) {
+                return false
+            }
+            return try {
+                VpnService.prepare(context) == null
+            } catch (e: Exception) {
+                FwLog.e("$TAG: 检查 VPN 授权失败: ${e.message}", e)
+                false
+            }
+        }
+
+        /**
+         * 获取 VPN 授权 Intent；返回 null 表示已授权。
+         */
+        fun prepareIntent(context: Context): Intent? {
+            return if (Build.VERSION.SDK_INT < 24) {
+                null
+            } else {
+                VpnService.prepare(context)
+            }
+        }
     }
 
     private var vpnInterface: ParcelFileDescriptor? = null // VPN 隧道文件描述符
@@ -108,11 +151,13 @@ class FwVpnService : VpnService() {
         super.onCreate()
         FwLog.d("$TAG: onCreate - VPN 保活服务初始化")
         isRunning = true // 标记服务已启动
+        startAsForeground()
         establishVpnTunnel() // 建立 VPN 隧道
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         FwLog.d("$TAG: onStartCommand - 收到启动命令")
+        startAsForeground()
         // 如果隧道未建立则重新建立
         if (vpnInterface == null) {
             FwLog.d("$TAG: VPN 隧道未建立，重新建立")
@@ -124,6 +169,7 @@ class FwVpnService : VpnService() {
     override fun onRevoke() {
         FwLog.w("$TAG: onRevoke - 用户撤销了 VPN 权限")
         closeVpnTunnel() // 关闭隧道
+        FwStrategyStateManager.markError(FwStrategyKey.VPN_SERVICE, "用户撤销 VPN 权限")
         stopSelf() // 停止自身
     }
 
@@ -131,6 +177,7 @@ class FwVpnService : VpnService() {
         FwLog.w("$TAG: onDestroy - VPN 保活服务被销毁，尝试自救")
         closeVpnTunnel() // 关闭隧道释放资源
         isRunning = false // 标记服务已停止
+        FwStrategyStateManager.markStopped(FwStrategyKey.VPN_SERVICE, "onDestroy")
         // 通过 ServiceStarter 拉起前台服务进行自救
         ServiceStarter.startForegroundService(this, "VPN服务被杀后自救")
         super.onDestroy()
@@ -143,10 +190,9 @@ class FwVpnService : VpnService() {
     private fun establishVpnTunnel() {
         try {
             FwLog.d("$TAG: 开始建立 VPN 隧道...")
-            vpnInterface = Builder()
+            val builder = Builder()
                 .setSession("FwKeepAlive") // 设置会话名称（系统设置中显示）
                 .addAddress("10.0.0.2", 32) // 设置本地回环地址
-                .addRoute("0.0.0.0", 0) // 添加默认路由（实际不转发流量）
                 .setBlocking(false) // 非阻塞模式，避免线程阻塞
                 .setMtu(1500) // 设置最大传输单元
                 .also { builder ->
@@ -155,18 +201,75 @@ class FwVpnService : VpnService() {
                         builder.setMetered(false) // 标记为非计费网络
                     }
                 }
-                .establish() // 建立隧道，返回文件描述符
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                builder.addDisallowedApplication(packageName) // 避免应用自身流量进入占位 VPN
+            }
+            vpnInterface = builder.establish() // 建立隧道，返回文件描述符
 
             if (vpnInterface != null) {
+                FwStrategyStateManager.markStarted(FwStrategyKey.VPN_SERVICE, "fd=${vpnInterface?.fd}")
                 FwLog.d("$TAG: VPN 隧道建立成功，fd=${vpnInterface?.fd}")
                 // 隧道已建立，持有文件描述符即可获得系统绑定保护
                 // 不需要读写任何数据，仅占位保持 VPN 连接状态
             } else {
+                FwStrategyStateManager.markError(FwStrategyKey.VPN_SERVICE, "establish 返回 null")
                 FwLog.e("$TAG: VPN 隧道建立失败，establish() 返回 null（可能缺少 VPN 权限）")
             }
         } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.VPN_SERVICE, e.message ?: "建立隧道异常", e)
             FwLog.e("$TAG: 建立 VPN 隧道异常: ${e.message}", e)
         }
+    }
+
+    /**
+     * 将 VPN 服务提升为前台服务。
+     */
+    private fun startAsForeground() {
+        val notification = buildVpnNotification()
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            FwLog.d("$TAG: VPN 服务已前台化")
+        } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.VPN_SERVICE, e.message ?: "前台化失败", e)
+            FwLog.e("$TAG: VPN 服务前台化失败: ${e.message}", e)
+        }
+    }
+
+    /**
+     * 构建 VPN 前台通知。
+     */
+    private fun buildVpnNotification(): Notification {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "VPN 保活服务",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                setSound(null, null)
+                enableLights(false)
+                enableVibration(false)
+                setShowBadge(false)
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+        }
+        return builder
+            .setContentTitle("VPN 服务运行中")
+            .setContentText("本地占位 VPN 已保持连接")
+            .setSmallIcon(Fw.config.notificationIconResId)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .build()
     }
 
     /**

@@ -23,6 +23,21 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 
+static void fw_start_release_virtual_display(JNIEnv* env, jobject virtualDisplay) {
+    if (virtualDisplay == nullptr) {
+        return;
+    }
+    jclass virtualDisplayClass = env->GetObjectClass(virtualDisplay);
+    jmethodID release = env->GetMethodID(virtualDisplayClass, "release", "()V");
+    if (release != nullptr) {
+        env->CallVoidMethod(virtualDisplay, release);
+        fw_start_clear_exception(env, "VirtualDisplay.release()");
+    } else {
+        fw_start_clear_exception(env, "VirtualDisplay.release lookup");
+    }
+    env->DeleteLocalRef(virtualDisplayClass);
+}
+
 static jobject fw_start_create_surface(JNIEnv* env) {
     jclass surfaceTextureClass = env->FindClass("android/graphics/SurfaceTexture");
     if (surfaceTextureClass == nullptr) {
@@ -174,6 +189,38 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
                 FW_START_VIRTUAL_DISPLAY,
                 "VirtualDisplay displayId 无效");
     }
+    if (ctx.sdkInt >= 29) {
+        jobject activityManager = fw_start_get_system_service(ctx.env, ctx.context, "activity");
+        if (activityManager != nullptr) {
+            jclass activityManagerClass = ctx.env->GetObjectClass(activityManager);
+            jmethodID isAllowed = ctx.env->GetMethodID(
+                    activityManagerClass,
+                    "isActivityStartAllowedOnDisplay",
+                    "(Landroid/content/Context;ILandroid/content/Intent;)Z");
+            if (isAllowed != nullptr) {
+                jboolean allowed = ctx.env->CallBooleanMethod(activityManager, isAllowed, ctx.context, displayId, ctx.intent);
+                bool checkFailed = fw_start_clear_exception(ctx.env, "ActivityManager.isActivityStartAllowedOnDisplay");
+                ctx.env->DeleteLocalRef(activityManagerClass);
+                ctx.env->DeleteLocalRef(activityManager);
+                if (checkFailed || allowed != JNI_TRUE) {
+                    fw_start_release_virtual_display(ctx.env, virtualDisplay);
+                    ctx.env->DeleteLocalRef(virtualDisplayClass);
+                    ctx.env->DeleteLocalRef(virtualDisplay);
+                    ctx.env->DeleteLocalRef(displayManagerClass);
+                    ctx.env->DeleteLocalRef(surface);
+                    ctx.env->DeleteLocalRef(displayManager);
+                    return fw_start_failure(
+                            FW_START_CODE_SYSTEM_API_BLOCKED,
+                            FW_START_VIRTUAL_DISPLAY,
+                            "系统不允许在该 VirtualDisplay 上启动 Activity");
+                }
+            } else {
+                fw_start_clear_exception(ctx.env, "ActivityManager.isActivityStartAllowedOnDisplay lookup");
+                ctx.env->DeleteLocalRef(activityManagerClass);
+                ctx.env->DeleteLocalRef(activityManager);
+            }
+        }
+    }
     jobject optionsBundle = fw_start_make_launch_display_bundle(ctx.env, displayId);
     jobject clonedIntent = fw_start_clone_intent(ctx.env, ctx.intent);
     if (clonedIntent != nullptr) {
@@ -187,6 +234,7 @@ FwStartResult fw_start_virtual_display(FwStartContext& ctx) {
     if (optionsBundle != nullptr) {
         ctx.env->DeleteLocalRef(optionsBundle);
     }
+    fw_start_release_virtual_display(ctx.env, virtualDisplay);
     ctx.env->DeleteLocalRef(virtualDisplayClass);
     ctx.env->DeleteLocalRef(virtualDisplay);
     ctx.env->DeleteLocalRef(displayManagerClass);

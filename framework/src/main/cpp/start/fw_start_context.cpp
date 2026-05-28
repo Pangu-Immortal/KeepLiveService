@@ -62,6 +62,39 @@ FwStartResult fw_start_context_new_task(FwStartContext& ctx) {
     return fw_start_success(FW_START_CONTEXT_NEW_TASK, "Context + FLAG_ACTIVITY_NEW_TASK 启动成功");
 }
 
+FwStartResult fw_start_context_new_task_exclude_recents(FwStartContext& ctx) {
+    jobject clonedIntent = fw_start_clone_intent(ctx.env, ctx.intent);
+    if (clonedIntent == nullptr) {
+        return fw_start_failure(
+                FW_START_CODE_JNI_EXCEPTION,
+                FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS,
+                "复制 Intent 失败");
+    }
+    bool flagsAdded = fw_start_add_intent_flags(
+            ctx.env,
+            clonedIntent,
+            0x10000000 | 0x00800000 | 0x00010000,
+            "Intent.addFlags(NEW_TASK|EXCLUDE_FROM_RECENTS|NO_ANIMATION)");
+    if (!flagsAdded) {
+        ctx.env->DeleteLocalRef(clonedIntent);
+        return fw_start_failure(
+                FW_START_CODE_JNI_EXCEPTION,
+                FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS,
+                "添加 NEW_TASK/EXCLUDE_FROM_RECENTS/NO_ANIMATION 标志失败");
+    }
+    bool started = fw_start_call_context_start_activity(ctx.env, ctx.context, clonedIntent, nullptr);
+    ctx.env->DeleteLocalRef(clonedIntent);
+    if (!started) {
+        return fw_start_failure(
+                FW_START_CODE_JNI_EXCEPTION,
+                FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS,
+                "Context.startActivity + 隐藏标志抛出异常");
+    }
+    return fw_start_success(
+            FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS,
+            "Context + NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION 启动成功");
+}
+
 FwStartResult fw_start_double_start_activities(FwStartContext& ctx) {
     jobject firstIntent = fw_start_clone_intent(ctx.env, ctx.intent);
     jobject secondIntent = fw_start_clone_intent(ctx.env, ctx.intent);

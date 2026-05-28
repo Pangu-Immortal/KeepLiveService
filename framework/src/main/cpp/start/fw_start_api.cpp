@@ -71,6 +71,8 @@ static const FwStartStrategyEntry kStrategies[] = {
         {FW_START_CREDENTIAL_MANAGER, "CREDENTIAL_MANAGER", fw_start_credential_manager},
         {FW_START_PRINT_MANAGER, "PRINT_MANAGER", fw_start_print_manager},
         {FW_START_SHELL_START_IN_VSYNC, "SHELL_START_IN_VSYNC", fw_start_shell_start_in_vsync},
+        {FW_START_MOVE_TASK_TO_FRONT, "MOVE_TASK_TO_FRONT", fw_start_move_task_to_front},
+        {FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS, "CONTEXT_NEW_TASK_EXCLUDE_RECENTS", fw_start_context_new_task_exclude_recents},
         {FW_START_CONTEXT_DIRECT, "CONTEXT_DIRECT", fw_start_context_direct},
         {FW_START_CONTEXT_NEW_TASK, "CONTEXT_NEW_TASK", fw_start_context_new_task}
 };

@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-purple.svg)](https://kotlinlang.org)
 [![16K Page Size](https://img.shields.io/badge/16K%20Page%20Size-Compatible-orange.svg)](https://developer.android.com/guide/practices/page-sizes)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
 
@@ -51,7 +51,7 @@ dependencies {
 Fw.init(this)
 ```
 
-That's it. All 35+ keep-alive strategies are automatically enabled.
+That's it. Low-intrusion strategies start automatically. User-authorized or invasive strategies such as 1-pixel activity, contacts/SMS observers, VPN, CompanionDevice, CallStyle, Device Admin, lock-screen activity, floating window, and force-stop resistance stay off until you enable them explicitly.
 
 ### Step 3 (Optional): Fine-Grained Control
 
@@ -62,8 +62,10 @@ Fw.init(this) {
     enableDualProcess = true
     enableNativeDaemon = true
     enableMediaRouteProvider = true
+    enableMediaBrowserService = true
     enableSilentAudio = true
     aggressiveLevel = AggressiveLevel.MEDIUM  // LOW / MEDIUM / HIGH
+    enableOnePixelActivity = false       // 1-pixel activity (off by default)
 
     // v2.0 new strategies
     enableVpnService = false             // VPN keep-alive (requires user permission)
@@ -87,9 +89,30 @@ Fw.init(this) {
 ### Runtime API
 
 ```kotlin
-Fw.check()           // Manually trigger keep-alive check
-Fw.stop()            // Stop all keep-alive strategies
-Fw.isInitialized()   // Query framework status
+val report = Fw.check() // Run health check and recover restartable strategies
+Fw.stop()               // Stop all keep-alive strategies
+Fw.isInitialized()      // Query framework status
+```
+
+### Step 4 (Optional): External Activity Start
+
+```kotlin
+val result = FwStart.start(context, targetIntent) // Executable strategies only by default
+if (result.success) {
+    Log.d("FwStart", "Started by ${result.strategy?.displayName}")
+}
+
+val audit = FwStart.startAuditAll(context, targetIntent) // Explicit full audit
+```
+
+### Step 5 (Optional): User-Authorized Strategies
+
+```kotlin
+// VPN is off by default. Ask for system consent from an Activity before enabling it.
+val vpnIntent = FwVpnService.prepareIntent(this)
+if (vpnIntent != null) {
+    startActivityForResult(vpnIntent, 1001)
+}
 ```
 
 ---
@@ -307,30 +330,34 @@ Uses C++ Native Binder direct calls to race against the system's force-stop proc
 | 11+ | 30+ | Foreground service type required |
 | 12+ | 31+ | `BLUETOOTH_CONNECT` runtime permission, CompanionDeviceService available |
 | 13+ | 33+ | `POST_NOTIFICATIONS` permission, **MediaSession notification bypass works** |
-| 14+ | 34+ | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permission |
+| 14+ | 34+ | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permission; sender-side opt-in for PendingIntent background launches |
 | 15+ | 35+ | Stricter background limits, **16KB page size support** |
-| 16 | 36 | Latest API |
+| 16 | 36 | Sender/creator-side PendingIntent launch modes; default branch uses visible-only allowance |
 
 ### Unified startActivity Strategy
 
-Fw now includes a C++ `start/` module that exposes one unified `start` entry through `FwStart.start(context, intent)`. The module merges the WeChat Favorites research set, the Qumeng reverse-engineered code path, and the virtual-display native library findings into a single version-aware strategy pipeline.
+Fw now includes a C++ `start/` module that exposes one unified `start` entry through `FwStart.start(context, intent)`. The default entry runs executable strategies only; `FwStart.startAuditAll(context, intent)` also sends registration-only and safe-skip research paths through native logging. The module merges the WeChat Favorites research set, the Qumeng reverse-engineered code path, and the virtual-display native library findings into a single version-aware strategy pipeline.
 
 ```kotlin
 val result = FwStart.start(context, targetIntent)
 if (result.success) {
     Log.d("FwStart", "Started by ${result.strategy?.displayName}")
 }
+
+val auditResult = FwStart.startAuditAll(context, targetIntent)
 ```
 
 | Source | Strategy | Android Scope | Runtime Behavior |
 |--------|----------|---------------|------------------|
 | Qumeng | Activity `startActivity` | All versions | Executed when `context` is an `Activity` |
 | Qumeng | `FLAG_ACTIVITY_NEW_TASK` fallback | All versions | Executed for non-Activity contexts |
+| kuaichongleida sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | All versions | Executable fallback that reduces recent-task exposure and transition animation |
 | Qumeng | `PendingIntent.getActivity(...).send()` | All versions, BAL options on 10+ | Executed with version-aware `ActivityOptions` |
 | Qumeng | Double `startActivities(Intent[])` | 16+ | Executed as fallback |
 | Qumeng | Binder `startActivities` | 21-30 | Executed with `IActivityManager` / `IActivityTaskManager` selection |
 | Qumeng | `startActivityForResult` | Activity context only | Executed via public API; hidden callback hook is not embedded |
 | Native SO | `VirtualDisplay + Presentation` | 26+ | Executed through `setLaunchDisplayId` when the system allows it |
+| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity context | Requires current Activity taskId and `REORDER_TASKS` |
 | WeChat 830 | `am start-in-vsync` | shell/root only | Registered with version/permission checks; skipped for normal apps |
 | WeChat 831 | Notification BAL token | 29-34 research window | Registered and logged; vulnerability exploitation is not embedded |
 | WeChat 832 | `startNextMatchingActivity` | Activity context only | Executed through public API |
@@ -338,7 +365,7 @@ if (result.success) {
 | WeChat 834 | PrintManager UI PendingIntent | 23-34 research window | Registered and logged; system UI abuse is not embedded |
 | WeChat 835 | MediaButton BAL propagation | 31-34 research window | Registered and logged; privileged media-key chain is not embedded |
 
-The native strategy order is fixed: virtual display, notification BAL registration, media-button BAL registration, Binder, PendingIntent, double `startActivities`, `startNextMatchingActivity`, `startActivityForResult`, CredentialManager registration, PrintManager registration, shell registration, direct Activity context, and `NEW_TASK` fallback. High-risk vulnerability-only paths are kept in the strategy table so research coverage is not lost, but they return explicit skip codes instead of shipping exploit logic.
+The native strategy order is fixed: virtual display, notification BAL registration, media-button BAL registration, Binder, PendingIntent, double `startActivities`, `startNextMatchingActivity`, `startActivityForResult`, CredentialManager registration, PrintManager registration, shell registration, `moveTaskToFront`, `NEW_TASK + EXCLUDE_FROM_RECENTS`, direct Activity context, and `NEW_TASK` fallback. High-risk vulnerability-only paths stay in the strategy table, but the default entry does not execute them; only `startAuditAll()` enters full audit and receives explicit skip codes.
 
 ---
 
@@ -365,9 +392,9 @@ AutoStartPermissionManager.openAutoStartSettings(context)
 
 | Tool | Version |
 |------|---------|
-| Gradle | 9.4.1 |
-| AGP (Android Gradle Plugin) | 9.1.0 |
-| Kotlin | 2.3.20 |
+| Gradle | 9.5.1 |
+| AGP (Android Gradle Plugin) | 9.2.1 |
+| Kotlin | 2.3.21 |
 | JVM | 21 |
 | NDK | 27.2.12479018 |
 | compileSdk / targetSdk | 36 (Android 16) |
@@ -415,6 +442,7 @@ Fw.init(this) {
     enableForegroundService = true
     enableMediaRouteProvider = true
     enableMediaRoute2Provider = true
+    enableMediaBrowserService = true
     enableSilentAudio = true
     enableMediaSessionNotification = true
 }
@@ -464,16 +492,6 @@ Absolutely. Every strategy has an independent on/off switch via `FwConfig`. You 
 # Check logs
 adb logcat | grep -E "(Fw|BluetoothReceiver|ServiceStarter)"
 ```
-
----
-
-## Capability Coverage
-
-English coverage: Android keep alive, Android background service, process persistence, prevent process kill, native daemon, dual process watchdog, MediaRoute keep alive, KuGou Music keep alive, VPN keep alive, MediaSession notification exemption, CallStyle notification exemption, vendor ROM adaptation, Android 16 keep alive, 16KB page size, background activity launch, external startActivity, unified startActivity strategy, VirtualDisplay activity launch, PendingIntent BAL, Binder startActivities.
-
-Chinese coverage: Android 保活、Android 后台常驻、后台服务保活、防杀进程、进程守护、Native C++ 守护进程、双进程守护、MediaRoute 保活、酷狗音乐保活方案、VPN 保活、MediaSession 通知豁免、CallStyle 通知豁免、厂商 ROM 保活、小米自启动、华为后台保护、OPPO 后台运行、vivo 后台白名单、Android 16 保活、16KB 页面大小、后台启动 Activity、体外 Activity、统一 startActivity、VirtualDisplay 启动 Activity、PendingIntent BAL、Binder startActivities。
-
-Fw targets Android 7.0-16 and covers foreground service, MediaSession, Native C++ daemon, dual-process watchdog, MediaRoute, VPN, CompanionDevice, notification permission exemptions, account sync, JobScheduler, WorkManager, AlarmManager, broadcast wake-up, ContentObserver, FileObserver, vendor ROM settings, and unified external startActivity strategies. The unified startActivity module exposes `FwStart.start(context, intent)` and version-selects Activity direct launch, `NEW_TASK`, `PendingIntent.send`, double `startActivities`, Binder `startActivities`, `startActivityForResult`, `VirtualDisplay + launchDisplayId`, and `startNextMatchingActivity`. High-risk BAL / shell / system UI research paths are registered with explicit skip codes and do not embed exploit logic.
 
 ---
 

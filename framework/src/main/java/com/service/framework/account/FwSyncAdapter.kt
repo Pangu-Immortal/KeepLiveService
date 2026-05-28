@@ -23,6 +23,8 @@ import android.content.Context
 import android.content.SyncResult
 import android.os.Bundle
 import com.service.framework.Fw
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 
@@ -54,6 +56,7 @@ class FwSyncAdapter @JvmOverloads constructor(
         syncResult: SyncResult?
     ) {
         FwLog.d("SyncAdapter onPerformSync 执行")
+        FwStrategyStateManager.markTriggered(FwStrategyKey.ACCOUNT_SYNC, authority ?: "未知 authority")
 
         // 拉起服务
         ServiceStarter.startForegroundService(context, "账户同步唤醒")
@@ -91,8 +94,10 @@ class FwSyncAdapter @JvmOverloads constructor(
                     config.syncIntervalSeconds
                 )
 
+                FwStrategyStateManager.markStarted(FwStrategyKey.ACCOUNT_SYNC, config.accountType)
                 FwLog.d("同步已启用，间隔: ${config.syncIntervalSeconds}秒")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.ACCOUNT_SYNC, e.message ?: "启用失败", e)
                 FwLog.e("启用同步失败: ${e.message}", e)
             }
         }
@@ -112,8 +117,10 @@ class FwSyncAdapter @JvmOverloads constructor(
                     ContentResolver.removePeriodicSync(account, config.accountType, Bundle.EMPTY)
                 }
 
+                FwStrategyStateManager.markStopped(FwStrategyKey.ACCOUNT_SYNC, config.accountType)
                 FwLog.d("同步已禁用")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.ACCOUNT_SYNC, e.message ?: "禁用失败", e)
                 FwLog.e("禁用同步失败: ${e.message}", e)
             }
         }
@@ -136,9 +143,29 @@ class FwSyncAdapter @JvmOverloads constructor(
                     ContentResolver.requestSync(account, config.accountType, extras)
                 }
 
+                FwStrategyStateManager.markTriggered(FwStrategyKey.ACCOUNT_SYNC, "requestSync")
                 FwLog.d("已请求立即同步")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.ACCOUNT_SYNC, e.message ?: "请求同步失败", e)
                 FwLog.e("请求同步失败: ${e.message}", e)
+            }
+        }
+
+        /**
+         * 检查账户同步是否已开启。
+         */
+        fun isSyncEnabled(context: Context): Boolean {
+            val config = Fw.config ?: return false
+            return try {
+                val accountManager = AccountManager.get(context)
+                val accounts = accountManager.getAccountsByType(config.accountType)
+                accounts.any { account ->
+                    ContentResolver.getIsSyncable(account, config.accountType) > 0 &&
+                        ContentResolver.getSyncAutomatically(account, config.accountType)
+                }
+            } catch (e: Exception) {
+                FwLog.e("检查账户同步状态失败: ${e.message}", e)
+                false
             }
         }
     }

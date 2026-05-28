@@ -24,7 +24,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
 import com.service.framework.Fw
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 
@@ -84,6 +87,7 @@ object AlarmStrategy {
                             triggerTime,
                             pendingIntent
                         )
+                        FwStrategyStateManager.markStarted(FwStrategyKey.ALARM_MANAGER, "精确闹钟")
                         FwLog.d("AlarmManager 设置精确闹钟成功 (Android 12+)")
                     } else {
                         // 没有精确闹钟权限，使用非精确闹钟
@@ -92,6 +96,7 @@ object AlarmStrategy {
                             triggerTime,
                             pendingIntent
                         )
+                        FwStrategyStateManager.markStarted(FwStrategyKey.ALARM_MANAGER, "非精确闹钟")
                         FwLog.d("AlarmManager 设置非精确闹钟 (无权限)")
                     }
                 }
@@ -102,6 +107,7 @@ object AlarmStrategy {
                         triggerTime,
                         pendingIntent
                     )
+                    FwStrategyStateManager.markStarted(FwStrategyKey.ALARM_MANAGER, "setExactAndAllowWhileIdle")
                     FwLog.d("AlarmManager 设置精确闹钟成功 (Android 6.0+)")
                 }
                 // 更低版本使用 setExact
@@ -111,10 +117,12 @@ object AlarmStrategy {
                         triggerTime,
                         pendingIntent
                     )
+                    FwStrategyStateManager.markStarted(FwStrategyKey.ALARM_MANAGER, "setExact")
                     FwLog.d("AlarmManager 设置精确闹钟成功")
                 }
             }
         } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.ALARM_MANAGER, e.message ?: "调度失败", e)
             FwLog.e("AlarmManager 调度失败: ${e.message}", e)
         }
     }
@@ -147,9 +155,74 @@ object AlarmStrategy {
                 it.cancel()
             }
 
+            FwStrategyStateManager.markStopped(FwStrategyKey.ALARM_MANAGER, "取消闹钟")
             FwLog.d("AlarmManager 已取消")
         } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.ALARM_MANAGER, e.message ?: "取消失败", e)
             FwLog.e("取消 AlarmManager 失败: ${e.message}", e)
+        }
+    }
+
+    /**
+     * 检查闹钟 PendingIntent 是否仍存在。
+     */
+    fun isScheduled(context: Context): Boolean {
+        return try {
+            val intent = Intent(context, AlarmReceiver::class.java).apply {
+                action = ACTION_ALARM_WAKEUP
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                REQUEST_CODE,
+                intent,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_NO_CREATE
+                } else {
+                    PendingIntent.FLAG_NO_CREATE
+                }
+            )
+            pendingIntent != null
+        } catch (e: Exception) {
+            FwLog.e("检查 AlarmManager 状态失败: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * 检查当前是否具备精确闹钟能力。
+     */
+    fun canScheduleExactAlarms(context: Context): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                true
+            } else {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                alarmManager?.canScheduleExactAlarms() == true
+            }
+        } catch (e: Exception) {
+            FwLog.e("检查精确闹钟权限失败: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * 打开精确闹钟授权页面。
+     */
+    fun openExactAlarmSettings(context: Context): Boolean {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                return true
+            }
+            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+            FwLog.d("AlarmManager 已打开精确闹钟授权页面")
+            true
+        } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.ALARM_MANAGER, e.message ?: "打开授权页失败", e)
+            FwLog.e("打开精确闹钟授权页面失败: ${e.message}", e)
+            false
         }
     }
 }
@@ -163,6 +236,7 @@ class AlarmReceiver : BroadcastReceiver() {
         if (context == null) return
 
         FwLog.d("AlarmReceiver 收到广播: ${intent?.action}")
+        FwStrategyStateManager.markTriggered(FwStrategyKey.ALARM_MANAGER, intent?.action ?: "未知闹钟")
 
         // 拉起服务
         ServiceStarter.startForegroundService(context, "AlarmManager唤醒")

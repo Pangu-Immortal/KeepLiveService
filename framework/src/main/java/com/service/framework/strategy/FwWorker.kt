@@ -26,6 +26,8 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.service.framework.Fw
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 import java.util.concurrent.TimeUnit
@@ -84,8 +86,10 @@ class FwWorker(
                     workRequest
                 )
 
+                FwStrategyStateManager.markStarted(FwStrategyKey.WORK_MANAGER, WORK_NAME)
                 FwLog.d("WorkManager 调度成功")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.WORK_MANAGER, e.message ?: "调度失败", e)
                 FwLog.e("WorkManager 调度失败: ${e.message}", e)
             }
         }
@@ -96,20 +100,41 @@ class FwWorker(
         fun cancel(context: Context) {
             try {
                 WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+                FwStrategyStateManager.markStopped(FwStrategyKey.WORK_MANAGER, WORK_NAME)
                 FwLog.d("WorkManager 已取消")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.WORK_MANAGER, e.message ?: "取消失败", e)
                 FwLog.e("取消 WorkManager 失败: ${e.message}", e)
+            }
+        }
+
+        /**
+         * 检查唯一周期任务是否仍在 WorkManager 队列中。
+         */
+        fun isScheduled(context: Context): Boolean {
+            return try {
+                val workInfos = WorkManager.getInstance(context)
+                    .getWorkInfosForUniqueWork(WORK_NAME)
+                    .get(600, TimeUnit.MILLISECONDS)
+                workInfos.any { workInfo ->
+                    !workInfo.state.isFinished
+                }
+            } catch (e: Exception) {
+                FwLog.e("检查 WorkManager 状态失败: ${e.message}", e)
+                false
             }
         }
     }
 
     override fun doWork(): Result {
         FwLog.d("WorkManager doWork 执行")
+        FwStrategyStateManager.markTriggered(FwStrategyKey.WORK_MANAGER, "doWork")
 
         try {
             // 拉起服务
             ServiceStarter.startForegroundService(applicationContext, "WorkManager唤醒")
         } catch (e: Exception) {
+            FwStrategyStateManager.markError(FwStrategyKey.WORK_MANAGER, e.message ?: "doWork 执行失败", e)
             FwLog.e("WorkManager 执行失败: ${e.message}", e)
             return Result.retry()
         }

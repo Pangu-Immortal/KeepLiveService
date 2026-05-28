@@ -25,6 +25,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.Build
 import com.service.framework.Fw
+import com.service.framework.health.FwStrategyKey
+import com.service.framework.health.FwStrategyStateManager
 import com.service.framework.util.FwLog
 import com.service.framework.util.ServiceStarter
 
@@ -83,11 +85,14 @@ class FwJobService : JobService() {
 
                 val result = jobScheduler.schedule(builder.build())
                 if (result == JobScheduler.RESULT_SUCCESS) {
+                    FwStrategyStateManager.markStarted(FwStrategyKey.JOB_SCHEDULER, "JobID=$JOB_ID")
                     FwLog.d("JobScheduler 调度成功")
                 } else {
+                    FwStrategyStateManager.markError(FwStrategyKey.JOB_SCHEDULER, "JobScheduler.schedule 返回失败")
                     FwLog.e("JobScheduler 调度失败")
                 }
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.JOB_SCHEDULER, e.message ?: "调度异常", e)
                 FwLog.e("JobScheduler 调度异常: ${e.message}", e)
             }
         }
@@ -99,15 +104,32 @@ class FwJobService : JobService() {
             try {
                 val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as? JobScheduler
                 jobScheduler?.cancel(JOB_ID)
+                FwStrategyStateManager.markStopped(FwStrategyKey.JOB_SCHEDULER, "JobID=$JOB_ID")
                 FwLog.d("JobScheduler 已取消")
             } catch (e: Exception) {
+                FwStrategyStateManager.markError(FwStrategyKey.JOB_SCHEDULER, e.message ?: "取消异常", e)
                 FwLog.e("取消 JobScheduler 失败: ${e.message}", e)
+            }
+        }
+
+        /**
+         * 检查 Job 是否仍在系统调度队列中。
+         */
+        fun isScheduled(context: Context): Boolean {
+            return try {
+                val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as? JobScheduler
+                    ?: return false
+                jobScheduler.allPendingJobs.any { jobInfo -> jobInfo.id == JOB_ID }
+            } catch (e: Exception) {
+                FwLog.e("检查 JobScheduler 状态失败: ${e.message}", e)
+                false
             }
         }
     }
 
     override fun onStartJob(params: JobParameters?): Boolean {
         FwLog.d("JobScheduler onStartJob 执行")
+        FwStrategyStateManager.markTriggered(FwStrategyKey.JOB_SCHEDULER, "onStartJob")
 
         // 拉起服务
         ServiceStarter.startForegroundService(applicationContext, "JobScheduler唤醒")

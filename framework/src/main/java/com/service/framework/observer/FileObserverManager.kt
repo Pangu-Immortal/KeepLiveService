@@ -110,6 +110,11 @@ object FileObserverManager {
     }
 
     /**
+     * 检查文件观察者是否已经注册。
+     */
+    fun isRegistered(): Boolean = isRegistered
+
+    /**
      * 监听下载目录
      *
      * 用户下载文件时触发
