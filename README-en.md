@@ -222,6 +222,14 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 # Publish framework artifact to local Maven
 ./gradlew :framework:publishReleasePublicationToMavenLocal
 
+# Optional Rust Native skeleton
+rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+./gradlew :framework:checkFwRustToolchain
+./gradlew :framework:assembleRelease -PfwBuildRust=true
+# If cargo is not in PATH, append: -PfwCargoPath=/path/to/cargo
+
+The optional Rust layer currently provides JNI dynamic registration, build-pipeline probing, read-only process diagnostics, and MediaRoute state/heartbeat logic. Existing `libfw_native.so` and `libfw_mediaroute.so` behavior remains available as fallback.
+
 # Repeated kill/recovery test
 ./kill_alive.sh
 

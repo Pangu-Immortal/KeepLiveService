@@ -106,6 +106,10 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ./gradlew build
 ./gradlew :framework:publishReleasePublicationToMavenLocal
 
+rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+./gradlew :framework:checkFwRustToolchain
+./gradlew :framework:assembleRelease -PfwBuildRust=true
+
 ./kill_alive.sh
 adb logcat | grep -E "(Fw|FwStart|FwHealth|ServiceStarter)"
 ```

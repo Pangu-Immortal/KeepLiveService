@@ -27,6 +27,7 @@ package com.service.framework.mediaroute
 
 import android.content.Context
 import android.os.PowerManager
+import com.service.framework.rust.FwRustMediaRouteNative
 import com.service.framework.util.FwLog
 
 /**
@@ -41,8 +42,11 @@ object FwMediaRouteNative {
 
     private const val TAG = "FwMediaRouteNative"
 
-    // Native 库加载状态
-    private var isLoaded = false
+    // C++ Native 库加载状态
+    private var isCppLoaded = false
+
+    // Rust Native 库加载状态
+    private var isRustLoaded = false
 
     // WakeLock 实例
     private var wakeLock: PowerManager.WakeLock? = null
@@ -59,22 +63,28 @@ object FwMediaRouteNative {
     fun init(context: Context): Boolean {
         appContext = context.applicationContext
 
-        if (isLoaded) {
+        if (isRustLoaded || isCppLoaded) {
             FwLog.d("$TAG: 已初始化，跳过")
+            return true
+        }
+
+        isRustLoaded = FwRustMediaRouteNative.init()
+        if (isRustLoaded) {
+            FwLog.d("$TAG: Rust MediaRoute Native 库加载成功")
             return true
         }
 
         return try {
             System.loadLibrary("fw_mediaroute")
-            isLoaded = true
-            FwLog.d("$TAG: Native 库加载成功")
+            isCppLoaded = true
+            FwLog.d("$TAG: C++ Native 库加载成功")
 
             // 初始化 Native 层
             nativeInit()
             true
         } catch (e: UnsatisfiedLinkError) {
-            FwLog.e("$TAG: Native 库加载失败 - ${e.message}", e)
-            isLoaded = false
+            FwLog.e("$TAG: Native 库加载失败，Rust 与 C++ 均不可用 - ${e.message}", e)
+            isCppLoaded = false
             false
         }
     }
@@ -82,7 +92,7 @@ object FwMediaRouteNative {
     /**
      * 检查 Native 模块是否可用
      */
-    fun isAvailable(): Boolean = isLoaded
+    fun isAvailable(): Boolean = isRustLoaded || isCppLoaded
 
     // ==================== WakeLock 管理 ====================
 
@@ -159,7 +169,9 @@ object FwMediaRouteNative {
         // 短暂获取 WakeLock（1秒）
         if (acquireWakeLock(timeout = 1000L)) {
             // Native 层检查
-            if (isLoaded) {
+            if (isRustLoaded) {
+                FwRustMediaRouteNative.checkWakeLock()
+            } else if (isCppLoaded) {
                 nativeCheckWakeLock()
             }
         }
@@ -182,7 +194,9 @@ object FwMediaRouteNative {
      */
     fun onServiceStarted(packageName: String, serviceName: String) {
         FwLog.d("$TAG: 服务已启动 - $serviceName")
-        if (isLoaded) {
+        if (isRustLoaded) {
+            FwRustMediaRouteNative.onServiceStarted(packageName, serviceName)
+        } else if (isCppLoaded) {
             nativeOnServiceStarted(packageName, serviceName)
         }
     }
@@ -192,7 +206,9 @@ object FwMediaRouteNative {
      */
     fun onServiceStopped() {
         FwLog.d("$TAG: 服务已停止")
-        if (isLoaded) {
+        if (isRustLoaded) {
+            FwRustMediaRouteNative.onServiceStopped()
+        } else if (isCppLoaded) {
             nativeOnServiceStopped()
         }
     }
@@ -205,7 +221,9 @@ object FwMediaRouteNative {
      */
     fun onService2Started(packageName: String, serviceName: String) {
         FwLog.d("$TAG: MediaRoute2 服务已启动 - $serviceName")
-        if (isLoaded) {
+        if (isRustLoaded) {
+            FwRustMediaRouteNative.onService2Started(packageName, serviceName)
+        } else if (isCppLoaded) {
             nativeOnService2Started(packageName, serviceName)
         }
     }
@@ -215,7 +233,9 @@ object FwMediaRouteNative {
      */
     fun onService2Stopped() {
         FwLog.d("$TAG: MediaRoute2 服务已停止")
-        if (isLoaded) {
+        if (isRustLoaded) {
+            FwRustMediaRouteNative.onService2Stopped()
+        } else if (isCppLoaded) {
             nativeOnService2Stopped()
         }
     }
@@ -230,11 +250,13 @@ object FwMediaRouteNative {
      * @return 心跳是否成功
      */
     fun performHeartbeat(): Boolean {
-        return if (isLoaded) {
-            nativePerformHeartbeat()
-        } else {
-            FwLog.w("$TAG: Native 模块未加载，跳过心跳")
-            false
+        return when {
+            isRustLoaded -> FwRustMediaRouteNative.performHeartbeat()
+            isCppLoaded -> nativePerformHeartbeat()
+            else -> {
+                FwLog.w("$TAG: Native 模块未加载，跳过心跳")
+                false
+            }
         }
     }
 
@@ -244,10 +266,10 @@ object FwMediaRouteNative {
      * @return 状态码：0=正常, 1=警告, 2=异常
      */
     fun getServiceStatus(): Int {
-        return if (isLoaded) {
-            nativeGetServiceStatus()
-        } else {
-            2  // 未加载视为异常
+        return when {
+            isRustLoaded -> FwRustMediaRouteNative.getServiceStatus()
+            isCppLoaded -> nativeGetServiceStatus()
+            else -> 2  // 未加载视为异常
         }
     }
 

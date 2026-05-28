@@ -17,3 +17,4 @@ local.properties
 /.idea/
 /.kotlin/
 /framework/build/
+/framework/src/main/rust/**/target/

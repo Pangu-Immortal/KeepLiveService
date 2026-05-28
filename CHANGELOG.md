@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `FwMediaBrowserService` strategy and wired it into config, startup, shutdown, and health checks.
 - Added native startActivity strategies for `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` and `moveTaskToFront`.
 - Added `FwStart.startAuditAll()` for full native strategy audit while keeping `FwStart.start()` on executable strategies by default.
+- Added optional Rust Native skeleton build with 4 Android ABI outputs behind `-PfwBuildRust=true`.
+- Added Rust read-only process diagnostics for OOM adj, memory, process status, root marker, and process count probing.
+- Added optional Rust MediaRoute native state and heartbeat implementation with C++ fallback.
 
 ### Changed
 - Hardened VPN startup to require user authorization, foreground notification startup, no default traffic routing, and explicit special-use subtype metadata.

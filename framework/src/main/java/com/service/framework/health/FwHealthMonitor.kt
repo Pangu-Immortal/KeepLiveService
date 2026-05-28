@@ -29,6 +29,7 @@ import com.service.framework.mediaroute.FwMediaRouteManager
 import com.service.framework.native.FwNative
 import com.service.framework.observer.ContentObserverManager
 import com.service.framework.observer.FileObserverManager
+import com.service.framework.rust.FwRustNative
 import com.service.framework.service.FwForegroundService
 import com.service.framework.strategy.AlarmStrategy
 import com.service.framework.strategy.BatteryOptimizationManager
@@ -281,6 +282,8 @@ object FwHealthMonitor {
         autoRecover: Boolean
     ): List<FwStrategyHealth> {
         val nativeAvailable = FwNative.isAvailable() || FwNative.init(context)
+        val rustSnapshot = FwRustNative.processSnapshotOrNull()
+        val rustMessage = rustSnapshot?.toHealthMessage()
         val daemonHealth = if (!config.enableNativeDaemon) {
             disabled(FwStrategyKey.NATIVE_DAEMON, "配置关闭")
         } else if (!nativeAvailable) {
@@ -299,7 +302,10 @@ object FwHealthMonitor {
                 state = if (running || recovered) FwStrategyHealthState.RUNNING else FwStrategyHealthState.STOPPED,
                 enabled = true,
                 supported = true,
-                message = if (running) "Native 守护运行中" else "Native 守护未运行",
+                message = listOfNotNull(
+                    if (running) "Native 守护运行中" else "Native 守护未运行",
+                    rustMessage
+                ).joinToString("；"),
                 recovered = recovered
             )
         }

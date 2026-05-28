@@ -25,6 +25,7 @@ package com.service.framework.native
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.service.framework.rust.FwRustNative
 import com.service.framework.util.FwLog
 
 /**
@@ -312,6 +313,13 @@ object FwNative {
      * 获取可读的内存信息
      */
     fun getMemoryInfoReadable(): String {
+        FwRustNative.processSnapshotOrNull()?.let { snapshot ->
+            val totalMB = snapshot.memoryTotalKb / 1024
+            val freeMB = snapshot.memoryFreeKb / 1024
+            val availableMB = snapshot.memoryAvailableKb / 1024
+            return "总内存: ${totalMB}MB, 空闲: ${freeMB}MB, 可用: ${availableMB}MB (Rust)"
+        }
+
         if (!isAvailable()) return "Native 模块不可用"
 
         return try {
@@ -329,6 +337,16 @@ object FwNative {
      * 获取当前进程信息摘要
      */
     fun getProcessSummary(): String {
+        FwRustNative.processSnapshotOrNull()?.let { snapshot ->
+            return buildString {
+                appendLine("OOM adj: ${snapshot.oomAdj}")
+                appendLine("进程优先级: Rust 未迁移")
+                appendLine("Root 权限: ${snapshot.hasRoot}")
+                appendLine("系统进程数: ${snapshot.processCount}")
+                append(snapshot.processStatus)
+            }
+        }
+
         if (!isAvailable()) return "Native 模块不可用"
 
         return try {
