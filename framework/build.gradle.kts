@@ -1,3 +1,9 @@
+import org.gradle.api.GradleException
+import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.Delete
+import org.gradle.api.tasks.Exec
+import java.util.Properties
+
 /**
  * ===============================================================================
  * Fw Android Keep-Alive Framework - Library Module Build Configuration
@@ -36,10 +42,39 @@ plugins {
     signing
 }
 
+data class FwRustAndroidTarget(
+    val abi: String,
+    val rustTriple: String,
+    val linkerPrefix: String
+)
+
+val fwRustAndroidTargets = listOf(
+    FwRustAndroidTarget("armeabi-v7a", "armv7-linux-androideabi", "armv7a-linux-androideabi"),
+    FwRustAndroidTarget("arm64-v8a", "aarch64-linux-android", "aarch64-linux-android"),
+    FwRustAndroidTarget("x86", "i686-linux-android", "i686-linux-android"),
+    FwRustAndroidTarget("x86_64", "x86_64-linux-android", "x86_64-linux-android")
+)
+val fwAndroidNdkVersion = "27.2.12479018"
+val fwBuildRust = providers.gradleProperty("fwBuildRust")
+    .map { value -> value.equals("true", ignoreCase = true) }
+    .orElse(false)
+val fwRustManifest = layout.projectDirectory.file("src/main/rust/fw_rust/Cargo.toml")
+val fwRustTargetDir = layout.buildDirectory.dir("rust/target")
+val fwRustJniDir = layout.buildDirectory.dir("generated/rustJniLibs")
+val fwRustMinSdk = 24
+
+fun String.toFwTaskSuffix(): String =
+    split("-", "_").joinToString("") { part ->
+        part.replaceFirstChar { char -> char.uppercase() }
+    }
+
+fun rustLinkerEnvName(rustTriple: String): String =
+    "CARGO_TARGET_${rustTriple.uppercase().replace("-", "_")}_LINKER"
+
 android {
     namespace = "com.service.framework"
     compileSdk = 36
-    ndkVersion = "27.2.12479018"
+    ndkVersion = fwAndroidNdkVersion
 
     defaultConfig {
         minSdk = 24
@@ -128,6 +163,17 @@ android {
     }
 }
 
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        // 只有显式开启 Rust 构建时才把生成目录加入 jniLibs，避免默认构建误打包旧 so。
+        if (fwBuildRust.get()) {
+            variant.sources.jniLibs?.addStaticSourceDirectory(
+                fwRustJniDir.get().asFile.absolutePath
+            )
+        }
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.media)
@@ -141,6 +187,155 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+// ==================== Rust Native 构建配置 ====================
+
+fun resolveAndroidSdkDir(): File {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.isFile) {
+        val properties = Properties()
+        localPropertiesFile.inputStream().use { input -> properties.load(input) }
+        val sdkDir = properties.getProperty("sdk.dir")
+        if (!sdkDir.isNullOrBlank()) {
+            return File(sdkDir)
+        }
+    }
+    val envSdkDir = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+    if (!envSdkDir.isNullOrBlank()) {
+        return File(envSdkDir)
+    }
+    throw GradleException("未找到 Android SDK 目录，请配置 local.properties 的 sdk.dir 或 ANDROID_HOME")
+}
+
+fun resolveExecutable(command: String): File? {
+    val commandFile = File(command)
+    if (commandFile.isAbsolute || command.contains(File.separator)) {
+        return commandFile.takeIf { file -> file.canExecute() }
+    }
+    return System.getenv("PATH")
+        .orEmpty()
+        .split(File.pathSeparator)
+        .asSequence()
+        .filter { path -> path.isNotBlank() }
+        .map { path -> File(path, command) }
+        .firstOrNull { file -> file.canExecute() }
+}
+
+fun resolveNdkToolchainBin(): File {
+    val ndkDir = File(resolveAndroidSdkDir(), "ndk/$fwAndroidNdkVersion")
+    val prebuiltDir = File(ndkDir, "toolchains/llvm/prebuilt")
+    val hostCandidates = listOf("darwin-x86_64", "darwin-aarch64", "linux-x86_64", "windows-x86_64")
+    val hostDir = hostCandidates
+        .map { hostName -> File(prebuiltDir, hostName) }
+        .firstOrNull { candidate -> candidate.isDirectory }
+        ?: throw GradleException("未找到 Android NDK LLVM 工具链目录：${prebuiltDir.absolutePath}")
+    return File(hostDir, "bin")
+}
+
+tasks.register<Delete>("cleanFwRustAndroid") {
+    group = "rust"
+    description = "清理 Fw Rust Native 产物"
+    delete(fwRustTargetDir, fwRustJniDir)
+}
+
+tasks.register("checkFwRustToolchain") {
+    group = "rust"
+    description = "检查 Rust、Cargo 与 Android NDK 链接器是否可用"
+    doLast {
+        val cargoExecutable = findProperty("fwCargoPath") as String? ?: "cargo"
+        val cargoFile = resolveExecutable(cargoExecutable)
+            ?: throw GradleException("未找到 Cargo 可执行文件，请安装 Rust 或通过 -PfwCargoPath 指定 cargo 路径")
+        val rustcExecutable = findProperty("fwRustcPath") as String? ?: File(cargoFile.parentFile, "rustc").absolutePath
+        resolveExecutable(rustcExecutable)
+            ?: throw GradleException("未找到 rustc 可执行文件，请安装 Rust 或通过 -PfwRustcPath 指定 rustc 路径")
+        val toolchainBin = resolveNdkToolchainBin()
+        fwRustAndroidTargets.forEach { target ->
+            val linker = File(toolchainBin, "${target.linkerPrefix}${fwRustMinSdk}-clang")
+            if (!linker.canExecute()) {
+                throw GradleException("Rust Android 链接器不可执行：${linker.absolutePath}")
+            }
+        }
+    }
+}
+
+val copyFwRustTasks = fwRustAndroidTargets.map { target ->
+    val suffix = target.abi.toFwTaskSuffix()
+    val buildTask = tasks.register<Exec>("buildFwRust$suffix") {
+        group = "rust"
+        description = "构建 ${target.abi} 对应的 libfw_rust.so"
+        onlyIf { fwBuildRust.get() }
+        workingDir = fwRustManifest.asFile.parentFile
+        executable = findProperty("fwCargoPath") as String? ?: "cargo"
+        args(
+            "build",
+            "--manifest-path",
+            fwRustManifest.asFile.absolutePath,
+            "--target",
+            target.rustTriple,
+            "--release"
+        )
+        doFirst {
+            if (!fwRustManifest.asFile.isFile) {
+                throw GradleException("Rust manifest 不存在：${fwRustManifest.asFile.absolutePath}")
+            }
+            val configuredCargo = findProperty("fwCargoPath") as String? ?: "cargo"
+            val cargoFile = resolveExecutable(configuredCargo)
+                ?: throw GradleException("未找到 Cargo 可执行文件，请安装 Rust 或通过 -PfwCargoPath 指定 cargo 路径")
+            val rustcExecutable = findProperty("fwRustcPath") as String? ?: File(cargoFile.parentFile, "rustc").absolutePath
+            val rustcFile = resolveExecutable(rustcExecutable)
+                ?: throw GradleException("未找到 rustc 可执行文件，请安装 Rust 或通过 -PfwRustcPath 指定 rustc 路径")
+            val toolchainBin = resolveNdkToolchainBin()
+            val linker = File(toolchainBin, "${target.linkerPrefix}${fwRustMinSdk}-clang")
+            if (!linker.canExecute()) {
+                throw GradleException("Rust Android 链接器不可执行：${linker.absolutePath}")
+            }
+            val baseRustFlags = System.getenv("RUSTFLAGS").orEmpty()
+            val androidRustFlags = "-C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,--gc-sections"
+            val rustPath = listOf(cargoFile.parentFile.absolutePath, System.getenv("PATH").orEmpty())
+                .filter { value -> value.isNotBlank() }
+                .joinToString(File.pathSeparator)
+            environment("CARGO_TARGET_DIR", fwRustTargetDir.get().asFile.absolutePath)
+            environment(rustLinkerEnvName(target.rustTriple), linker.absolutePath)
+            environment("PATH", rustPath)
+            environment("RUSTC", rustcFile.absolutePath)
+            environment(
+                "RUSTFLAGS",
+                listOf(baseRustFlags, androidRustFlags).filter { value -> value.isNotBlank() }.joinToString(" ")
+            )
+            logger.lifecycle("Fw Rust: 构建 ${target.abi}，target=${target.rustTriple}")
+        }
+    }
+
+    tasks.register<Copy>("copyFwRust$suffix") {
+        group = "rust"
+        description = "复制 ${target.abi} 的 libfw_rust.so 到 Android jniLibs 产物目录"
+        onlyIf { fwBuildRust.get() }
+        dependsOn(buildTask)
+        from(fwRustTargetDir.map { targetDir ->
+            targetDir.file("${target.rustTriple}/release/libfw_rust.so")
+        })
+        into(fwRustJniDir.map { jniDir -> jniDir.dir(target.abi) })
+        rename { "libfw_rust.so" }
+    }
+}
+
+val buildFwRustAndroid = tasks.register("buildFwRustAndroid") {
+    group = "rust"
+    description = "构建并打包 4 个 Android ABI 的 Rust Native 骨架库"
+    onlyIf { fwBuildRust.get() }
+    dependsOn(copyFwRustTasks)
+    doFirst {
+        logger.lifecycle("Fw Rust: 已启用 -PfwBuildRust=true，将把 libfw_rust.so 纳入 AAR")
+    }
+}
+
+tasks.matching { task ->
+    task.name.startsWith("merge") && task.name.endsWith("JniLibFolders")
+}.configureEach {
+    if (fwBuildRust.get()) {
+        dependsOn(buildFwRustAndroid)
+    }
 }
 
 // ==================== Maven Central 发布配置 ====================

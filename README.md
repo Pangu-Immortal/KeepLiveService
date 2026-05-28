@@ -406,6 +406,20 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 # 输出：release/app-202604101118.apk + mapping 文件
 ```
 
+### Rust Native（可选）
+
+源码工程默认不强制构建 Rust so，避免没有 Rust 工具链的环境无法编译现有 C++ 版本。需要验证 Rust 迁移骨架时，先安装 Rust 并添加 Android targets，然后显式开启构建开关：
+
+```bash
+rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+./gradlew :framework:checkFwRustToolchain
+./gradlew :framework:assembleRelease -PfwBuildRust=true
+```
+
+如果 `cargo` 不在 `PATH` 中，可以追加 `-PfwCargoPath=/path/to/cargo` 指定 Cargo 路径。
+
+开启后会为 `armeabi-v7a`、`arm64-v8a`、`x86`、`x86_64` 生成并打包 `libfw_rust.so`。当前 Rust 层已接入 JNI 动态注册、构建链路探测、只读进程信息快照和 MediaRoute 状态/心跳逻辑；现有 `libfw_native.so` 与 `libfw_mediaroute.so` 行为保持不变，Rust so 不存在时自动回退。
+
 ### 保活测试
 
 ```bash

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Debug 专用 Activity：用于设备侧 startActivity 策略测试，不进入 release 包。 -->
+        <activity
+            android:name=".TestStartActivity"
+            android:exported="false" />
+    </application>
+
+</manifest>
