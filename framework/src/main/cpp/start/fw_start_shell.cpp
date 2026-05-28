@@ -30,7 +30,7 @@ FwStartResult fw_start_shell_start_in_vsync(FwStartContext& ctx) {
                 "am start-in-vsync 研究路径仅针对新系统 shell 命令");
     }
     if (geteuid() != 0 && geteuid() != 2000) {
-        LOGW("shell start-in-vsync 需要 root/shell 身份，当前 euid=%d", geteuid());
+        LOGW("start strategy requires privilege: mask=%d, euid=%d", FW_START_SHELL_START_IN_VSYNC, geteuid());
         return fw_start_failure(
                 FW_START_CODE_REQUIRES_PRIVILEGE,
                 FW_START_SHELL_START_IN_VSYNC,

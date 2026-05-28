@@ -55,26 +55,25 @@ typedef FwStartResult (*FwStartStrategyFn)(FwStartContext&);
 
 struct FwStartStrategyEntry {
     int mask;
-    const char* name;
     FwStartStrategyFn function;
 };
 
 static const FwStartStrategyEntry kStrategies[] = {
-        {FW_START_VIRTUAL_DISPLAY, "VIRTUAL_DISPLAY", fw_start_virtual_display},
-        {FW_START_NOTIFICATION_BAL, "NOTIFICATION_BAL", fw_start_notification_bal},
-        {FW_START_MEDIA_BUTTON_BAL, "MEDIA_BUTTON_BAL", fw_start_media_button_bal},
-        {FW_START_BINDER_START_ACTIVITIES, "BINDER_START_ACTIVITIES", fw_start_binder_start_activities},
-        {FW_START_PENDING_INTENT_SEND, "PENDING_INTENT_SEND", fw_start_pending_intent_send},
-        {FW_START_DOUBLE_START_ACTIVITIES, "DOUBLE_START_ACTIVITIES", fw_start_double_start_activities},
-        {FW_START_START_NEXT_MATCHING, "START_NEXT_MATCHING", fw_start_next_matching},
-        {FW_START_START_FOR_RESULT_HOOK, "START_FOR_RESULT_HOOK", fw_start_start_for_result_hook},
-        {FW_START_CREDENTIAL_MANAGER, "CREDENTIAL_MANAGER", fw_start_credential_manager},
-        {FW_START_PRINT_MANAGER, "PRINT_MANAGER", fw_start_print_manager},
-        {FW_START_SHELL_START_IN_VSYNC, "SHELL_START_IN_VSYNC", fw_start_shell_start_in_vsync},
-        {FW_START_MOVE_TASK_TO_FRONT, "MOVE_TASK_TO_FRONT", fw_start_move_task_to_front},
-        {FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS, "CONTEXT_NEW_TASK_EXCLUDE_RECENTS", fw_start_context_new_task_exclude_recents},
-        {FW_START_CONTEXT_DIRECT, "CONTEXT_DIRECT", fw_start_context_direct},
-        {FW_START_CONTEXT_NEW_TASK, "CONTEXT_NEW_TASK", fw_start_context_new_task}
+        {FW_START_VIRTUAL_DISPLAY, fw_start_virtual_display},
+        {FW_START_NOTIFICATION_BAL, fw_start_notification_bal},
+        {FW_START_MEDIA_BUTTON_BAL, fw_start_media_button_bal},
+        {FW_START_BINDER_START_ACTIVITIES, fw_start_binder_start_activities},
+        {FW_START_PENDING_INTENT_SEND, fw_start_pending_intent_send},
+        {FW_START_DOUBLE_START_ACTIVITIES, fw_start_double_start_activities},
+        {FW_START_START_NEXT_MATCHING, fw_start_next_matching},
+        {FW_START_START_FOR_RESULT_HOOK, fw_start_start_for_result_hook},
+        {FW_START_CREDENTIAL_MANAGER, fw_start_credential_manager},
+        {FW_START_PRINT_MANAGER, fw_start_print_manager},
+        {FW_START_SHELL_START_IN_VSYNC, fw_start_shell_start_in_vsync},
+        {FW_START_MOVE_TASK_TO_FRONT, fw_start_move_task_to_front},
+        {FW_START_CONTEXT_NEW_TASK_EXCLUDE_RECENTS, fw_start_context_new_task_exclude_recents},
+        {FW_START_CONTEXT_DIRECT, fw_start_context_direct},
+        {FW_START_CONTEXT_NEW_TASK, fw_start_context_new_task}
 };
 
 int start(JNIEnv* env, jobject context, jobject intent, int modeMask, int sdkInt) {
@@ -87,24 +86,21 @@ int fw_start_activity(JNIEnv* env, jobject context, jobject intent, int modeMask
         return FW_START_CODE_INVALID_ARGUMENT;
     }
     FwStartContext ctx{env, context, intent, modeMask, sdkInt};
-    LOGI("统一 startActivity 开始: modeMask=%d, sdkInt=%d", modeMask, sdkInt);
+    LOGI("native start begin: modeMask=%d, sdkInt=%d", modeMask, sdkInt);
     for (const FwStartStrategyEntry& entry : kStrategies) {
         if (!fw_start_has_strategy(modeMask, entry.mask)) {
-            LOGD("策略跳过: %s 未在 modeMask 中启用", entry.name);
+            LOGD("策略跳过: mask=%d 未在 modeMask 中启用", entry.mask);
             continue;
         }
-        LOGI("策略开始: %s", entry.name);
+        LOGI("策略开始: mask=%d", entry.mask);
         FwStartResult result = entry.function(ctx);
         if (fw_start_is_success(result)) {
-            LOGI("策略成功: %s, message=%s", entry.name, result.message);
+            LOGI("策略成功: mask=%d", entry.mask);
             return entry.mask;
         }
-        LOGW("策略未成功: %s, code=%s, message=%s",
-             entry.name,
-             fw_start_code_name(result.code),
-             result.message);
-        fw_start_clear_exception(env, entry.name);
+        LOGW("策略未成功: mask=%d, code=%s", entry.mask, fw_start_code_name(result.code));
+        fw_start_clear_exception(env, "strategy");
     }
-    LOGE("统一 startActivity 结束: 所有启用策略均未成功");
+    LOGE("native start end: no strategy succeeded");
     return FW_START_CODE_NO_STRATEGY_SUCCEEDED;
 }

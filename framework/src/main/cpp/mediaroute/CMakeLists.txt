@@ -22,6 +22,11 @@ add_library(
     fw_mediaroute_jni.cpp  # 源文件
 )
 
+# 引入上级 native 公共头文件。
+target_include_directories(fw_mediaroute PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
 # 链接 Android 日志库
 target_link_libraries(
     fw_mediaroute
@@ -32,4 +37,26 @@ target_link_libraries(
 set_target_properties(fw_mediaroute PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
+)
+
+# ==================== Native 防护配置 ====================
+# Release/RelWithDebInfo 构建仅导出 JNI_OnLoad，其他业务符号全部本地化。
+target_compile_options(fw_mediaroute PRIVATE
+    -Wall
+    -Wextra
+    -fvisibility=hidden
+    -fvisibility-inlines-hidden
+    -ffunction-sections
+    -fdata-sections
+    $<$<NOT:$<CONFIG:Debug>>:-O2>
+    $<$<NOT:$<CONFIG:Debug>>:-flto>
+)
+
+target_link_options(fw_mediaroute PRIVATE
+    -Wl,-z,max-page-size=16384
+    -Wl,--gc-sections
+    -Wl,--exclude-libs,ALL
+    -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/fw_mediaroute.exports
+    $<$<NOT:$<CONFIG:Debug>>:-flto>
+    $<$<NOT:$<CONFIG:Debug>>:-Wl,--strip-all>
 )

@@ -24,9 +24,11 @@
 #include <string>
 #include <ctime>
 #include <atomic>
+#include "fw_jni_protect.h"
+#include "fw_jni_register.h"
 
 // 日志标签
-#define TAG "FwMediaRouteNative"
+#define TAG "FwMR"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, TAG, __VA_ARGS__)
@@ -76,7 +78,7 @@ void init() {
     g_serviceState.lastHeartbeatTime = getCurrentTimeMs();
     g_serviceState.heartbeatCount = 0;
 
-    LOGI("MediaRoute Native module initialized");
+    LOGI("native module initialized");
 }
 
 /**
@@ -191,35 +193,33 @@ int getServiceStatus() {
 
 // ==================== JNI 方法实现 ====================
 
-extern "C" {
-
 /**
  * Native 初始化
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeInit(
-        JNIEnv *env,
-        jclass clazz) {
+static void JNICALL
+nativeInit(
+        JNIEnv* /* env */,
+        jclass /* clazz */) {
     fw::mediaroute::init();
 }
 
 /**
  * WakeLock 检查
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeCheckWakeLock(
-        JNIEnv *env,
-        jclass clazz) {
+static void JNICALL
+nativeCheckWakeLock(
+        JNIEnv* /* env */,
+        jclass /* clazz */) {
     fw::mediaroute::checkWakeLock();
 }
 
 /**
  * 服务启动通知
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeOnServiceStarted(
+static void JNICALL
+nativeOnServiceStarted(
         JNIEnv *env,
-        jclass clazz,
+        jclass /* clazz */,
         jstring packageName,
         jstring serviceName) {
     const char *pkgName = env->GetStringUTFChars(packageName, nullptr);
@@ -234,20 +234,20 @@ Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeOnServiceStarted(
 /**
  * 服务停止通知
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeOnServiceStopped(
-        JNIEnv *env,
-        jclass clazz) {
+static void JNICALL
+nativeOnServiceStopped(
+        JNIEnv* /* env */,
+        jclass /* clazz */) {
     fw::mediaroute::onServiceStopped();
 }
 
 /**
  * MediaRoute2 服务启动通知
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeOnService2Started(
+static void JNICALL
+nativeOnService2Started(
         JNIEnv *env,
-        jclass clazz,
+        jclass /* clazz */,
         jstring packageName,
         jstring serviceName) {
     const char *pkgName = env->GetStringUTFChars(packageName, nullptr);
@@ -262,31 +262,58 @@ Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeOnService2Started
 /**
  * MediaRoute2 服务停止通知
  */
-JNIEXPORT void JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeOnService2Stopped(
-        JNIEnv *env,
-        jclass clazz) {
+static void JNICALL
+nativeOnService2Stopped(
+        JNIEnv* /* env */,
+        jclass /* clazz */) {
     fw::mediaroute::onService2Stopped();
 }
 
 /**
  * 心跳检测
  */
-JNIEXPORT jboolean JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativePerformHeartbeat(
-        JNIEnv *env,
-        jclass clazz) {
+static jboolean JNICALL
+nativePerformHeartbeat(
+        JNIEnv* /* env */,
+        jclass /* clazz */) {
     return fw::mediaroute::performHeartbeat() ? JNI_TRUE : JNI_FALSE;
 }
 
 /**
  * 获取服务状态
  */
-JNIEXPORT jint JNICALL
-Java_com_service_framework_mediaroute_FwMediaRouteNative_nativeGetServiceStatus(
-        JNIEnv *env,
-        jclass clazz) {
+static jint JNICALL
+nativeGetServiceStatus(
+        JNIEnv* /* env */,
+        jclass /* clazz */) {
     return fw::mediaroute::getServiceStatus();
 }
 
-} // extern "C"
+/**
+ * JNI_OnLoad
+ *
+ * 库加载时动态注册 MediaRoute native 方法。
+ */
+extern "C" JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* /* reserved */) {
+    JNIEnv* env = nullptr;
+    if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
+        LOGE("JNI_OnLoad: GetEnv 失败");
+        return JNI_ERR;
+    }
+
+    if (!fw::jni::registerNativeMethods(env, FW_PROTECT_STR("com/service/framework/mediaroute/FwMediaRouteNative"), {
+            {FW_PROTECT_STR("nativeInit"), FW_PROTECT_STR("()V"), reinterpret_cast<void*>(nativeInit)},
+            {FW_PROTECT_STR("nativeCheckWakeLock"), FW_PROTECT_STR("()V"), reinterpret_cast<void*>(nativeCheckWakeLock)},
+            {FW_PROTECT_STR("nativeOnServiceStarted"), FW_PROTECT_STR("(Ljava/lang/String;Ljava/lang/String;)V"), reinterpret_cast<void*>(nativeOnServiceStarted)},
+            {FW_PROTECT_STR("nativeOnServiceStopped"), FW_PROTECT_STR("()V"), reinterpret_cast<void*>(nativeOnServiceStopped)},
+            {FW_PROTECT_STR("nativeOnService2Started"), FW_PROTECT_STR("(Ljava/lang/String;Ljava/lang/String;)V"), reinterpret_cast<void*>(nativeOnService2Started)},
+            {FW_PROTECT_STR("nativeOnService2Stopped"), FW_PROTECT_STR("()V"), reinterpret_cast<void*>(nativeOnService2Stopped)},
+            {FW_PROTECT_STR("nativePerformHeartbeat"), FW_PROTECT_STR("()Z"), reinterpret_cast<void*>(nativePerformHeartbeat)},
+            {FW_PROTECT_STR("nativeGetServiceStatus"), FW_PROTECT_STR("()I"), reinterpret_cast<void*>(nativeGetServiceStatus)}
+    }, TAG)) {
+        return JNI_ERR;
+    }
+
+    LOGI("JNI_OnLoad: fw_mediaroute 库已加载");
+    return JNI_VERSION_1_6;
+}

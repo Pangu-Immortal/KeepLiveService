@@ -42,27 +42,27 @@ FwStartResult fw_start_pending_intent_send(FwStartContext& ctx) {
                 "复制 Intent 失败");
     }
     fw_start_add_new_task_flag(ctx.env, clonedIntent);
-    jclass pendingIntentClass = ctx.env->FindClass("android/app/PendingIntent");
+    jclass pendingIntentClass = ctx.env->FindClass(FW_PROTECT_STR("android/app/PendingIntent").c_str());
     if (pendingIntentClass == nullptr) {
-        fw_start_clear_exception(ctx.env, "FindClass(PendingIntent)");
+        fw_start_clear_exception(ctx.env, "stage");
         ctx.env->DeleteLocalRef(clonedIntent);
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
-                FW_START_PENDING_INTENT_SEND,
-                "PendingIntent 类查找失败");
+            FW_START_PENDING_INTENT_SEND,
+            "PendingIntent 类查找失败");
     }
     jmethodID getActivity = ctx.env->GetStaticMethodID(
             pendingIntentClass,
-            "getActivity",
-            "(Landroid/content/Context;ILandroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/PendingIntent;");
+            FW_PROTECT_STR("getActivity").c_str(),
+            FW_PROTECT_STR("(Landroid/content/Context;ILandroid/content/Intent;ILandroid/os/Bundle;)Landroid/app/PendingIntent;").c_str());
     if (getActivity == nullptr) {
-        fw_start_clear_exception(ctx.env, "PendingIntent.getActivity(Context,int,Intent,int,Bundle)");
+        fw_start_clear_exception(ctx.env, "stage");
         getActivity = ctx.env->GetStaticMethodID(
                 pendingIntentClass,
-                "getActivity",
-                "(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;");
+                FW_PROTECT_STR("getActivity").c_str(),
+                FW_PROTECT_STR("(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;").c_str());
         if (getActivity == nullptr) {
-            fw_start_clear_exception(ctx.env, "PendingIntent.getActivity");
+            fw_start_clear_exception(ctx.env, "stage");
             ctx.env->DeleteLocalRef(clonedIntent);
             ctx.env->DeleteLocalRef(pendingIntentClass);
             return fw_start_failure(
@@ -87,8 +87,8 @@ FwStartResult fw_start_pending_intent_send(FwStartContext& ctx) {
     } else {
         jmethodID getActivityLegacy = ctx.env->GetStaticMethodID(
                 pendingIntentClass,
-                "getActivity",
-                "(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;");
+                FW_PROTECT_STR("getActivity").c_str(),
+                FW_PROTECT_STR("(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;").c_str());
         if (getActivityLegacy != nullptr) {
             pendingIntent = ctx.env->CallStaticObjectMethod(
                     pendingIntentClass,
@@ -98,11 +98,11 @@ FwStartResult fw_start_pending_intent_send(FwStartContext& ctx) {
                     clonedIntent,
                     fw_start_pending_intent_flags(ctx.sdkInt));
         } else {
-            fw_start_clear_exception(ctx.env, "PendingIntent.getActivity legacy lookup");
+            fw_start_clear_exception(ctx.env, "stage");
         }
     }
     ctx.env->DeleteLocalRef(clonedIntent);
-    if (fw_start_clear_exception(ctx.env, "PendingIntent.getActivity()") || pendingIntent == nullptr) {
+    if (fw_start_clear_exception(ctx.env, "stage") || pendingIntent == nullptr) {
         ctx.env->DeleteLocalRef(pendingIntentClass);
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
@@ -114,20 +114,23 @@ FwStartResult fw_start_pending_intent_send(FwStartContext& ctx) {
     if (optionsBundle != nullptr) {
         jmethodID sendWithBundle = ctx.env->GetMethodID(
                 pendingIntentClass,
-                "send",
-                "(Landroid/content/Context;ILandroid/content/Intent;Landroid/app/PendingIntent$OnFinished;Landroid/os/Handler;Ljava/lang/String;Landroid/os/Bundle;)V");
+                FW_PROTECT_STR("send").c_str(),
+                FW_PROTECT_STR("(Landroid/content/Context;ILandroid/content/Intent;Landroid/app/PendingIntent$OnFinished;Landroid/os/Handler;Ljava/lang/String;Landroid/os/Bundle;)V").c_str());
         if (sendWithBundle != nullptr) {
             ctx.env->CallVoidMethod(pendingIntent, sendWithBundle, ctx.context, 0, nullptr, nullptr, nullptr, nullptr, optionsBundle);
-            sent = !fw_start_clear_exception(ctx.env, "PendingIntent.send(Bundle)");
+            sent = !fw_start_clear_exception(ctx.env, "stage");
         } else {
-            fw_start_clear_exception(ctx.env, "PendingIntent.send(Bundle) lookup");
+            fw_start_clear_exception(ctx.env, "stage");
         }
         ctx.env->DeleteLocalRef(optionsBundle);
     }
     if (!sent) {
-        jmethodID send = ctx.env->GetMethodID(pendingIntentClass, "send", "()V");
+        jmethodID send = ctx.env->GetMethodID(
+                pendingIntentClass,
+                FW_PROTECT_STR("send").c_str(),
+                FW_PROTECT_STR("()V").c_str());
         if (send == nullptr) {
-            fw_start_clear_exception(ctx.env, "PendingIntent.send()");
+            fw_start_clear_exception(ctx.env, "stage");
             ctx.env->DeleteLocalRef(pendingIntent);
             ctx.env->DeleteLocalRef(pendingIntentClass);
             return fw_start_failure(
@@ -136,7 +139,7 @@ FwStartResult fw_start_pending_intent_send(FwStartContext& ctx) {
                     "PendingIntent.send 方法查找失败");
         }
         ctx.env->CallVoidMethod(pendingIntent, send);
-        sent = !fw_start_clear_exception(ctx.env, "PendingIntent.send()");
+        sent = !fw_start_clear_exception(ctx.env, "stage");
     }
     ctx.env->DeleteLocalRef(pendingIntent);
     ctx.env->DeleteLocalRef(pendingIntentClass);
@@ -146,7 +149,7 @@ FwStartResult fw_start_pending_intent_send(FwStartContext& ctx) {
                 FW_START_PENDING_INTENT_SEND,
                 "PendingIntent.send 抛出异常");
     }
-    LOGI("PendingIntent.getActivity(...).send() 执行成功");
+    LOGI("start strategy executed: mask=%d", FW_START_PENDING_INTENT_SEND);
     return fw_start_success(FW_START_PENDING_INTENT_SEND, "PendingIntent send 启动成功");
 }
 

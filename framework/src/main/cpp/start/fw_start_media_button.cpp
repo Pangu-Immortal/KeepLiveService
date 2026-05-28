@@ -29,7 +29,7 @@ FwStartResult fw_start_media_button_bal(FwStartContext& ctx) {
                 FW_START_MEDIA_BUTTON_BAL,
                 "MediaButton BAL 研究路径仅针对 Android 12-14 旧实现窗口");
     }
-    LOGW("MediaButton BAL 策略已纳入策略表：依赖系统媒体键 PendingIntent 权限传播，不在 SDK 内执行");
+    LOGW("start strategy skipped: mask=%d", FW_START_MEDIA_BUTTON_BAL);
     return fw_start_failure(
             FW_START_CODE_SKIPPED_BY_POLICY,
             FW_START_MEDIA_BUTTON_BAL,

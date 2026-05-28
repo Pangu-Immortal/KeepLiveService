@@ -21,6 +21,7 @@
 
 #include <jni.h>
 #include <string>
+#include "fw_jni_protect.h"
 
 bool fw_start_clear_exception(JNIEnv* env, const char* stage);
 bool fw_start_has_strategy(int modeMask, int strategyMask);

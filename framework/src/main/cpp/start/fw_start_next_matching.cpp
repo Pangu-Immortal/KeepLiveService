@@ -32,10 +32,10 @@ FwStartResult fw_start_next_matching(FwStartContext& ctx) {
     jclass activityClass = ctx.env->GetObjectClass(ctx.context);
     jmethodID startNextMatchingActivity = ctx.env->GetMethodID(
             activityClass,
-            "startNextMatchingActivity",
-            "(Landroid/content/Intent;)Z");
+            FW_PROTECT_STR("startNextMatchingActivity").c_str(),
+            FW_PROTECT_STR("(Landroid/content/Intent;)Z").c_str());
     if (startNextMatchingActivity == nullptr) {
-        fw_start_clear_exception(ctx.env, "Activity.startNextMatchingActivity");
+        fw_start_clear_exception(ctx.env, "stage");
         ctx.env->DeleteLocalRef(activityClass);
         return fw_start_failure(
                 FW_START_CODE_JNI_EXCEPTION,
@@ -43,7 +43,7 @@ FwStartResult fw_start_next_matching(FwStartContext& ctx) {
                 "startNextMatchingActivity 方法查找失败");
     }
     jboolean result = ctx.env->CallBooleanMethod(ctx.context, startNextMatchingActivity, ctx.intent);
-    bool failed = fw_start_clear_exception(ctx.env, "Activity.startNextMatchingActivity()");
+    bool failed = fw_start_clear_exception(ctx.env, "stage");
     ctx.env->DeleteLocalRef(activityClass);
     if (failed || result != JNI_TRUE) {
         return fw_start_failure(
@@ -51,6 +51,6 @@ FwStartResult fw_start_next_matching(FwStartContext& ctx) {
                 FW_START_START_NEXT_MATCHING,
                 "startNextMatchingActivity 未找到下一个匹配 Activity 或被系统拦截");
     }
-    LOGI("startNextMatchingActivity 公开 API 路径执行成功");
+    LOGI("start strategy executed: mask=%d", FW_START_START_NEXT_MATCHING);
     return fw_start_success(FW_START_START_NEXT_MATCHING, "startNextMatchingActivity 启动成功");
 }
