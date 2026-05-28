@@ -18,7 +18,7 @@
 
 </div>
 
-**简体中文** | [English](README-en.md)
+**简体中文** | [繁體中文](README-zh-Hant.md) | [English](README-en.md) | [日本語](README-ja.md) | [한국어](README-ko.md)
 
 > **TL;DR — 为什么选择 Fw？**
 >
@@ -98,251 +98,6 @@ val vpnIntent = FwVpnService.prepareIntent(this)
 if (vpnIntent != null) {
     startActivityForResult(vpnIntent, 1001)
 }
-```
-
-![Pangu-Immortal 微信二维码](https://github.com/Pangu-Immortal/Pangu-Immortal/blob/main/getqrcode.png)
-
-**Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
-
----
-
-## 什么是 Android 保活？
-
-在 Android 系统中，当用户切换到其他应用或锁屏后，系统会根据内存压力和电池策略自动回收后台进程。所谓 **Android 保活**（也称为"后台常驻""进程保护""后台保持运行""防杀进程"），是指通过一系列技术手段让应用在后台持续运行、不被系统或厂商的资源管理机制杀死的技术。
-
-**为什么需要保活？**
-
-- **即时通讯 (IM)**：微信、钉钉等 App 需要在后台实时接收消息推送，一旦进程被杀，用户将无法收到新消息通知。
-- **音乐/音频播放**：用户期望锁屏后音乐继续播放，进程被回收意味着播放中断。
-- **IoT 设备控制**：智能家居、蓝牙外设等场景需要应用持续保持与设备的连接。
-- **健康与运动追踪**：步数统计、心率监测、GPS 轨迹记录等功能需要后台持续采集数据。
-- **定位与导航服务**：实时定位、地理围栏、物流追踪等需要应用在后台不间断运行。
-
-然而，从 Android 8.0 开始，系统对[后台执行](https://developer.android.com/about/versions/oreo/background)施加了越来越严格的限制；各厂商（小米 MIUI、华为 EMUI、OPPO ColorOS、vivo Funtouch）还额外叠加了自家的省电策略和自启动管理。普通开发者如果不借助系统化的后台保持运行方案，应用进程极容易在后台被杀。
-
-**Fw 框架正是为解决这一问题而生** —— 它将市面上所有已知的后台常驻技术（前台服务、双进程守护、Native 守护、MediaRoute、VPN 保护、通知豁免等）整合为一个开箱即用的 SDK，让开发者通过一行代码就能获得商业级的进程保护能力。
-
----
-
-> **一行代码接入 35+ 种后台保持运行策略，覆盖 Android 7.0 - 16 全版本，适配 10+ 厂商 ROM。**
->
-> 完整复现市面上所有商业应用的防杀进程机制——前台服务、双进程守护、Native C++ fork 守护、MediaRoute 媒体路由（酷狗音乐核心方案）、账户同步、[JobScheduler](https://developer.android.com/reference/android/app/job/JobScheduler)、[WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager)、[AlarmManager](https://developer.android.com/reference/android/app/AlarmManager)、1 像素 Activity、静默音频、悬浮窗、[无障碍服务](https://developer.android.com/guide/topics/ui/accessibility/service)、通知监听、蓝牙/WiFi/USB/NFC 广播唤醒、ContentObserver、FileObserver、Binder 直调 AMS 防强停、统一体外 Activity 启动策略、VirtualDisplay 启动 Activity……穷尽展示所有进程保护手段。
->
-> 为了拉齐全网共同认知，让小团队开发不再迷茫，开源了全套所有私密函数和私密策略。会长期持续迭代，会陆陆续续的公开所有的隐私策略，ecpm 策略等等，欢迎 star 持续关注。
-
----
-
-## v2.0 重大升级 — 8 大全新保活策略
-
-> **2026 年 4 月发布**，策略总数从 27 到 35+，覆盖 Android 8.0 - 16 的最新系统特性。这是本项目自开源以来最大规模的一次更新。
-
-### 新增策略一览
-
-| # | 策略 | 类名 | 核心原理 | API 要求 | 有效性 |
-|---|------|------|---------|---------|-------|
-| 1 | **VPN 系统级保活** | `FwVpnService` | 本地回环 VPN，[BIND_VPN_SERVICE](https://developer.android.com/reference/android/net/VpnService) 绑定保护 | 24+ | 极高 |
-| 2 | **伴侣设备后台常驻** | `FwCompanionService` | [CompanionDeviceService](https://developer.android.com/reference/android/companion/CompanionDeviceService)，BLE 设备关联 | 31+ | 高 |
-| 3 | **CallStyle 通知豁免** | `FwCallStyleManager` | [Notification.CallStyle](https://developer.android.com/reference/android/app/Notification.CallStyle)，无需 POST_NOTIFICATIONS | 31+ | 极高 |
-| 4 | **MediaSession 通知豁免** | `MediaSessionNotificationManager` | [MediaSession](https://developer.android.com/reference/android/media/session/MediaSession) + MediaStyle，Android 13+ 豁免机制 | 33+ | 极高 |
-| 5 | **设备管理员进程保护** | `FwDeviceAdminService` | [Device Owner](https://developer.android.com/work/dpc/build-dpc) 模式，系统自动绑定 | 26+ | 极高 |
-| 6 | **Quick Settings 磁贴** | `FwTileService` | [TileService](https://developer.android.com/reference/android/service/quicksettings/TileService) 下拉通知栏磁贴，用户交互触发 | 24+ | 高 |
-| 7 | **桌面小组件** | `FwWidgetProvider` | [AppWidgetProvider](https://developer.android.com/guide/topics/appwidgets)，30 分钟系统级定时唤醒 | 24+ | 高 |
-| 8 | **屏保防杀进程** | `FwDreamService` | [DreamService](https://developer.android.com/reference/android/service/dreams/DreamService) 充电待机时系统自动激活 | 24+ | 高 |
-
-### 新策略详解
-
-#### 1. VPN 系统级保活 — `FwVpnService`
-
-通过建立本地回环 VPN 隧道（127.0.0.1 -> 127.0.0.1），获得系统级 [`BIND_VPN_SERVICE`](https://developer.android.com/reference/android/net/VpnService) 绑定保护。VPN 服务是 Android 系统中进程优先级最高的服务之一，几乎不会被系统杀死。
-
-- **核心机制**：VpnService 建立虚拟网络接口，所有流量通过本地回环，不影响正常网络
-- **进程优先级**：与系统 VPN 服务同级，OOM adj 值极低
-- **用户感知**：状态栏显示 VPN 图标（可配合通知引导用户理解）
-- **默认关闭**：需用户手动授权 VPN 权限
-
-#### 2. 伴侣设备后台常驻 — `FwCompanionService`
-
-利用 Android 12+ 的 [`CompanionDeviceService`](https://developer.android.com/reference/android/companion/CompanionDeviceService) API，通过 BLE 设备关联获得 `REQUEST_COMPANION_RUN_IN_BACKGROUND` 和 `REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND` 两大系统级豁免权限。
-
-- **核心机制**：注册为伴侣设备应用，获得后台运行豁免
-- **系统绑定**：配对设备在附近时，系统自动绑定服务
-- **默认关闭**：需要 BLE 设备配对
-
-#### 3. CallStyle 通知豁免 — `FwCallStyleManager`
-
-注册为自管理通话应用（Self-Managed Connection），通过 [`Notification.CallStyle`](https://developer.android.com/reference/android/app/Notification.CallStyle) 发送通话样式通知。Android 系统对通话通知有特殊豁免——**无需 POST_NOTIFICATIONS 权限即可显示通知**。
-
-- **核心机制**：[ConnectionService](https://developer.android.com/reference/android/telecom/ConnectionService) + PhoneAccount + Notification.CallStyle
-- **通知豁免**：通话通知不受 Android 13+ 通知权限限制
-- **进程保护**：通话进程优先级极高
-- **默认关闭**：侵入性较强（会显示通话样式通知）
-
-#### 4. MediaSession 通知豁免 — `MediaSessionNotificationManager`
-
-这是 Android 13+ 上绕过 [`POST_NOTIFICATIONS`](https://developer.android.com/develop/ui/views/notifications/notification-permission) 权限限制的核心策略。通过创建活跃的 `MediaSession` 并使用 `MediaStyle` 通知，系统将应用识别为正在播放媒体的应用，自动豁免通知权限要求。
-
-- **核心机制**：MediaSessionCompat + NotificationCompat.MediaStyle
-- **权限豁免**：Android 13+ 无需 POST_NOTIFICATIONS 即可显示通知
-- **商业应用实践**：酷狗音乐、QQ 音乐、网易云音乐等均使用此机制
-- **默认开启**：侵入性低，推荐使用
-
-#### 5. 设备管理员进程保护 — `FwDeviceAdminService`
-
-当应用被设置为 [Device Owner](https://developer.android.com/work/dpc/build-dpc) 时，系统会自动绑定 `DeviceAdminService`，使进程获得极高优先级。此服务完全由系统管理生命周期，无需手动启动。
-
-- **核心机制**：[DeviceAdminService](https://developer.android.com/reference/android/app/admin/DeviceAdminService)（API 26+），系统自动绑定
-- **激活方式**：通过 `adb shell dpm set-device-owner` 或 NFC provisioning
-- **适用场景**：企业 MDM、自有设备管理
-- **默认关闭**：需要设备管理员权限
-
-#### 6. Quick Settings 磁贴 — `FwTileService`
-
-在下拉通知栏[快速设置](https://developer.android.com/reference/android/service/quicksettings/TileService)中添加自定义磁贴。每次用户下拉通知栏、点击磁贴，都会触发保活检查。磁贴显示保活状态（活跃/休眠）。
-
-- **核心机制**：TileService，系统级 UI 组件
-- **触发方式**：用户下拉通知栏或点击磁贴
-- **默认开启**：用户需手动添加磁贴到通知栏
-
-#### 7. 桌面小组件 — `FwWidgetProvider`
-
-利用 [`AppWidgetProvider`](https://developer.android.com/guide/topics/appwidgets) 在桌面显示保活状态小组件。系统每 30 分钟自动调用 `onUpdate()`，触发保活检查。
-
-- **核心机制**：AppWidgetProvider + 30 分钟 updatePeriodMillis
-- **系统保证**：即使应用被杀，系统也会按时触发 onUpdate
-- **默认开启**：用户需手动添加小组件到桌面
-
-#### 8. 屏保防杀进程 — `FwDreamService`
-
-利用 Android 的[屏保（Dream）框架](https://developer.android.com/reference/android/service/dreams/DreamService)，在设备充电且空闲时系统自动激活屏保服务，触发保活检查。
-
-- **核心机制**：DreamService，系统自动管理
-- **触发条件**：设备充电 + 空闲（用户可在设置中选择屏保）
-- **默认开启**：需用户在系统设置中选择此屏保
-
----
-
-## 与同类项目对比
-
-| 特性 | **Fw (本项目)** | MarsDaemon | Leoric | 其他方案 |
-|------|:-----------:|:----------:|:------:|:--------:|
-| 策略数量 | **35+** | 2-3 | 3-5 | 1-5 |
-| Native C++ 守护 | 支持 | 支持 | 支持 | 不支持 |
-| MediaRoute 后台常驻 | 支持 | 不支持 | 不支持 | 不支持 |
-| VPN 系统级保活 | 支持 | 不支持 | 不支持 | 不支持 |
-| CompanionDevice 防杀进程 | 支持 | 不支持 | 不支持 | 不支持 |
-| 通知权限豁免 (2 种) | 支持 | 不支持 | 不支持 | 不支持 |
-| 设备管理员保活 | 支持 | 不支持 | 不支持 | 不支持 |
-| Quick Settings 磁贴 | 支持 | 不支持 | 不支持 | 不支持 |
-| 桌面小组件 | 支持 | 不支持 | 不支持 | 不支持 |
-| 屏保后台保持运行 | 支持 | 不支持 | 不支持 | 不支持 |
-| Android 16 适配 | 支持 | 不支持 | 不支持 | 不支持 |
-| Maven Central 一行集成 | 支持 | 不支持 | 不支持 | 不支持 |
-| 厂商 ROM 适配 | **10+ 厂商** | 有限 | 有限 | 无 |
-| 持续维护 (2026) | 活跃 | 已停更 | 已停更 | 不定 |
-
-> MarsDaemon（2018 年停更）和 Leoric（2020 年停更）是 Android 后台常驻领域的先驱，但由于 Android 系统不断加强后台限制，这些项目已无法适配新版本系统。**Fw 是目前唯一持续维护并覆盖 Android 16 的开源后台保持运行框架。**
-
-## 项目简介
-
-Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前开源社区最完整的 **Android 保活技术百科全书**。项目完整复现了市面上所有商业应用（酷狗音乐、墨迹天气、QQ 音乐等）的后台保持运行技术，采用 Kotlin + Native C++17 双层架构，通过 `Fw.init()` 启动默认安全策略，并可按需开启 35+ 种防杀进程策略。
-
-所有策略通过 `FwConfig` 的 50+ 配置项独立控制开关，`ServiceStarter` 作为唯一拉起汇聚点，`RestartProtection` 防止无限重启耗电。最多同时运行 5 个进程（主进程 + :daemon + :assist1 + :assist2 + :assist3）形成环形互保。
-
-**核心特性：**
-
-- **一行代码集成** — `implementation("io.github.pangu-immortal:keeplive-framework:2.0.1")`
-- **模块化设计** — 35+ 种策略独立开关，50+ 配置项精细控制
-- **Native C++ 层** — fork 守护进程、Socket 心跳、文件锁互监控、Binder 直调 AMS
-- **全版本适配** — Android 7.0 - 16（API 24 - 36），包括 [16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)
-- **全厂商覆盖** — 小米、华为、OPPO、vivo、三星、魅族、一加等 10+ 厂商，16 个自启动管理 Intent
-- **商业级方案** — 酷狗音乐 MediaRoute、墨迹天气锁屏、QQ 音乐静默音频等核心后台常驻技术
-- **通知权限豁免** — MediaSession + CallStyle 双重豁免 POST_NOTIFICATIONS 权限
-- **VPN 系统级保护** — 本地回环 VPN，系统级 BIND_VPN_SERVICE 绑定保护
-- **厂商分析工具** — 检测目标应用的推送 SDK 和进程保护机制
-- **生产级质量** — 通过 Lint 检查、ProGuard 混淆优化、Google Play Ready
-
-### **Star 这个项目如果对你有帮助！**
-
----
-
-## 开发环境
-
-| 项目 | 版本 |
-|-----|------|
-| Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2 |
-| Gradle | 9.5.1 |
-| AGP (Android Gradle Plugin) | 9.2.1 |
-| Kotlin | 2.3.21 |
-| JVM | 21 |
-| NDK | 27.2.12479018 |
-| CMake | 3.22.1 |
-| compileSdk | 36 (Android 16) |
-| targetSdk | 36 |
-| minSdk | 24 (Android 7.0) |
-
----
-
-## Android 版本适配
-
-| Android 版本 | API   | 适配要点 |
-|-------------|-------|---------|
-| 7.x | 24-25 | `startService()` |
-| 8.0+ | 26+   | [`startForegroundService()`](https://developer.android.com/about/versions/oreo/background) + 通知渠道，静态广播受限 |
-| 9.0+ | 28+   | [后台限制加强](https://developer.android.com/about/versions/pie/power) |
-| 10+ | 29+   | [后台启动 Activity 受限](https://developer.android.com/guide/components/activities/background-starts) |
-| 11+ | 30+   | [前台服务类型必须声明](https://developer.android.com/about/versions/11/privacy/foreground-services) |
-| 12+ | 31+   | `BLUETOOTH_CONNECT` 运行时权限，[精确闹钟权限](https://developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission)，CompanionDeviceService 可用 |
-| 13+ | 33+   | [`POST_NOTIFICATIONS` 运行时权限](https://developer.android.com/develop/ui/views/notifications/notification-permission)，**MediaSession 通知豁免生效** |
-| 14+ | 34+   | [`FOREGROUND_SERVICE_MEDIA_PLAYBACK`](https://developer.android.com/about/versions/14/changes/fgs-types-required) 权限；PendingIntent 后台启动需发送方显式允许 |
-| 15+ | 35+   | 更严格的后台限制，**[16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)设备支持** |
-| 16 | 36 | PendingIntent 后台启动增加创建方/发送方双侧模式，默认采用可见时允许分支 |
-
-### 统一 startActivity 策略
-
-Fw 新增 C++ `start/` 模块，通过 `FwStart.start(context, intent)` 对外暴露统一 `start` 函数。默认入口只执行可落地策略；`FwStart.startAuditAll(context, intent)` 会把仅登记/安全跳过的研究路径也纳入日志审计。该模块把微信收藏 830-835、放大镜 qumeng 逆向路径、虚拟屏 so 方法合并成一条带版本判断的策略流水线。
-
-```kotlin
-val result = FwStart.start(context, targetIntent)
-if (result.success) {
-    FwLog.d("命中统一 startActivity 策略：${result.strategy?.displayName}")
-}
-
-val auditResult = FwStart.startAuditAll(context, targetIntent)
-```
-
-| 来源 | 策略 | Android 范围 | 运行行为 |
-|------|------|--------------|----------|
-| 放大镜 qumeng | Activity `startActivity` | 全版本 | `context` 是 Activity 时执行 |
-| 放大镜 qumeng | `FLAG_ACTIVITY_NEW_TASK` 兜底 | 全版本 | 非 Activity Context 时执行 |
-| 快充雷达 sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | 全版本 | 默认可执行兜底，减少最近任务展示并取消切换动画 |
-| 放大镜 qumeng | `PendingIntent.getActivity(...).send()` | 全版本，Android 10+ 带 BAL Options | 按版本构造 `ActivityOptions` 后执行 |
-| 放大镜 qumeng | 双 Intent `startActivities(Intent[])` | 16+ | 作为兜底路径执行 |
-| 放大镜 qumeng | Binder `startActivities` | 21-30 | 按版本选择 `IActivityManager` / `IActivityTaskManager` |
-| 放大镜 qumeng | `startActivityForResult` | 仅 Activity Context | 走公开 API；不内置隐藏 Handler hook |
-| so 逆向 | `VirtualDisplay + Presentation` | 26+ | 通过 `setLaunchDisplayId` 尝试在虚拟屏启动 |
-| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity Context | 需要当前 Activity 的 taskId 和 `REORDER_TASKS` 权限 |
-| 微信收藏 830 | `am start-in-vsync` | shell/root 条件 | 登记版本和权限判断；普通应用跳过 |
-| 微信收藏 831 | Notification BAL token | 29-34 研究窗口 | 登记并输出日志；不内置漏洞利用 |
-| 微信收藏 832 | `startNextMatchingActivity` | 仅 Activity Context | 走公开 API 执行 |
-| 微信收藏 833 | CredentialManager UI | 34 | 登记并输出日志；不滥用系统 UI |
-| 微信收藏 834 | PrintManager UI PendingIntent | 23-34 研究窗口 | 登记并输出日志；不滥用系统 UI |
-| 微信收藏 835 | MediaButton BAL 传播 | 31-34 研究窗口 | 登记并输出日志；不内置特权媒体键链路 |
-
-Native 固定执行顺序为：虚拟屏、Notification BAL 登记、MediaButton BAL 登记、Binder、PendingIntent、双 Intent、`startNextMatchingActivity`、`startActivityForResult`、CredentialManager 登记、PrintManager 登记、shell 登记、`moveTaskToFront`、`NEW_TASK + EXCLUDE_FROM_RECENTS`、Activity 直启、`NEW_TASK` 兜底。高风险漏洞型路径全部保留在策略表中，保证研究覆盖不遗漏，但默认入口不执行这些路径；只有 `startAuditAll()` 会进入全量审计并返回明确跳过码。
-
-### Android 16K 页面大小适配
-
-从 Android 15 开始，部分设备使用 [16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)（而非传统的 4KB）。本项目已完成 16K 适配：
-
-```cmake
-# CMakeLists.txt 中添加
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
-```
-
-```bash
-# 验证 ELF 对齐
-llvm-readelf -l libfw_native.so | grep LOAD
-# 输出应显示对齐值为 0x4000 (16384 = 16KB)
 ```
 
 ---
@@ -469,6 +224,436 @@ AutoStartPermissionManager.openAutoStartSettings(context)
 // 厂商集成分析（分析目标应用的防杀进程机制）
 VendorIntegrationAnalyzer.getFullAnalysisReport(context, "com.moji.mjweather")
 ```
+
+---
+
+## 权限说明
+
+### Manifest 权限（自动授予）
+
+```xml
+<!-- 前台服务 -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+
+<!-- 蓝牙 -->
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
+<!-- NFC -->
+<uses-permission android:name="android.permission.NFC" />
+
+<!-- 网络 -->
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+<uses-permission android:name="android.permission.INTERNET" />
+
+<!-- 电源 -->
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+<!-- 闹钟 -->
+<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+<!-- 开机广播 -->
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+<!-- 账户同步 -->
+<uses-permission android:name="android.permission.GET_ACCOUNTS" />
+<uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+<uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
+
+<!-- 悬浮窗 -->
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+<!-- 锁屏显示 -->
+<uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+<!-- v2.0 新增权限 -->
+<uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
+<uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
+<uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+```
+
+> VPN 使用 service 级 `android.permission.BIND_VPN_SERVICE` 绑定声明，不需要在宿主应用顶层声明 `uses-permission`。
+
+### 运行时权限（需用户授予）
+
+```kotlin
+// Android 12+ 蓝牙连接权限
+Manifest.permission.BLUETOOTH_CONNECT
+
+// Android 13+ 通知权限（MediaSession/CallStyle 通知豁免可绕过）
+Manifest.permission.POST_NOTIFICATIONS
+
+// 存储权限（用于 ContentObserver）
+Manifest.permission.READ_MEDIA_IMAGES
+Manifest.permission.READ_MEDIA_VIDEO
+Manifest.permission.READ_MEDIA_AUDIO
+
+// 联系人 / 短信权限（用于 ContentObserver）
+Manifest.permission.READ_CONTACTS
+Manifest.permission.READ_SMS
+
+// 悬浮窗权限
+Settings.canDrawOverlays(context)
+
+// VPN 权限（v2.0 新增）
+VpnService.prepare(context)
+```
+
+如果开启 `enableContactsContentObserver` 或 `enableSmsContentObserver`，宿主应用需要在自身 Manifest 中显式声明联系人或短信权限；Fw 默认不合并这两类敏感权限，避免普通接入携带不必要的权限。
+
+---
+
+## 使用场景推荐配置
+
+不同业务场景对后台保持运行的需求不同。以下矩阵给出了 5 种典型场景的推荐策略配置，帮助你快速选择最佳方案。
+
+| 策略配置项 | IM / 即时通讯 | 音乐播放 | IoT 设备监控 | 健康/运动追踪 | 定位服务 |
+|-----------|:----------:|:------:|:----------:|:----------:|:------:|
+| **aggressiveLevel** | `HIGH` | `MEDIUM` | `MEDIUM` | `LOW` | `MEDIUM` |
+| enableForegroundService | 开启 | 开启 | 开启 | 开启 | 开启 |
+| enableMediaSession | 开启 | 开启 | 关闭 | 关闭 | 关闭 |
+| enableDualProcess | 开启 | 开启 | 开启 | 关闭 | 开启 |
+| enableNativeDaemon | 开启 | 关闭 | 开启 | 关闭 | 开启 |
+| enableSilentAudio | 开启 | 不需要(有真实音频) | 关闭 | 关闭 | 关闭 |
+| enableMediaRouteProvider | 关闭 | 开启 | 关闭 | 关闭 | 关闭 |
+| enableVpnService | 可选 | 关闭 | 开启 | 关闭 | 关闭 |
+| enableCompanionDevice | 关闭 | 关闭 | 开启 | 开启 | 关闭 |
+| enableCallStyleNotification | 关闭 | 关闭 | 关闭 | 关闭 | 关闭 |
+| enableMediaSessionNotification | 开启 | 开启 | 关闭 | 关闭 | 关闭 |
+| enableJobScheduler | 开启 | 开启 | 开启 | 开启 | 开启 |
+| enableWorkManager | 开启 | 开启 | 开启 | 开启 | 开启 |
+| enableAlarmManager | 开启 | 关闭 | 开启 | 开启 | 开启 |
+| enableAccountSync | 开启 | 关闭 | 关闭 | 关闭 | 关闭 |
+| enableWidget | 关闭 | 开启 | 开启 | 开启 | 关闭 |
+| enableTileService | 开启 | 开启 | 开启 | 开启 | 开启 |
+| enableForceStopResistance | 可选 | 关闭 | 关闭 | 关闭 | 关闭 |
+| **核心关注点** | 消息实时性 | 播放不中断 | 连接稳定性 | 数据持续采集 | 轨迹不断点 |
+| **推荐理由** | 最高优先级保障消息送达，双进程+Native+静默音频三重守护 | MediaRoute + MediaSession 获得媒体应用身份，系统天然保护 | VPN + 伴侣设备获得系统级绑定，蓝牙保持长连接 | 低能耗为主，伴侣设备获取运动传感器持续访问权 | 前台服务+定时唤醒确保定位不中断，双进程兜底 |
+
+**配置示例 — IM/即时通讯场景：**
+
+```kotlin
+Fw.init(this) {
+    aggressiveLevel = AggressiveLevel.HIGH
+    enableForegroundService = true
+    enableMediaSession = true
+    enableDualProcess = true
+    enableNativeDaemon = true
+    enableSilentAudio = true
+    enableMediaSessionNotification = true
+    enableJobScheduler = true
+    enableWorkManager = true
+    enableAlarmManager = true
+    enableAccountSync = true
+    enableTileService = true
+}
+```
+
+**配置示例 — 音乐播放场景：**
+
+```kotlin
+Fw.init(this) {
+    aggressiveLevel = AggressiveLevel.MEDIUM
+    enableForegroundService = true
+    enableMediaSession = true
+    enableMediaRouteProvider = true
+    enableMediaSessionNotification = true
+    enableDualProcess = true
+    enableJobScheduler = true
+    enableWorkManager = true
+    enableWidget = true
+    enableTileService = true
+}
+```
+
+**配置示例 — IoT 设备监控场景：**
+
+```kotlin
+Fw.init(this) {
+    aggressiveLevel = AggressiveLevel.MEDIUM
+    enableForegroundService = true
+    enableDualProcess = true
+    enableNativeDaemon = true
+    enableVpnService = true
+    enableCompanionDevice = true
+    enableJobScheduler = true
+    enableWorkManager = true
+    enableAlarmManager = true
+    enableWidget = true
+    enableTileService = true
+}
+```
+
+---
+
+## 构建运行
+
+```bash
+# Debug 构建
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# Release 构建（带时间戳）
+./gradlew buildTimestampedReleaseApk
+# 输出：release/app-202604101118.apk + mapping 文件
+```
+
+### 保活测试
+
+```bash
+# 默认：强杀 100 次，间隔 5 秒
+./kill_alive.sh
+
+# 自定义参数
+./kill_alive.sh 50 3 com.your.package
+```
+
+### 查看日志
+
+```bash
+adb logcat | grep -E "(Fw|BluetoothReceiver|UsbReceiver|NfcReceiver)"
+```
+
+### 检测命令
+
+```bash
+# 检查系统白名单
+adb shell cat /system/etc/sysconfig/*.xml | grep -i moji
+
+# 检查应用签名/权限/安装路径
+adb shell dumpsys package com.moji.mjweather | grep -A5 "signatures"
+adb shell pm path com.moji.mjweather
+```
+
+---
+
+## Android 版本适配
+
+| Android 版本 | API   | 适配要点 |
+|-------------|-------|---------|
+| 7.x | 24-25 | `startService()` |
+| 8.0+ | 26+   | [`startForegroundService()`](https://developer.android.com/about/versions/oreo/background) + 通知渠道，静态广播受限 |
+| 9.0+ | 28+   | [后台限制加强](https://developer.android.com/about/versions/pie/power) |
+| 10+ | 29+   | [后台启动 Activity 受限](https://developer.android.com/guide/components/activities/background-starts) |
+| 11+ | 30+   | [前台服务类型必须声明](https://developer.android.com/about/versions/11/privacy/foreground-services) |
+| 12+ | 31+   | `BLUETOOTH_CONNECT` 运行时权限，[精确闹钟权限](https://developer.android.com/about/versions/12/behavior-changes-12#exact-alarm-permission)，CompanionDeviceService 可用 |
+| 13+ | 33+   | [`POST_NOTIFICATIONS` 运行时权限](https://developer.android.com/develop/ui/views/notifications/notification-permission)，**MediaSession 通知豁免生效** |
+| 14+ | 34+   | [`FOREGROUND_SERVICE_MEDIA_PLAYBACK`](https://developer.android.com/about/versions/14/changes/fgs-types-required) 权限；PendingIntent 后台启动需发送方显式允许 |
+| 15+ | 35+   | 更严格的后台限制，**[16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)设备支持** |
+| 16 | 36 | PendingIntent 后台启动增加创建方/发送方双侧模式，默认采用可见时允许分支 |
+
+### 统一 startActivity 策略
+
+Fw 新增 C++ `start/` 模块，通过 `FwStart.start(context, intent)` 对外暴露统一 `start` 函数。默认入口只执行可落地策略；`FwStart.startAuditAll(context, intent)` 会把仅登记/安全跳过的研究路径也纳入日志审计。该模块把微信收藏 830-835、放大镜 qumeng 逆向路径、虚拟屏 so 方法合并成一条带版本判断的策略流水线。
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    FwLog.d("命中统一 startActivity 策略：${result.strategy?.displayName}")
+}
+
+val auditResult = FwStart.startAuditAll(context, targetIntent)
+```
+
+| 来源 | 策略 | Android 范围 | 运行行为 |
+|------|------|--------------|----------|
+| 放大镜 qumeng | Activity `startActivity` | 全版本 | `context` 是 Activity 时执行 |
+| 放大镜 qumeng | `FLAG_ACTIVITY_NEW_TASK` 兜底 | 全版本 | 非 Activity Context 时执行 |
+| 快充雷达 sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | 全版本 | 默认可执行兜底，减少最近任务展示并取消切换动画 |
+| 放大镜 qumeng | `PendingIntent.getActivity(...).send()` | 全版本，Android 10+ 带 BAL Options | 按版本构造 `ActivityOptions` 后执行 |
+| 放大镜 qumeng | 双 Intent `startActivities(Intent[])` | 16+ | 作为兜底路径执行 |
+| 放大镜 qumeng | Binder `startActivities` | 21-30 | 按版本选择 `IActivityManager` / `IActivityTaskManager` |
+| 放大镜 qumeng | `startActivityForResult` | 仅 Activity Context | 走公开 API；不内置隐藏 Handler hook |
+| so 逆向 | `VirtualDisplay + Presentation` | 26+ | 通过 `setLaunchDisplayId` 尝试在虚拟屏启动 |
+| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity Context | 需要当前 Activity 的 taskId 和 `REORDER_TASKS` 权限 |
+| 微信收藏 830 | `am start-in-vsync` | shell/root 条件 | 登记版本和权限判断；普通应用跳过 |
+| 微信收藏 831 | Notification BAL token | 29-34 研究窗口 | 登记并输出日志；不内置漏洞利用 |
+| 微信收藏 832 | `startNextMatchingActivity` | 仅 Activity Context | 走公开 API 执行 |
+| 微信收藏 833 | CredentialManager UI | 34 | 登记并输出日志；不滥用系统 UI |
+| 微信收藏 834 | PrintManager UI PendingIntent | 23-34 研究窗口 | 登记并输出日志；不滥用系统 UI |
+| 微信收藏 835 | MediaButton BAL 传播 | 31-34 研究窗口 | 登记并输出日志；不内置特权媒体键链路 |
+
+Native 固定执行顺序为：虚拟屏、Notification BAL 登记、MediaButton BAL 登记、Binder、PendingIntent、双 Intent、`startNextMatchingActivity`、`startActivityForResult`、CredentialManager 登记、PrintManager 登记、shell 登记、`moveTaskToFront`、`NEW_TASK + EXCLUDE_FROM_RECENTS`、Activity 直启、`NEW_TASK` 兜底。高风险漏洞型路径全部保留在策略表中，保证研究覆盖不遗漏，但默认入口不执行这些路径；只有 `startAuditAll()` 会进入全量审计并返回明确跳过码。
+
+### Android 16K 页面大小适配
+
+从 Android 15 开始，部分设备使用 [16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)（而非传统的 4KB）。本项目已完成 16K 适配：
+
+```cmake
+# CMakeLists.txt 中添加
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+```
+
+```bash
+# 验证 ELF 对齐
+llvm-readelf -l libfw_native.so | grep LOAD
+# 输出应显示对齐值为 0x4000 (16384 = 16KB)
+```
+
+---
+
+## 厂商适配
+
+| 厂商 | 特殊限制 | 解决方案 |
+|-----|---------|---------|
+| 小米 (MIUI) | 自启动管理、电池优化 | 引导用户开启自启动权限 |
+| 华为 (EMUI) | 高级电池管理 | 引导用户关闭电池优化 |
+| OPPO (ColorOS) | 后台冻结 | 引导用户添加省电白名单 |
+| vivo (Funtouch) | i管家限制 | 引导用户开启后台运行权限 |
+| 三星 (OneUI) | 设备维护优化 | 相对宽松 |
+| Google (Pixel) | [Doze 模式](https://developer.android.com/training/monitoring-device-state/doze-standby)严格 | 请求 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`，高优先级 FCM |
+| 传音 (Tecno) | 内存清理 | 引导用户锁定应用，加入自启动列表 |
+
+```kotlin
+// 自动打开当前厂商的自启动设置
+AutoStartPermissionManager.openAutoStartSettings(context)
+```
+
+---
+
+## 项目简介
+
+Fw（Framework）是一个模块化的 Android 进程保护框架，也是目前开源社区最完整的 **Android 保活技术百科全书**。项目完整复现了市面上所有商业应用（酷狗音乐、墨迹天气、QQ 音乐等）的后台保持运行技术，采用 Kotlin + Native C++17 双层架构，通过 `Fw.init()` 启动默认安全策略，并可按需开启 35+ 种防杀进程策略。
+
+所有策略通过 `FwConfig` 的 50+ 配置项独立控制开关，`ServiceStarter` 作为唯一拉起汇聚点，`RestartProtection` 防止无限重启耗电。最多同时运行 5 个进程（主进程 + :daemon + :assist1 + :assist2 + :assist3）形成环形互保。
+
+**核心特性：**
+
+- **一行代码集成** — `implementation("io.github.pangu-immortal:keeplive-framework:2.0.1")`
+- **模块化设计** — 35+ 种策略独立开关，50+ 配置项精细控制
+- **Native C++ 层** — fork 守护进程、Socket 心跳、文件锁互监控、Binder 直调 AMS
+- **全版本适配** — Android 7.0 - 16（API 24 - 36），包括 [16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)
+- **全厂商覆盖** — 小米、华为、OPPO、vivo、三星、魅族、一加等 10+ 厂商，16 个自启动管理 Intent
+- **商业级方案** — 酷狗音乐 MediaRoute、墨迹天气锁屏、QQ 音乐静默音频等核心后台常驻技术
+- **通知权限豁免** — MediaSession + CallStyle 双重豁免 POST_NOTIFICATIONS 权限
+- **VPN 系统级保护** — 本地回环 VPN，系统级 BIND_VPN_SERVICE 绑定保护
+- **厂商分析工具** — 检测目标应用的推送 SDK 和进程保护机制
+- **生产级质量** — 通过 Lint 检查、ProGuard 混淆优化、Google Play Ready
+
+### **Star 这个项目如果对你有帮助！**
+
+---
+
+## 什么是 Android 保活？
+
+在 Android 系统中，当用户切换到其他应用或锁屏后，系统会根据内存压力和电池策略自动回收后台进程。所谓 **Android 保活**（也称为"后台常驻""进程保护""后台保持运行""防杀进程"），是指通过一系列技术手段让应用在后台持续运行、不被系统或厂商的资源管理机制杀死的技术。
+
+**为什么需要保活？**
+
+- **即时通讯 (IM)**：微信、钉钉等 App 需要在后台实时接收消息推送，一旦进程被杀，用户将无法收到新消息通知。
+- **音乐/音频播放**：用户期望锁屏后音乐继续播放，进程被回收意味着播放中断。
+- **IoT 设备控制**：智能家居、蓝牙外设等场景需要应用持续保持与设备的连接。
+- **健康与运动追踪**：步数统计、心率监测、GPS 轨迹记录等功能需要后台持续采集数据。
+- **定位与导航服务**：实时定位、地理围栏、物流追踪等需要应用在后台不间断运行。
+
+然而，从 Android 8.0 开始，系统对[后台执行](https://developer.android.com/about/versions/oreo/background)施加了越来越严格的限制；各厂商（小米 MIUI、华为 EMUI、OPPO ColorOS、vivo Funtouch）还额外叠加了自家的省电策略和自启动管理。普通开发者如果不借助系统化的后台保持运行方案，应用进程极容易在后台被杀。
+
+**Fw 框架正是为解决这一问题而生** —— 它将市面上所有已知的后台常驻技术（前台服务、双进程守护、Native 守护、MediaRoute、VPN 保护、通知豁免等）整合为一个开箱即用的 SDK，让开发者通过一行代码就能获得商业级的进程保护能力。
+
+---
+
+> **一行代码接入 35+ 种后台保持运行策略，覆盖 Android 7.0 - 16 全版本，适配 10+ 厂商 ROM。**
+>
+> 完整复现市面上所有商业应用的防杀进程机制——前台服务、双进程守护、Native C++ fork 守护、MediaRoute 媒体路由（酷狗音乐核心方案）、账户同步、[JobScheduler](https://developer.android.com/reference/android/app/job/JobScheduler)、[WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager)、[AlarmManager](https://developer.android.com/reference/android/app/AlarmManager)、1 像素 Activity、静默音频、悬浮窗、[无障碍服务](https://developer.android.com/guide/topics/ui/accessibility/service)、通知监听、蓝牙/WiFi/USB/NFC 广播唤醒、ContentObserver、FileObserver、Binder 直调 AMS 防强停、统一体外 Activity 启动策略、VirtualDisplay 启动 Activity……穷尽展示所有进程保护手段。
+>
+> 为了拉齐全网共同认知，让小团队开发不再迷茫，开源了全套所有私密函数和私密策略。会长期持续迭代，会陆陆续续的公开所有的隐私策略，ecpm 策略等等，欢迎 star 持续关注。
+
+---
+
+## v2.0 重大升级 — 8 大全新保活策略
+
+> **2026 年 4 月发布**，策略总数从 27 到 35+，覆盖 Android 8.0 - 16 的最新系统特性。这是本项目自开源以来最大规模的一次更新。
+
+### 新增策略一览
+
+| # | 策略 | 类名 | 核心原理 | API 要求 | 有效性 |
+|---|------|------|---------|---------|-------|
+| 1 | **VPN 系统级保活** | `FwVpnService` | 本地回环 VPN，[BIND_VPN_SERVICE](https://developer.android.com/reference/android/net/VpnService) 绑定保护 | 24+ | 极高 |
+| 2 | **伴侣设备后台常驻** | `FwCompanionService` | [CompanionDeviceService](https://developer.android.com/reference/android/companion/CompanionDeviceService)，BLE 设备关联 | 31+ | 高 |
+| 3 | **CallStyle 通知豁免** | `FwCallStyleManager` | [Notification.CallStyle](https://developer.android.com/reference/android/app/Notification.CallStyle)，无需 POST_NOTIFICATIONS | 31+ | 极高 |
+| 4 | **MediaSession 通知豁免** | `MediaSessionNotificationManager` | [MediaSession](https://developer.android.com/reference/android/media/session/MediaSession) + MediaStyle，Android 13+ 豁免机制 | 33+ | 极高 |
+| 5 | **设备管理员进程保护** | `FwDeviceAdminService` | [Device Owner](https://developer.android.com/work/dpc/build-dpc) 模式，系统自动绑定 | 26+ | 极高 |
+| 6 | **Quick Settings 磁贴** | `FwTileService` | [TileService](https://developer.android.com/reference/android/service/quicksettings/TileService) 下拉通知栏磁贴，用户交互触发 | 24+ | 高 |
+| 7 | **桌面小组件** | `FwWidgetProvider` | [AppWidgetProvider](https://developer.android.com/guide/topics/appwidgets)，30 分钟系统级定时唤醒 | 24+ | 高 |
+| 8 | **屏保防杀进程** | `FwDreamService` | [DreamService](https://developer.android.com/reference/android/service/dreams/DreamService) 充电待机时系统自动激活 | 24+ | 高 |
+
+### 新策略详解
+
+#### 1. VPN 系统级保活 — `FwVpnService`
+
+通过建立本地回环 VPN 隧道（127.0.0.1 -> 127.0.0.1），获得系统级 [`BIND_VPN_SERVICE`](https://developer.android.com/reference/android/net/VpnService) 绑定保护。VPN 服务是 Android 系统中进程优先级最高的服务之一，几乎不会被系统杀死。
+
+- **核心机制**：VpnService 建立虚拟网络接口，所有流量通过本地回环，不影响正常网络
+- **进程优先级**：与系统 VPN 服务同级，OOM adj 值极低
+- **用户感知**：状态栏显示 VPN 图标（可配合通知引导用户理解）
+- **默认关闭**：需用户手动授权 VPN 权限
+
+#### 2. 伴侣设备后台常驻 — `FwCompanionService`
+
+利用 Android 12+ 的 [`CompanionDeviceService`](https://developer.android.com/reference/android/companion/CompanionDeviceService) API，通过 BLE 设备关联获得 `REQUEST_COMPANION_RUN_IN_BACKGROUND` 和 `REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND` 两大系统级豁免权限。
+
+- **核心机制**：注册为伴侣设备应用，获得后台运行豁免
+- **系统绑定**：配对设备在附近时，系统自动绑定服务
+- **默认关闭**：需要 BLE 设备配对
+
+#### 3. CallStyle 通知豁免 — `FwCallStyleManager`
+
+注册为自管理通话应用（Self-Managed Connection），通过 [`Notification.CallStyle`](https://developer.android.com/reference/android/app/Notification.CallStyle) 发送通话样式通知。Android 系统对通话通知有特殊豁免——**无需 POST_NOTIFICATIONS 权限即可显示通知**。
+
+- **核心机制**：[ConnectionService](https://developer.android.com/reference/android/telecom/ConnectionService) + PhoneAccount + Notification.CallStyle
+- **通知豁免**：通话通知不受 Android 13+ 通知权限限制
+- **进程保护**：通话进程优先级极高
+- **默认关闭**：侵入性较强（会显示通话样式通知）
+
+#### 4. MediaSession 通知豁免 — `MediaSessionNotificationManager`
+
+这是 Android 13+ 上绕过 [`POST_NOTIFICATIONS`](https://developer.android.com/develop/ui/views/notifications/notification-permission) 权限限制的核心策略。通过创建活跃的 `MediaSession` 并使用 `MediaStyle` 通知，系统将应用识别为正在播放媒体的应用，自动豁免通知权限要求。
+
+- **核心机制**：MediaSessionCompat + NotificationCompat.MediaStyle
+- **权限豁免**：Android 13+ 无需 POST_NOTIFICATIONS 即可显示通知
+- **商业应用实践**：酷狗音乐、QQ 音乐、网易云音乐等均使用此机制
+- **默认开启**：侵入性低，推荐使用
+
+#### 5. 设备管理员进程保护 — `FwDeviceAdminService`
+
+当应用被设置为 [Device Owner](https://developer.android.com/work/dpc/build-dpc) 时，系统会自动绑定 `DeviceAdminService`，使进程获得极高优先级。此服务完全由系统管理生命周期，无需手动启动。
+
+- **核心机制**：[DeviceAdminService](https://developer.android.com/reference/android/app/admin/DeviceAdminService)（API 26+），系统自动绑定
+- **激活方式**：通过 `adb shell dpm set-device-owner` 或 NFC provisioning
+- **适用场景**：企业 MDM、自有设备管理
+- **默认关闭**：需要设备管理员权限
+
+#### 6. Quick Settings 磁贴 — `FwTileService`
+
+在下拉通知栏[快速设置](https://developer.android.com/reference/android/service/quicksettings/TileService)中添加自定义磁贴。每次用户下拉通知栏、点击磁贴，都会触发保活检查。磁贴显示保活状态（活跃/休眠）。
+
+- **核心机制**：TileService，系统级 UI 组件
+- **触发方式**：用户下拉通知栏或点击磁贴
+- **默认开启**：用户需手动添加磁贴到通知栏
+
+#### 7. 桌面小组件 — `FwWidgetProvider`
+
+利用 [`AppWidgetProvider`](https://developer.android.com/guide/topics/appwidgets) 在桌面显示保活状态小组件。系统每 30 分钟自动调用 `onUpdate()`，触发保活检查。
+
+- **核心机制**：AppWidgetProvider + 30 分钟 updatePeriodMillis
+- **系统保证**：即使应用被杀，系统也会按时触发 onUpdate
+- **默认开启**：用户需手动添加小组件到桌面
+
+#### 8. 屏保防杀进程 — `FwDreamService`
+
+利用 Android 的[屏保（Dream）框架](https://developer.android.com/reference/android/service/dreams/DreamService)，在设备充电且空闲时系统自动激活屏保服务，触发保活检查。
+
+- **核心机制**：DreamService，系统自动管理
+- **触发条件**：设备充电 + 空闲（用户可在设置中选择屏保）
+- **默认开启**：需用户在系统设置中选择此屏保
 
 ---
 
@@ -911,109 +1096,6 @@ KeepLiveService/
 
 ---
 
-## 厂商适配
-
-| 厂商 | 特殊限制 | 解决方案 |
-|-----|---------|---------|
-| 小米 (MIUI) | 自启动管理、电池优化 | 引导用户开启自启动权限 |
-| 华为 (EMUI) | 高级电池管理 | 引导用户关闭电池优化 |
-| OPPO (ColorOS) | 后台冻结 | 引导用户添加省电白名单 |
-| vivo (Funtouch) | i管家限制 | 引导用户开启后台运行权限 |
-| 三星 (OneUI) | 设备维护优化 | 相对宽松 |
-| Google (Pixel) | [Doze 模式](https://developer.android.com/training/monitoring-device-state/doze-standby)严格 | 请求 `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`，高优先级 FCM |
-| 传音 (Tecno) | 内存清理 | 引导用户锁定应用，加入自启动列表 |
-
-```kotlin
-// 自动打开当前厂商的自启动设置
-AutoStartPermissionManager.openAutoStartSettings(context)
-```
-
----
-
-## 权限说明
-
-### Manifest 权限（自动授予）
-
-```xml
-<!-- 前台服务 -->
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
-
-<!-- 蓝牙 -->
-<uses-permission android:name="android.permission.BLUETOOTH" />
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-
-<!-- NFC -->
-<uses-permission android:name="android.permission.NFC" />
-
-<!-- 网络 -->
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-<uses-permission android:name="android.permission.INTERNET" />
-
-<!-- 电源 -->
-<uses-permission android:name="android.permission.WAKE_LOCK" />
-<uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-
-<!-- 闹钟 -->
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-
-<!-- 开机广播 -->
-<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
-<!-- 账户同步 -->
-<uses-permission android:name="android.permission.GET_ACCOUNTS" />
-<uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
-<uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
-
-<!-- 悬浮窗 -->
-<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-<!-- 锁屏显示 -->
-<uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
-<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-
-<!-- v2.0 新增权限 -->
-<uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
-<uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
-<uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
-```
-
-> VPN 使用 service 级 `android.permission.BIND_VPN_SERVICE` 绑定声明，不需要在宿主应用顶层声明 `uses-permission`。
-
-### 运行时权限（需用户授予）
-
-```kotlin
-// Android 12+ 蓝牙连接权限
-Manifest.permission.BLUETOOTH_CONNECT
-
-// Android 13+ 通知权限（MediaSession/CallStyle 通知豁免可绕过）
-Manifest.permission.POST_NOTIFICATIONS
-
-// 存储权限（用于 ContentObserver）
-Manifest.permission.READ_MEDIA_IMAGES
-Manifest.permission.READ_MEDIA_VIDEO
-Manifest.permission.READ_MEDIA_AUDIO
-
-// 联系人 / 短信权限（用于 ContentObserver）
-Manifest.permission.READ_CONTACTS
-Manifest.permission.READ_SMS
-
-// 悬浮窗权限
-Settings.canDrawOverlays(context)
-
-// VPN 权限（v2.0 新增）
-VpnService.prepare(context)
-```
-
-如果开启 `enableContactsContentObserver` 或 `enableSmsContentObserver`，宿主应用需要在自身 Manifest 中显式声明联系人或短信权限；Fw 默认不合并这两类敏感权限，避免普通接入携带不必要的权限。
-
----
-
 ## 核心原理
 
 ### 为什么酷狗能被蓝牙唤醒？
@@ -1044,129 +1126,26 @@ VpnService.prepare(context)
 
 ---
 
-## 构建运行
+## 与同类项目对比
 
-```bash
-# Debug 构建
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+| 特性 | **Fw (本项目)** | MarsDaemon | Leoric | 其他方案 |
+|------|:-----------:|:----------:|:------:|:--------:|
+| 策略数量 | **35+** | 2-3 | 3-5 | 1-5 |
+| Native C++ 守护 | 支持 | 支持 | 支持 | 不支持 |
+| MediaRoute 后台常驻 | 支持 | 不支持 | 不支持 | 不支持 |
+| VPN 系统级保活 | 支持 | 不支持 | 不支持 | 不支持 |
+| CompanionDevice 防杀进程 | 支持 | 不支持 | 不支持 | 不支持 |
+| 通知权限豁免 (2 种) | 支持 | 不支持 | 不支持 | 不支持 |
+| 设备管理员保活 | 支持 | 不支持 | 不支持 | 不支持 |
+| Quick Settings 磁贴 | 支持 | 不支持 | 不支持 | 不支持 |
+| 桌面小组件 | 支持 | 不支持 | 不支持 | 不支持 |
+| 屏保后台保持运行 | 支持 | 不支持 | 不支持 | 不支持 |
+| Android 16 适配 | 支持 | 不支持 | 不支持 | 不支持 |
+| Maven Central 一行集成 | 支持 | 不支持 | 不支持 | 不支持 |
+| 厂商 ROM 适配 | **10+ 厂商** | 有限 | 有限 | 无 |
+| 持续维护 (2026) | 活跃 | 已停更 | 已停更 | 不定 |
 
-# Release 构建（带时间戳）
-./gradlew buildTimestampedReleaseApk
-# 输出：release/app-202604101118.apk + mapping 文件
-```
-
-### 保活测试
-
-```bash
-# 默认：强杀 100 次，间隔 5 秒
-./kill_alive.sh
-
-# 自定义参数
-./kill_alive.sh 50 3 com.your.package
-```
-
-### 查看日志
-
-```bash
-adb logcat | grep -E "(Fw|BluetoothReceiver|UsbReceiver|NfcReceiver)"
-```
-
-### 检测命令
-
-```bash
-# 检查系统白名单
-adb shell cat /system/etc/sysconfig/*.xml | grep -i moji
-
-# 检查应用签名/权限/安装路径
-adb shell dumpsys package com.moji.mjweather | grep -A5 "signatures"
-adb shell pm path com.moji.mjweather
-```
-
----
-
-## 使用场景推荐配置
-
-不同业务场景对后台保持运行的需求不同。以下矩阵给出了 5 种典型场景的推荐策略配置，帮助你快速选择最佳方案。
-
-| 策略配置项 | IM / 即时通讯 | 音乐播放 | IoT 设备监控 | 健康/运动追踪 | 定位服务 |
-|-----------|:----------:|:------:|:----------:|:----------:|:------:|
-| **aggressiveLevel** | `HIGH` | `MEDIUM` | `MEDIUM` | `LOW` | `MEDIUM` |
-| enableForegroundService | 开启 | 开启 | 开启 | 开启 | 开启 |
-| enableMediaSession | 开启 | 开启 | 关闭 | 关闭 | 关闭 |
-| enableDualProcess | 开启 | 开启 | 开启 | 关闭 | 开启 |
-| enableNativeDaemon | 开启 | 关闭 | 开启 | 关闭 | 开启 |
-| enableSilentAudio | 开启 | 不需要(有真实音频) | 关闭 | 关闭 | 关闭 |
-| enableMediaRouteProvider | 关闭 | 开启 | 关闭 | 关闭 | 关闭 |
-| enableVpnService | 可选 | 关闭 | 开启 | 关闭 | 关闭 |
-| enableCompanionDevice | 关闭 | 关闭 | 开启 | 开启 | 关闭 |
-| enableCallStyleNotification | 关闭 | 关闭 | 关闭 | 关闭 | 关闭 |
-| enableMediaSessionNotification | 开启 | 开启 | 关闭 | 关闭 | 关闭 |
-| enableJobScheduler | 开启 | 开启 | 开启 | 开启 | 开启 |
-| enableWorkManager | 开启 | 开启 | 开启 | 开启 | 开启 |
-| enableAlarmManager | 开启 | 关闭 | 开启 | 开启 | 开启 |
-| enableAccountSync | 开启 | 关闭 | 关闭 | 关闭 | 关闭 |
-| enableWidget | 关闭 | 开启 | 开启 | 开启 | 关闭 |
-| enableTileService | 开启 | 开启 | 开启 | 开启 | 开启 |
-| enableForceStopResistance | 可选 | 关闭 | 关闭 | 关闭 | 关闭 |
-| **核心关注点** | 消息实时性 | 播放不中断 | 连接稳定性 | 数据持续采集 | 轨迹不断点 |
-| **推荐理由** | 最高优先级保障消息送达，双进程+Native+静默音频三重守护 | MediaRoute + MediaSession 获得媒体应用身份，系统天然保护 | VPN + 伴侣设备获得系统级绑定，蓝牙保持长连接 | 低能耗为主，伴侣设备获取运动传感器持续访问权 | 前台服务+定时唤醒确保定位不中断，双进程兜底 |
-
-**配置示例 — IM/即时通讯场景：**
-
-```kotlin
-Fw.init(this) {
-    aggressiveLevel = AggressiveLevel.HIGH
-    enableForegroundService = true
-    enableMediaSession = true
-    enableDualProcess = true
-    enableNativeDaemon = true
-    enableSilentAudio = true
-    enableMediaSessionNotification = true
-    enableJobScheduler = true
-    enableWorkManager = true
-    enableAlarmManager = true
-    enableAccountSync = true
-    enableTileService = true
-}
-```
-
-**配置示例 — 音乐播放场景：**
-
-```kotlin
-Fw.init(this) {
-    aggressiveLevel = AggressiveLevel.MEDIUM
-    enableForegroundService = true
-    enableMediaSession = true
-    enableMediaRouteProvider = true
-    enableMediaSessionNotification = true
-    enableDualProcess = true
-    enableJobScheduler = true
-    enableWorkManager = true
-    enableWidget = true
-    enableTileService = true
-}
-```
-
-**配置示例 — IoT 设备监控场景：**
-
-```kotlin
-Fw.init(this) {
-    aggressiveLevel = AggressiveLevel.MEDIUM
-    enableForegroundService = true
-    enableDualProcess = true
-    enableNativeDaemon = true
-    enableVpnService = true
-    enableCompanionDevice = true
-    enableJobScheduler = true
-    enableWorkManager = true
-    enableAlarmManager = true
-    enableWidget = true
-    enableTileService = true
-}
-```
-
----
+> MarsDaemon（2018 年停更）和 Leoric（2020 年停更）是 Android 后台常驻领域的先驱，但由于 Android 系统不断加强后台限制，这些项目已无法适配新版本系统。**Fw 是目前唯一持续维护并覆盖 Android 16 的开源后台保持运行框架。**
 
 ## 常见问题
 
@@ -1250,6 +1229,23 @@ Native 守护进程（C++ fork）在普通应用中效果有限——Android 5.0
 
 ---
 
+## 开发环境
+
+| 项目 | 版本 |
+|-----|------|
+| Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2 |
+| Gradle | 9.5.1 |
+| AGP (Android Gradle Plugin) | 9.2.1 |
+| Kotlin | 2.3.21 |
+| JVM | 21 |
+| NDK | 27.2.12479018 |
+| CMake | 3.22.1 |
+| compileSdk | 36 (Android 16) |
+| targetSdk | 36 |
+| minSdk | 24 (Android 7.0) |
+
+---
+
 ## 贡献指南
 
 欢迎提交 Issue 和 Pull Request！
@@ -1262,13 +1258,21 @@ Native 守护进程（C++ fork）在普通应用中效果有限——Android 5.0
 
 ---
 
+## 交流讨论
+
+**Telegram 群组**： [点击加群讨论，这里只是冰山一角。](https://t.me/+V7HSo1YNzkFkY2M1)
+
+![Pangu-Immortal 微信二维码](https://github.com/Pangu-Immortal/Pangu-Immortal/blob/main/getqrcode.png)
+
+---
+
 ## 更新日志
 
 ### v2.0.1 (2026-05)
 
-**文档升级** — 默认中文 README + 全项目文档整理
+**README 多语言整理** — 默认中文 README + 全项目文档整理
 
-- 默认 `README.md` 切换为简体中文，新增 `README-en.md` 英文文档入口
+- 默认 `README.md` 切换为简体中文，新增英文、繁体中文、日语、韩语文档入口
 - 调整文档结构，把接入步骤放到开头，保留完整能力说明
 - 扩充辅助说明文件、`CITATION.cff` 和 Maven POM 描述
 - 使用文档依赖版本升级到 `implementation("io.github.pangu-immortal:keeplive-framework:2.0.1")`

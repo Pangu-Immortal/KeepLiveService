@@ -16,7 +16,7 @@
 [![16K Page Size](https://img.shields.io/badge/16K%20Page%20Size-Compatible-orange.svg)](https://developer.android.com/guide/practices/page-sizes)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
 
-[简体中文](README.md) | **English**
+[简体中文](README.md) | [繁體中文](README-zh-Hant.md) | **English** | [日本語](README-ja.md) | [한국어](README-ko.md)
 
 </div>
 
@@ -117,6 +117,206 @@ if (vpnIntent != null) {
 
 ---
 
+## Configuration Reference
+
+Use `FwConfig` to control each strategy independently. Keep the default profile for broad compatibility, then enable higher-impact strategies only when the product scenario requires them.
+
+| Field | Default Guidance | When to Change |
+|-------|------------------|----------------|
+| `enableForegroundService` | Keep enabled | Core background execution requirement |
+| `enableMediaSession` | Keep enabled for media/IM | Disable for low-power utility apps |
+| `enableDualProcess` | Enable for stronger persistence | Disable for low-power tracking scenarios |
+| `enableNativeDaemon` | Enable for IM/IoT/location | Disable when native process monitoring is not needed |
+| `enableMediaRouteProvider` | Enable for media-style apps | Disable for non-media scenarios |
+| `enableMediaBrowserService` | Enable when media framework binding is useful | Disable for minimal permission surfaces |
+| `enableSilentAudio` | Use with care | Useful for IM; unnecessary for real music playback |
+| `aggressiveLevel` | `MEDIUM` | Use `LOW` for battery-sensitive apps, `HIGH` for realtime messaging |
+| `enableVpnService` | Off | Requires explicit user VPN consent |
+| `enableCompanionDevice` | Off | Requires BLE/device association |
+| `enableCallStyleNotification` | Off | Use only when call-style UX is acceptable |
+| `enableDeviceAdmin` | Off | Enterprise/device-owner scenarios only |
+| `enableForceStopResistance` | Off | Research or sideloaded enterprise scenarios only |
+| `enableContactsContentObserver` | Off | Host app must declare contacts permission |
+| `enableSmsContentObserver` | Off | Host app must declare SMS permission |
+
+```kotlin
+Fw.init(this) {
+    enableForegroundService = true
+    enableDualProcess = true
+    enableNativeDaemon = true
+    enableMediaRouteProvider = true
+    enableMediaBrowserService = true
+    enableSilentAudio = true
+    aggressiveLevel = AggressiveLevel.MEDIUM
+
+    enableVpnService = false
+    enableCompanionDevice = false
+    enableCallStyleNotification = false
+    enableDeviceAdmin = false
+    enableForceStopResistance = false
+
+    notificationChannelId = "fw_channel"
+    notificationChannelName = "Keep Alive Service"
+    notificationTitle = "Service running"
+    notificationContent = "Tap to open"
+    notificationActivityClass = MainActivity::class.java
+
+    enableDebugLog = true
+    logTag = "Fw"
+}
+```
+
+---
+
+## Permissions and User Consent
+
+Most manifest permissions are merged from the framework module automatically. Sensitive capabilities remain opt-in and should be declared or requested by the host app only when the corresponding strategy is enabled.
+
+| Capability | Integration Requirement |
+|------------|-------------------------|
+| Foreground service | Framework manifest merges FGS permissions and service declarations |
+| Bluetooth wake-up | Android 12+ may require `BLUETOOTH_CONNECT` at runtime |
+| Notification display | Android 13+ may require `POST_NOTIFICATIONS`; MediaSession/CallStyle paths can reduce this dependency |
+| Contacts observer | Host app declares and requests `READ_CONTACTS` only if enabled |
+| SMS observer | Host app declares and requests `READ_SMS` only if enabled |
+| Floating window | Host app asks the user to grant overlay permission |
+| Battery optimization | Host app opens the system battery-optimization exemption page |
+| VPN strategy | Host app calls `FwVpnService.prepareIntent(activity)` and waits for user consent |
+| Companion device | Host app runs BLE/device association flow |
+| Device admin | Host app activates device-admin or device-owner flow |
+
+```kotlin
+FwVpnService.prepareIntent(activity)?.let { intent ->
+    activity.startActivityForResult(intent, 1001)
+}
+
+BatteryOptimizationManager.requestIgnoreBatteryOptimizations(context)
+AutoStartPermissionManager.openAutoStartSettings(context)
+```
+
+---
+
+## Use Case Recommendations
+
+| Scenario | Recommended Strategies | AggressiveLevel | Key Config |
+|----------|----------------------|-----------------|------------|
+| **IM / Messaging** | ForegroundService + DualProcess + NativeDaemon + MediaSession + SilentAudio | `HIGH` | `enableForceStopResistance = true` |
+| **Music Playback** | ForegroundService + MediaRoute + SilentAudio + MediaSession | `MEDIUM` | `enableMediaRouteProvider = true` |
+| **IoT Device Connection** | ForegroundService + VPN + CompanionDevice + NativeDaemon | `MEDIUM` | `enableVpnService = true`, `enableCompanionDevice = true` |
+| **Health / Fitness Tracking** | ForegroundService + WorkManager + AlarmManager + Widget | `LOW` | `enableWidget = true` |
+| **Location Tracking** | ForegroundService + SilentAudio + JobScheduler + AlarmManager | `MEDIUM` | `enableAlarmManager = true` |
+| **Enterprise MDM** | ForegroundService + DeviceAdmin + TileService | `LOW` | `enableDeviceAdmin = true` |
+
+---
+
+## Build, Install, and Test
+
+```bash
+# Build debug APK
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# Build all modules and run lint/check tasks
+./gradlew build
+
+# Publish framework artifact to local Maven
+./gradlew :framework:publishReleasePublicationToMavenLocal
+
+# Repeated kill/recovery test
+./kill_alive.sh
+
+# Custom: 50 kills, 3-second interval
+./kill_alive.sh 50 3 com.your.package
+
+# Check runtime logs
+adb logcat | grep -E "(Fw|FwStart|FwHealth|ServiceStarter)"
+```
+
+---
+
+## Android Version Compatibility
+
+| Android | API | Key Adaptations |
+|---------|-----|-----------------|
+| 7.x | 24-25 | `startService()` |
+| 8.0+ | 26+ | `startForegroundService()` + notification channels |
+| 9.0+ | 28+ | Stronger background restrictions |
+| 10+ | 29+ | Background activity launch restrictions |
+| 11+ | 30+ | Foreground service type required |
+| 12+ | 31+ | `BLUETOOTH_CONNECT` runtime permission, CompanionDeviceService available |
+| 13+ | 33+ | `POST_NOTIFICATIONS` permission, **MediaSession notification bypass works** |
+| 14+ | 34+ | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permission; sender-side opt-in for PendingIntent background launches |
+| 15+ | 35+ | Stricter background limits, **16KB page size support** |
+| 16 | 36 | Sender/creator-side PendingIntent launch modes; default branch uses visible-only allowance |
+
+### Unified startActivity Strategy
+
+Fw now includes a C++ `start/` module that exposes one unified `start` entry through `FwStart.start(context, intent)`. The default entry runs executable strategies only; `FwStart.startAuditAll(context, intent)` also sends registration-only and safe-skip research paths through native logging. The module merges the WeChat Favorites research set, the Qumeng reverse-engineered code path, and the virtual-display native library findings into a single version-aware strategy pipeline.
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    Log.d("FwStart", "Started by ${result.strategy?.displayName}")
+}
+
+val auditResult = FwStart.startAuditAll(context, targetIntent)
+```
+
+| Source | Strategy | Android Scope | Runtime Behavior |
+|--------|----------|---------------|------------------|
+| Qumeng | Activity `startActivity` | All versions | Executed when `context` is an `Activity` |
+| Qumeng | `FLAG_ACTIVITY_NEW_TASK` fallback | All versions | Executed for non-Activity contexts |
+| kuaichongleida sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | All versions | Executable fallback that reduces recent-task exposure and transition animation |
+| Qumeng | `PendingIntent.getActivity(...).send()` | All versions, BAL options on 10+ | Executed with version-aware `ActivityOptions` |
+| Qumeng | Double `startActivities(Intent[])` | 16+ | Executed as fallback |
+| Qumeng | Binder `startActivities` | 21-30 | Executed with `IActivityManager` / `IActivityTaskManager` selection |
+| Qumeng | `startActivityForResult` | Activity context only | Executed via public API; hidden callback hook is not embedded |
+| Native SO | `VirtualDisplay + Presentation` | 26+ | Executed through `setLaunchDisplayId` when the system allows it |
+| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity context | Requires current Activity taskId and `REORDER_TASKS` |
+| WeChat 830 | `am start-in-vsync` | shell/root only | Registered with version/permission checks; skipped for normal apps |
+| WeChat 831 | Notification BAL token | 29-34 research window | Registered and logged; vulnerability exploitation is not embedded |
+| WeChat 832 | `startNextMatchingActivity` | Activity context only | Executed through public API |
+| WeChat 833 | CredentialManager UI | 34 | Registered and logged; system UI abuse is not embedded |
+| WeChat 834 | PrintManager UI PendingIntent | 23-34 research window | Registered and logged; system UI abuse is not embedded |
+| WeChat 835 | MediaButton BAL propagation | 31-34 research window | Registered and logged; privileged media-key chain is not embedded |
+
+The native strategy order is fixed: virtual display, notification BAL registration, media-button BAL registration, Binder, PendingIntent, double `startActivities`, `startNextMatchingActivity`, `startActivityForResult`, CredentialManager registration, PrintManager registration, shell registration, `moveTaskToFront`, `NEW_TASK + EXCLUDE_FROM_RECENTS`, direct Activity context, and `NEW_TASK` fallback. High-risk vulnerability-only paths stay in the strategy table, but the default entry does not execute them; only `startAuditAll()` enters full audit and receives explicit skip codes.
+
+---
+
+## Vendor ROM Adaptation
+
+| Vendor | Special Restrictions | Solution |
+|--------|---------------------|----------|
+| Xiaomi (MIUI) | Auto-start management, battery optimization | Guide user to enable auto-start |
+| Huawei (EMUI) | Advanced battery management | Guide user to disable battery optimization |
+| OPPO (ColorOS) | Background freeze | Guide user to add to power-saving whitelist |
+| vivo (FuntouchOS) | iManager restrictions | Guide user to enable background running |
+| Samsung (OneUI) | Device care optimization | Relatively lenient |
+| Google (Pixel) | Strict Doze mode | Request `IGNORE_BATTERY_OPTIMIZATIONS`, use high-priority FCM |
+| Transsion (Tecno) | Memory cleanup | Guide user to lock app |
+
+```kotlin
+// Auto-open vendor auto-start settings
+AutoStartPermissionManager.openAutoStartSettings(context)
+```
+
+---
+
+## Development Environment
+
+| Tool | Version |
+|------|---------|
+| Gradle | 9.5.1 |
+| AGP (Android Gradle Plugin) | 9.2.1 |
+| Kotlin | 2.3.21 |
+| JVM | 21 |
+| NDK | 27.2.12479018 |
+| compileSdk / targetSdk | 36 (Android 16) |
+| minSdk | 24 (Android 7.0) |
+
+---
+
 ## Overview
 
 Fw (Framework) is a production-grade Android keep-alive library that prevents your background service from being killed by the system. It implements every known keep-alive strategy used by commercial apps like KuGou Music, Moji Weather, and QQ Music — including foreground service, dual-process daemon, Native C++ fork daemon, MediaRoute provider, silent audio playback, VPN system-level binding, notification permission bypass, unified external startActivity orchestration, and more.
@@ -174,40 +374,6 @@ Adds a custom tile to the notification shade Quick Settings. Every time the user
 Uses Android's Dream framework. When the device is charging and idle, the system automatically activates the screen saver service, triggering a keep-alive check. Default: **ON**.
 
 </details>
-
----
-
-## Comparison with Alternatives
-
-| Feature | **Fw (This Project)** | MarsDaemon | Leoric | Cactus | Others |
-|---------|:---------------------:|:----------:|:------:|:------:|:------:|
-| Strategy Count | **35+** | 2-3 | 3-5 | 6 | 1-5 |
-| Native C++ Daemon | Yes | Yes | Yes | No | No |
-| MediaRoute Keep-Alive | Yes | No | No | No | No |
-| VPN System-Level Keep-Alive | Yes | No | No | No | No |
-| CompanionDevice Keep-Alive | Yes | No | No | No | No |
-| Notification Permission Bypass (2 methods) | Yes | No | No | No | No |
-| Device Admin Keep-Alive | Yes | No | No | No | No |
-| Quick Settings Tile | Yes | No | No | No | No |
-| Home Screen Widget | Yes | No | No | No | No |
-| Screen Saver Keep-Alive | Yes | No | No | No | No |
-| Android 16 Support | Yes | No | No | No | No |
-| Maven Central One-Line Integration | Yes | No | No | No | No |
-| Vendor ROM Adaptation | **10+ vendors** | Limited | Limited | Limited | None |
-| Actively Maintained (2026) | **Yes** | Abandoned (2018) | Abandoned (2020) | Abandoned (2022) | Varies |
-
-> MarsDaemon, Leoric, and Cactus were pioneers in Android keep-alive, but all have stopped maintenance. **Fw is the only open-source keep-alive framework that supports Android 16 and is actively maintained in 2026.**
-
-## Use Case Recommendations
-
-| Scenario | Recommended Strategies | AggressiveLevel | Key Config |
-|----------|----------------------|-----------------|------------|
-| **IM / Messaging** | ForegroundService + DualProcess + NativeDaemon + MediaSession + SilentAudio | `HIGH` | `enableForceStopResistance = true` |
-| **Music Playback** | ForegroundService + MediaRoute + SilentAudio + MediaSession | `MEDIUM` | `enableMediaRouteProvider = true` |
-| **IoT Device Connection** | ForegroundService + VPN + CompanionDevice + NativeDaemon | `MEDIUM` | `enableVpnService = true`, `enableCompanionDevice = true` |
-| **Health / Fitness Tracking** | ForegroundService + WorkManager + AlarmManager + Widget | `LOW` | `enableWidget = true` |
-| **Location Tracking** | ForegroundService + SilentAudio + JobScheduler + AlarmManager | `MEDIUM` | `enableAlarmManager = true` |
-| **Enterprise MDM** | ForegroundService + DeviceAdmin + TileService | `LOW` | `enableDeviceAdmin = true` |
 
 ---
 
@@ -319,88 +485,26 @@ Uses C++ Native Binder direct calls to race against the system's force-stop proc
 
 ---
 
-## Android Version Compatibility
+## Comparison with Alternatives
 
-| Android | API | Key Adaptations |
-|---------|-----|-----------------|
-| 7.x | 24-25 | `startService()` |
-| 8.0+ | 26+ | `startForegroundService()` + notification channels |
-| 9.0+ | 28+ | Stronger background restrictions |
-| 10+ | 29+ | Background activity launch restrictions |
-| 11+ | 30+ | Foreground service type required |
-| 12+ | 31+ | `BLUETOOTH_CONNECT` runtime permission, CompanionDeviceService available |
-| 13+ | 33+ | `POST_NOTIFICATIONS` permission, **MediaSession notification bypass works** |
-| 14+ | 34+ | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permission; sender-side opt-in for PendingIntent background launches |
-| 15+ | 35+ | Stricter background limits, **16KB page size support** |
-| 16 | 36 | Sender/creator-side PendingIntent launch modes; default branch uses visible-only allowance |
+| Feature | **Fw (This Project)** | MarsDaemon | Leoric | Cactus | Others |
+|---------|:---------------------:|:----------:|:------:|:------:|:------:|
+| Strategy Count | **35+** | 2-3 | 3-5 | 6 | 1-5 |
+| Native C++ Daemon | Yes | Yes | Yes | No | No |
+| MediaRoute Keep-Alive | Yes | No | No | No | No |
+| VPN System-Level Keep-Alive | Yes | No | No | No | No |
+| CompanionDevice Keep-Alive | Yes | No | No | No | No |
+| Notification Permission Bypass (2 methods) | Yes | No | No | No | No |
+| Device Admin Keep-Alive | Yes | No | No | No | No |
+| Quick Settings Tile | Yes | No | No | No | No |
+| Home Screen Widget | Yes | No | No | No | No |
+| Screen Saver Keep-Alive | Yes | No | No | No | No |
+| Android 16 Support | Yes | No | No | No | No |
+| Maven Central One-Line Integration | Yes | No | No | No | No |
+| Vendor ROM Adaptation | **10+ vendors** | Limited | Limited | Limited | None |
+| Actively Maintained (2026) | **Yes** | Abandoned (2018) | Abandoned (2020) | Abandoned (2022) | Varies |
 
-### Unified startActivity Strategy
-
-Fw now includes a C++ `start/` module that exposes one unified `start` entry through `FwStart.start(context, intent)`. The default entry runs executable strategies only; `FwStart.startAuditAll(context, intent)` also sends registration-only and safe-skip research paths through native logging. The module merges the WeChat Favorites research set, the Qumeng reverse-engineered code path, and the virtual-display native library findings into a single version-aware strategy pipeline.
-
-```kotlin
-val result = FwStart.start(context, targetIntent)
-if (result.success) {
-    Log.d("FwStart", "Started by ${result.strategy?.displayName}")
-}
-
-val auditResult = FwStart.startAuditAll(context, targetIntent)
-```
-
-| Source | Strategy | Android Scope | Runtime Behavior |
-|--------|----------|---------------|------------------|
-| Qumeng | Activity `startActivity` | All versions | Executed when `context` is an `Activity` |
-| Qumeng | `FLAG_ACTIVITY_NEW_TASK` fallback | All versions | Executed for non-Activity contexts |
-| kuaichongleida sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | All versions | Executable fallback that reduces recent-task exposure and transition animation |
-| Qumeng | `PendingIntent.getActivity(...).send()` | All versions, BAL options on 10+ | Executed with version-aware `ActivityOptions` |
-| Qumeng | Double `startActivities(Intent[])` | 16+ | Executed as fallback |
-| Qumeng | Binder `startActivities` | 21-30 | Executed with `IActivityManager` / `IActivityTaskManager` selection |
-| Qumeng | `startActivityForResult` | Activity context only | Executed via public API; hidden callback hook is not embedded |
-| Native SO | `VirtualDisplay + Presentation` | 26+ | Executed through `setLaunchDisplayId` when the system allows it |
-| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity context | Requires current Activity taskId and `REORDER_TASKS` |
-| WeChat 830 | `am start-in-vsync` | shell/root only | Registered with version/permission checks; skipped for normal apps |
-| WeChat 831 | Notification BAL token | 29-34 research window | Registered and logged; vulnerability exploitation is not embedded |
-| WeChat 832 | `startNextMatchingActivity` | Activity context only | Executed through public API |
-| WeChat 833 | CredentialManager UI | 34 | Registered and logged; system UI abuse is not embedded |
-| WeChat 834 | PrintManager UI PendingIntent | 23-34 research window | Registered and logged; system UI abuse is not embedded |
-| WeChat 835 | MediaButton BAL propagation | 31-34 research window | Registered and logged; privileged media-key chain is not embedded |
-
-The native strategy order is fixed: virtual display, notification BAL registration, media-button BAL registration, Binder, PendingIntent, double `startActivities`, `startNextMatchingActivity`, `startActivityForResult`, CredentialManager registration, PrintManager registration, shell registration, `moveTaskToFront`, `NEW_TASK + EXCLUDE_FROM_RECENTS`, direct Activity context, and `NEW_TASK` fallback. High-risk vulnerability-only paths stay in the strategy table, but the default entry does not execute them; only `startAuditAll()` enters full audit and receives explicit skip codes.
-
----
-
-## Vendor ROM Adaptation
-
-| Vendor | Special Restrictions | Solution |
-|--------|---------------------|----------|
-| Xiaomi (MIUI) | Auto-start management, battery optimization | Guide user to enable auto-start |
-| Huawei (EMUI) | Advanced battery management | Guide user to disable battery optimization |
-| OPPO (ColorOS) | Background freeze | Guide user to add to power-saving whitelist |
-| vivo (FuntouchOS) | iManager restrictions | Guide user to enable background running |
-| Samsung (OneUI) | Device care optimization | Relatively lenient |
-| Google (Pixel) | Strict Doze mode | Request `IGNORE_BATTERY_OPTIMIZATIONS`, use high-priority FCM |
-| Transsion (Tecno) | Memory cleanup | Guide user to lock app |
-
-```kotlin
-// Auto-open vendor auto-start settings
-AutoStartPermissionManager.openAutoStartSettings(context)
-```
-
----
-
-## Development Environment
-
-| Tool | Version |
-|------|---------|
-| Gradle | 9.5.1 |
-| AGP (Android Gradle Plugin) | 9.2.1 |
-| Kotlin | 2.3.21 |
-| JVM | 21 |
-| NDK | 27.2.12479018 |
-| compileSdk / targetSdk | 36 (Android 16) |
-| minSdk | 24 (Android 7.0) |
-
----
+> MarsDaemon, Leoric, and Cactus were pioneers in Android keep-alive, but all have stopped maintenance. **Fw is the only open-source keep-alive framework that supports Android 16 and is actively maintained in 2026.**
 
 ## FAQ
 
@@ -497,7 +601,7 @@ adb logcat | grep -E "(Fw|BluetoothReceiver|ServiceStarter)"
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md).
+Contributions are welcome.
 
 1. Fork this repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
