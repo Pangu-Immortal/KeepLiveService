@@ -2,6 +2,8 @@
 
 > 預設 README 仍為 [簡體中文](README.md)。本頁是繁體中文入口，保留最常用的接入、配置與授權說明；完整策略細節請參考 [README.md](README.md) 或 [English](README-en.md)。
 
+> Maven Central 目前最新穩定版為 `2.0.1`。本入口文件優先保留快速接入流程，完整策略表、Android 版本適配與 FAQ 請以完整文件為準。
+
 [简体中文](README.md) | **繁體中文** | [English](README-en.md) | [日本語](README-ja.md) | [한국어](README-ko.md)
 
 ---

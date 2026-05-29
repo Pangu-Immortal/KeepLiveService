@@ -5,7 +5,7 @@ English documentation: [README-en.md](README-en.md)
 
 ## 项目概览
 
-Fw 是一个 Android 7.0-16 保活技术百科全书 SDK，发布到 Maven Central：`io.github.pangu-immortal:keeplive-framework:2.0.1`。项目核心能力包括前台服务、MediaSession、Native C++ 守护、双进程守护、Socket 心跳、MediaRoute、VPN、CompanionDevice、通知权限豁免、账户同步、JobScheduler、WorkManager、AlarmManager、广播唤醒、ContentObserver、FileObserver、厂商 ROM 跳转和统一体外 Activity 启动策略。
+Fw 是一个 Android 7.0-16 保活技术百科全书 SDK，发布到 Maven Central：`io.github.pangu-immortal:keeplive-framework:2.0.1`。项目核心能力包括前台服务、MediaSession、Native C++/Rust JNI 能力、双进程守护、Socket 心跳、MediaRoute、VPN、CompanionDevice、通知权限豁免、账户同步、JobScheduler、WorkManager、AlarmManager、广播唤醒、ContentObserver、FileObserver、厂商 ROM 跳转和统一体外 Activity 启动策略。
 
 ## Unified startActivity / 体外 Activity
 

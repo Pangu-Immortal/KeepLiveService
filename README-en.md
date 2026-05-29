@@ -22,6 +22,19 @@
 
 > **The most comprehensive open-source Android keep-alive library — 35+ background service strategies, Native C++ daemon process, unified external startActivity strategies, covering Android 7.0–16, compatible with 10+ vendor ROMs.**
 
+## Navigation
+
+- [Quick Start](#quick-start)
+- [Configuration Reference](#configuration-reference)
+- [Permissions and User Consent](#permissions-and-user-consent)
+- [Use Case Recommendations](#use-case-recommendations)
+- [Build, Install, and Test](#build-install-and-test)
+- [Android Version Compatibility](#android-version-compatibility)
+- [Unified startActivity Strategy](#unified-startactivity-strategy)
+- [Vendor ROM Adaptation](#vendor-rom-adaptation)
+- [FAQ](#faq)
+- [Changelog](CHANGELOG.md)
+
 ---
 
 ## Quick Start
@@ -227,9 +240,11 @@ rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-andro
 ./gradlew :framework:checkFwRustToolchain
 ./gradlew :framework:assembleRelease -PfwBuildRust=true
 # If cargo is not in PATH, append: -PfwCargoPath=/path/to/cargo
+```
 
 The optional Rust layer currently provides JNI dynamic registration, build-pipeline probing, read-only process diagnostics, and MediaRoute state/heartbeat logic. Existing `libfw_native.so` and `libfw_mediaroute.so` behavior remains available as fallback.
 
+```bash
 # Repeated kill/recovery test
 ./kill_alive.sh
 

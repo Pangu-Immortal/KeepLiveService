@@ -1,6 +1,8 @@
-# Fw — Android Keep-Alive Framework Encyclopedia
+# Fw — Android バックグラウンド常駐フレームワーク百科
 
 > 既定で表示される README は引き続き [簡体中文](README.md) です。このページは、セットアップ、設定、権限フローを確認するための日本語入口です。完全な戦略リファレンスは [README.md](README.md) または [English](README-en.md) を参照してください。
+
+> Maven Central の現在の安定版は `2.0.1` です。この入口文書は最短の導入手順を優先し、詳細な戦略表と Android バージョン別の説明は完全版ドキュメントに集約しています。
 
 [简体中文](README.md) | [繁體中文](README-zh-Hant.md) | [English](README-en.md) | **日本語** | [한국어](README-ko.md)
 

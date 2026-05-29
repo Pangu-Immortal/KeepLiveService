@@ -357,7 +357,7 @@ afterEvaluate {
 
                 pom {
                     name.set("KeepLive Framework")
-                    description.set("Android 保活技术百科全书 — 35+ 种保活策略，Native C++ 守护进程，统一体外 Activity / startActivity 策略，适配 Android 7.0-16 全版本，覆盖 10+ 厂商 ROM")
+                    description.set("Android 保活技术百科全书 — 35+ 种保活策略，Native C++/Rust JNI 能力，统一体外 Activity / startActivity 策略，适配 Android 7.0-16 全版本，覆盖 10+ 厂商 ROM")
                     url.set("https://github.com/Pangu-Immortal/KeepLiveService")
                     inceptionYear.set("2024")
 

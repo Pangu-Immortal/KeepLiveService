@@ -24,6 +24,19 @@
 >
 > Fw 是目前开源社区中策略最全、版本覆盖最广的 Android 后台常驻框架。只需一行代码 `Fw.init(this)` 即可接入 35+ 种进程保护策略，覆盖 Android 7.0 到 16 全版本以及小米、华为、OPPO 等 10+ 厂商 ROM。无论是 IM 即时通讯、音乐播放、IoT 设备监控、健康运动追踪，还是需要研究 Android 体外 Activity / 后台启动 Activity / 统一 startActivity 策略的场景，Fw 都能通过灵活的配置项为你的应用量身定制防杀进程方案，让应用在后台保持运行不被系统回收。已发布至 Maven Central，开箱即用。
 
+## 文档导航
+
+- [快速集成](#快速集成)
+- [完整配置参考](#完整配置参考)
+- [权限说明](#权限说明)
+- [使用场景推荐配置](#使用场景推荐配置)
+- [构建运行](#构建运行)
+- [Android 版本适配](#android-版本适配)
+- [统一 startActivity 策略](#统一-startactivity-策略)
+- [厂商适配](#厂商适配)
+- [常见问题](#常见问题)
+- [更新日志](#更新日志)
+
 ---
 
 ## 快速集成
@@ -403,7 +416,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 # Release 构建（带时间戳）
 ./gradlew buildTimestampedReleaseApk
-# 输出：release/app-202604101118.apk + mapping 文件
+# 输出：release/app-<yyyyMMddHHmm>.apk + mapping 文件
 ```
 
 ### Rust Native（可选）
@@ -1281,6 +1294,8 @@ Native 守护进程（C++ fork）在普通应用中效果有限——Android 5.0
 ---
 
 ## 更新日志
+
+> Maven Central 当前最新稳定版本为 `2.0.1`。下方 `v2.1.0`、`v2.2.0`、`v2.2.1` 为早期开发标签记录，用于保留历史能力演进说明；新接入请以 Maven Central 徽章和快速集成中的版本号为准。
 
 ### v2.0.1 (2026-05)
 

@@ -1,6 +1,8 @@
-# Fw — Android Keep-Alive Framework Encyclopedia
+# Fw — Android 백그라운드 상주 프레임워크 백과
 
 > 기본 README 는 계속 [간체 중국어](README.md) 입니다. 이 한국어 문서는 설치, 설정, 권한 흐름을 빠르게 확인하기 위한 진입점입니다. 전체 전략 설명은 [README.md](README.md) 또는 [English](README-en.md)를 참고하세요.
+
+> Maven Central 의 현재 안정 버전은 `2.0.1` 입니다. 이 문서는 빠른 통합 흐름을 우선으로 다루며, 전체 전략표와 Android 버전별 설명은 전체 문서에 정리되어 있습니다.
 
 [简体中文](README.md) | [繁體中文](README-zh-Hant.md) | [English](README-en.md) | [日本語](README-ja.md) | **한국어**
 

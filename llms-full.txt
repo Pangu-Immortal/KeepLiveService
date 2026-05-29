@@ -4,7 +4,7 @@
 
 ## Overview
 
-Fw (Framework) is a modular Android keep alive library that reproduces every known technique used by commercial apps to maintain a persistent background service. It combines Kotlin and Native C++17 in a dual-layer architecture to maximize process survival across all Android versions and vendor ROMs. The default README is Simplified Chinese (`README.md`), with English documentation in `README-en.md`.
+Fw (Framework) is a modular Android keep alive library that reproduces every known technique used by commercial apps to maintain a persistent background service. It combines Kotlin, Native C++17, and optional Rust JNI components in a layered architecture to maximize process survival across all Android versions and vendor ROMs. The default README is Simplified Chinese (`README.md`), with English, Traditional Chinese, Japanese, and Korean entry documents available from the language switcher.
 
 The framework covers foreground service persistence, dual-process daemon watchdog, Native C++ fork daemon, MediaRoute media-route provider (the core keep alive approach used by KuGou Music), VPN system-level binding, CompanionDevice service, notification-permission exemptions (CallStyle + MediaSession), silent audio playback, 1-pixel Activity, account sync, JobScheduler, WorkManager, AlarmManager, accessibility service, notification listener, Bluetooth/WiFi/USB/NFC broadcast wake-up, ContentObserver, FileObserver, Binder direct-call to AMS to prevent process kill after force-stop, unified external startActivity orchestration, VirtualDisplay activity launch, and more.
 

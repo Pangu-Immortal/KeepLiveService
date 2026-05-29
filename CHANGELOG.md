@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added optional Rust MediaRoute native state and heartbeat implementation with C++ fallback.
 
 ### Changed
+- Refined README navigation, multilingual entry pages, build-output examples, and Maven-version guidance.
 - Hardened VPN startup to require user authorization, foreground notification startup, no default traffic routing, and explicit special-use subtype metadata.
 - Changed 1-pixel Activity and contacts/SMS observers to opt-in defaults, and stopped merging contacts/SMS permissions into host apps by default.
 - Updated PendingIntent background-launch handling for Android 14-16 sender/creator-side options.
