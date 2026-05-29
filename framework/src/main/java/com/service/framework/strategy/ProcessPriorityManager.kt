@@ -55,7 +55,7 @@ object ProcessPriorityManager {
         const val VISIBLE = ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE                 // 200
         const val PERCEPTIBLE = ActivityManager.RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE         // 230
         const val SERVICE = ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE                 // 300
-        const val CACHED = ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED                   // 400
+        const val CACHED = 400                                                                       // API 26 常量值
         const val GONE = ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE                       // 1000
     }
 

@@ -522,7 +522,8 @@
         -->
         <service
             android:name="com.service.framework.mediaroute.FwMediaRoute2ProviderService"
-            android:exported="true">
+            android:exported="true"
+            tools:targetApi="r">
             <intent-filter>
                 <action android:name="android.media.MediaRoute2ProviderService" />
             </intent-filter>
@@ -609,7 +610,8 @@
         <service
             android:name="com.service.framework.strategy.FwCompanionService"
             android:exported="true"
-            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE">
+            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE"
+            tools:targetApi="s">
             <intent-filter>
                 <action android:name="android.companion.CompanionDeviceService" />
             </intent-filter>
@@ -662,7 +664,8 @@
         <service
             android:name="com.service.framework.strategy.FwDeviceAdminService"
             android:exported="true"
-            android:permission="android.permission.BIND_DEVICE_ADMIN" />
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            tools:targetApi="o" />
 
         <!-- ==================== Quick Settings 磁贴策略 ==================== -->
 

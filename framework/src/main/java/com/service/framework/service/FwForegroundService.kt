@@ -27,6 +27,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.PowerManager
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import android.support.v4.media.session.MediaSessionCompat
@@ -100,6 +101,7 @@ class FwForegroundService : LifecycleService() {
     /**
      * 按当前启用策略和系统版本选择前台服务类型。
      */
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun resolveForegroundServiceType(): Int {
         var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Fw.config.enableWorkManager) {

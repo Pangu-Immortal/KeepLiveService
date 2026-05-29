@@ -77,7 +77,7 @@ class FwCompanionService : CompanionDeviceService() {
      */
     override fun onDeviceAppeared(associationInfo: AssociationInfo) {
         super.onDeviceAppeared(associationInfo)
-        FwLog.d("$TAG: onDeviceAppeared - 伴随设备出现，关联ID: ${associationInfo.id}")
+        FwLog.d("$TAG: onDeviceAppeared - 伴随设备出现，关联ID: ${associationIdForLog(associationInfo)}")
         // 触发保活检查
         try {
             Fw.check() // 手动触发保活检查
@@ -94,7 +94,7 @@ class FwCompanionService : CompanionDeviceService() {
      */
     override fun onDeviceDisappeared(associationInfo: AssociationInfo) {
         super.onDeviceDisappeared(associationInfo)
-        FwLog.d("$TAG: onDeviceDisappeared - 伴随设备消失，关联ID: ${associationInfo.id}")
+        FwLog.d("$TAG: onDeviceDisappeared - 伴随设备消失，关联ID: ${associationIdForLog(associationInfo)}")
         // 触发保活检查
         try {
             Fw.check() // 手动触发保活检查
@@ -107,6 +107,18 @@ class FwCompanionService : CompanionDeviceService() {
     override fun onDestroy() {
         super.onDestroy()
         FwLog.w("$TAG: onDestroy - 伴随设备服务被销毁")
+    }
+
+    /**
+     * 获取可用于日志输出的关联 ID。
+     * Android 13 以下 AssociationInfo 不暴露 id 字段，统一返回兼容标识。
+     */
+    private fun associationIdForLog(associationInfo: AssociationInfo): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            associationInfo.id.toString() // Android 13+ 可读取系统关联 ID
+        } else {
+            "legacy-api-${Build.VERSION.SDK_INT}" // Android 12/12L 使用兼容日志标识
+        }
     }
 }
 

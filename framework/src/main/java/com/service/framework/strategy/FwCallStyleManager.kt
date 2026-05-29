@@ -307,8 +307,15 @@ object FwCallStyleManager {
      */
     class FwCallConnection : Connection() {
         init {
-            // 设置连接属性为自管理
-            connectionProperties = PROPERTY_SELF_MANAGED
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                // Android 8.0+ 设置连接属性为自管理
+                connectionProperties = PROPERTY_SELF_MANAGED
+                // 输出自管理属性配置日志
+                FwLog.d("$TAG: 虚拟通话连接已设置为自管理属性")
+            } else {
+                // Android 7.x 不支持自管理连接属性，保持基础连接能力
+                FwLog.d("$TAG: API < 26，跳过自管理连接属性")
+            }
             // 设置音频模式
             audioModeIsVoip = true
         }
