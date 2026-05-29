@@ -23,6 +23,9 @@ jobs:
   build:
     name: Build AAB & APK
     runs-on: ubuntu-latest
+    outputs:
+      signing_enabled: ${{ steps.signing.outputs.enabled }}
+      build_mode: ${{ steps.build_mode.outputs.mode }}
 
     steps:
       - name: Checkout
@@ -58,22 +61,54 @@ jobs:
         run: ./gradlew lint
         continue-on-error: true
 
+      - name: Check release signing secrets
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [[ -n "$KEYSTORE_BASE64" && -n "$KEYSTORE_PASSWORD" && -n "$KEY_ALIAS" && -n "$KEY_PASSWORD" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve build mode
+        id: build_mode
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.build_type }}" == "debug" ]]; then
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ steps.signing.outputs.enabled }}" == "true" ]]; then
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate release signing secrets
+        if: (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release')) && steps.signing.outputs.enabled != 'true'
+        run: |
+          echo "::error::Release builds require KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD secrets."
+          exit 1
+
       - name: Build Debug AAB
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'debug')
+        if: steps.build_mode.outputs.mode == 'debug'
         run: ./gradlew bundleDebug
 
       - name: Build Debug APK
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'debug')
+        if: steps.build_mode.outputs.mode == 'debug'
         run: ./gradlew assembleDebug
 
       - name: Decode Keystore
-        if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'release')
+        if: steps.build_mode.outputs.mode == 'release'
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
-        continue-on-error: true
 
       - name: Build Release AAB
-        if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'release')
+        if: steps.build_mode.outputs.mode == 'release'
         run: ./gradlew bundleRelease
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/app/keystore.jks
@@ -82,7 +117,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Build Release APK
-        if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'release')
+        if: steps.build_mode.outputs.mode == 'release'
         run: ./gradlew assembleRelease
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/app/keystore.jks
@@ -93,7 +128,7 @@ jobs:
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: app-bundle-${{ github.event_name == 'pull_request' && 'debug' || github.event.inputs.build_type || 'release' }}
+          name: app-bundle-${{ steps.build_mode.outputs.mode }}
           path: app/build/outputs/bundle/**/*.aab
           retention-days: 30
         if: always()
@@ -101,7 +136,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-apk-${{ github.event_name == 'pull_request' && 'debug' || github.event.inputs.build_type || 'release' }}
+          name: app-apk-${{ steps.build_mode.outputs.mode }}
           path: app/build/outputs/apk/**/*.apk
           retention-days: 14
         if: always()
@@ -118,19 +153,38 @@ jobs:
     name: Deploy to Play Store
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build.outputs.signing_enabled == 'true'
 
     steps:
       - name: Download AAB
         uses: actions/download-artifact@v4
         with:
           name: app-bundle-release
+          path: release
+
+      - name: Validate Play Store secrets
+        env:
+          PLAY_STORE_SERVICE_ACCOUNT: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
+          PACKAGE_NAME: ${{ secrets.PACKAGE_NAME }}
+        run: |
+          if [[ -z "$PLAY_STORE_SERVICE_ACCOUNT" || -z "$PACKAGE_NAME" ]]; then
+            echo "::error::Play Store deployment requires PLAY_STORE_SERVICE_ACCOUNT and PACKAGE_NAME secrets."
+            exit 1
+          fi
+
+      - name: Validate release AAB
+        run: |
+          find release -name '*.aab' -print
+          if ! find release -name '*.aab' -print -quit | grep -q .; then
+            echo "::error::No release AAB found in downloaded artifact."
+            exit 1
+          fi
 
       - name: Deploy to Play Store
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT }}
           packageName: ${{ secrets.PACKAGE_NAME }}
-          releaseFiles: release/*.aab
+          releaseFiles: release/**/*.aab
           track: internal
           status: completed

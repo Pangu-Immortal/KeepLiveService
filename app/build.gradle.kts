@@ -33,19 +33,39 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// 校验发布签名环境，避免空密钥或缺失密码时误用 release 签名。
+fun hasReleaseSigningEnv(): Boolean {
+    val keystoreFile = System.getenv("KEYSTORE_FILE")
+    val keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+    val keyAlias = System.getenv("KEY_ALIAS")
+    val keyPassword = System.getenv("KEY_PASSWORD")
+    return !keystoreFile.isNullOrBlank() &&
+        !keystorePassword.isNullOrBlank() &&
+        !keyAlias.isNullOrBlank() &&
+        !keyPassword.isNullOrBlank() &&
+        file(keystoreFile).isFile
+}
+
 android {
     namespace = "com.google.services"
     compileSdk = 36
     ndkVersion = "27.2.12479018"
 
+    val releaseSigningEnabled = hasReleaseSigningEnv()
+    logger.lifecycle(
+        "KeepLiveService release signing: ${
+            if (releaseSigningEnabled) "enabled" else "disabled, fallback to debug signing"
+        }"
+    )
+
     signingConfigs {
         create("release") {
             val keystoreFile = System.getenv("KEYSTORE_FILE")
-            if (keystoreFile != null && file(keystoreFile).exists()) {
+            if (releaseSigningEnabled && !keystoreFile.isNullOrBlank()) {
                 storeFile = file(keystoreFile)
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
             }
         }
     }
@@ -87,8 +107,8 @@ android {
                 "proguard-rules.pro"
             )
 
-            // CI 环境使用环境变量签名，本地开发使用 debug 签名
-            signingConfig = if (System.getenv("KEYSTORE_FILE") != null) {
+            // CI 环境签名参数完整时使用 release 签名，本地开发和缺少参数时使用 debug 签名。
+            signingConfig = if (releaseSigningEnabled) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
