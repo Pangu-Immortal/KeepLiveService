@@ -55,11 +55,9 @@ jobs:
 
       - name: Run Tests
         run: ./gradlew testDebugUnitTest
-        continue-on-error: true
 
       - name: Run Lint
         run: ./gradlew lint
-        continue-on-error: true
 
       - name: Check release signing secrets
         id: signing
@@ -146,7 +144,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: lint-report
-          path: app/build/reports/lint-results*.html
+          path: |
+            app/build/reports/lint-results*.html
+            framework/build/reports/lint-results*.html
         continue-on-error: true
 
   deploy-play-store:
