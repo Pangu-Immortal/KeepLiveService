@@ -22,17 +22,17 @@
 
 > **TL;DR — 为什么选择 Fw？**
 >
-> Fw 是目前开源社区中策略最全、版本覆盖最广的 Android 后台常驻框架。只需一行代码 `Fw.init(this)` 即可接入 35+ 种进程保护策略，覆盖 Android 7.0 到 16 全版本以及小米、华为、OPPO 等 10+ 厂商 ROM。无论是 IM 即时通讯、音乐播放、IoT 设备监控、健康运动追踪，还是需要研究 Android 体外 Activity / 后台启动 Activity / 统一 startActivity 策略的场景，Fw 都能通过灵活的配置项为你的应用量身定制防杀进程方案，让应用在后台保持运行不被系统回收。已发布至 Maven Central，开箱即用。
+> Fw 是目前开源社区中策略最全、版本覆盖最广的 Android 后台常驻框架。只需一行代码 `Fw.init(this)` 即可接入 35+ 种进程保护策略，覆盖 Android 7.0 到 16 全版本以及小米、华为、OPPO 等 10+ 厂商 ROM。无论是 IM 即时通讯、音乐播放、IoT 设备监控、健康运动追踪，还是需要研究 Android 体外 Activity / 后台启动 Activity / 体外 Activity 策略的场景，Fw 都能通过灵活的配置项为你的应用量身定制防杀进程方案，让应用在后台保持运行不被系统回收。已发布至 Maven Central，开箱即用。
 
 ## 文档导航
 
 - [快速集成](#快速集成)
+- [体外 Activity 策略](#体外-activity-策略)
 - [完整配置参考](#完整配置参考)
 - [权限说明](#权限说明)
 - [使用场景推荐配置](#使用场景推荐配置)
 - [构建运行](#构建运行)
 - [Android 版本适配](#android-版本适配)
-- [统一 startActivity 策略](#统一-startactivity-策略)
 - [厂商适配](#厂商适配)
 - [常见问题](#常见问题)
 - [更新日志](#更新日志)
@@ -112,6 +112,128 @@ if (vpnIntent != null) {
     startActivityForResult(vpnIntent, 1001)
 }
 ```
+
+---
+
+## 体外 Activity 策略
+
+Fw 提供统一的体外 Activity 启动入口，通过 `FwStart.start(context, intent)` 对外暴露默认可执行策略，并通过 `FwStart.startAuditAll(context, intent)` 提供全量审计能力。默认入口只执行普通应用可落地、风险可控的启动路径；全量审计入口会记录需要特定系统条件、特权权限或仅用于研究登记的路径，并在日志中返回明确跳过原因。
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    FwLog.d("命中体外 Activity 策略：${result.strategy?.displayName}")
+}
+
+val auditResult = FwStart.startAuditAll(context, targetIntent)
+```
+
+- **Activity Context 直启策略**
+  - **适用范围**：全 Android 版本。
+  - **触发条件**：传入的 `context` 本身是 Activity，且目标 Intent 满足常规启动条件。
+  - **执行方式**：直接调用 Activity 的 `startActivity(intent)`。
+  - **策略定位**：这是最标准、最安全的公开 API 路径，优先用于前台 Activity、可见页面或业务明确允许的跳转场景。
+  - **失败处理**：如果当前不是 Activity Context，或者系统因后台启动限制拒绝启动，会继续进入后续兜底策略。
+
+- **`FLAG_ACTIVITY_NEW_TASK` 兜底策略**
+  - **适用范围**：全 Android 版本。
+  - **触发条件**：传入的是 Application、Service、BroadcastReceiver 等非 Activity Context。
+  - **执行方式**：为目标 Intent 添加 `FLAG_ACTIVITY_NEW_TASK` 后调用 `context.startActivity(intent)`。
+  - **策略定位**：解决非 Activity Context 无法直接启动 Activity 的基础问题，是普通 SDK 接入时最常见的兜底方式。
+  - **注意事项**：Android 10+ 仍会受到后台启动 Activity 限制，能否成功取决于当前应用可见性、系统版本和厂商策略。
+
+- **隐藏任务痕迹的 `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` 策略**
+  - **适用范围**：全 Android 版本。
+  - **触发条件**：需要通过新任务启动，同时尽量降低最近任务列表和切换动画带来的用户感知。
+  - **执行方式**：追加 `FLAG_ACTIVITY_NEW_TASK`、`FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS`、`FLAG_ACTIVITY_NO_ANIMATION` 后启动目标 Activity。
+  - **策略定位**：作为默认可执行兜底路径之一，用于减少最近任务展示和页面切换动画干扰。
+  - **注意事项**：该策略不绕过系统后台启动限制，只是在合法启动成功时优化任务栈展示效果。
+
+- **PendingIntent Activity 策略**
+  - **适用范围**：全 Android 版本；Android 10+ 会额外配置后台 Activity 启动相关 Options。
+  - **触发条件**：需要通过 PendingIntent 代理启动 Activity，或当前直接启动路径受限。
+  - **执行方式**：构造 `PendingIntent.getActivity(...)`，再调用 `send()` 触发目标 Intent。
+  - **策略定位**：利用系统对 PendingIntent 发送方、创建方的独立判定，把 Activity 启动封装为可审计的代理启动路径。
+  - **版本要点**：Android 14+ 对 PendingIntent 后台启动增加发送方显式允许要求；Android 16 进一步区分创建方与发送方模式，Fw 会按版本选择可见时允许分支。
+
+- **双 Intent `startActivities(Intent[])` 策略**
+  - **适用范围**：Android 4.1（API 16）及以上。
+  - **触发条件**：需要通过 Activity 栈批量启动方式构造更完整的任务栈。
+  - **执行方式**：组装 Intent 数组后调用 `startActivities(...)`。
+  - **策略定位**：作为公开 API 兜底路径，在部分系统或厂商 ROM 中比单 Intent 启动拥有不同的任务栈处理分支。
+  - **注意事项**：该策略依然遵守系统后台 Activity 启动限制，不作为强制绕过手段。
+
+- **Binder `startActivities` 策略**
+  - **适用范围**：主要覆盖 Android 5.0 - Android 11（API 21 - 30）的历史系统分支。
+  - **触发条件**：需要通过 Native/Binder 层直接进入系统 Activity 启动事务，并且当前系统版本存在可兼容的服务接口。
+  - **执行方式**：按系统版本选择 `IActivityManager` 或 `IActivityTaskManager` 事务路径，构造 Binder 调用并发起 `startActivities`。
+  - **策略定位**：用于覆盖历史版本系统的 Binder 直调能力，补齐公开 API 之外的版本兼容研究路径。
+  - **安全边界**：默认入口只执行可控分支；不满足版本、权限或事务条件时会记录失败并跳过。
+
+- **`startActivityForResult` 策略**
+  - **适用范围**：仅 Activity Context。
+  - **触发条件**：当前 `context` 是 Activity，且调用方希望使用带结果回调的公开 API 启动方式。
+  - **执行方式**：调用 Activity 的 `startActivityForResult(intent, requestCode)`。
+  - **策略定位**：保留公开 API 的兼容路径，适合需要结果回传或沿用旧业务链路的场景。
+  - **注意事项**：Fw 不内置隐藏 Handler hook，也不通过该策略做漏洞型绕过。
+
+- **VirtualDisplay + Presentation 策略**
+  - **适用范围**：Android 8.0（API 26）及以上。
+  - **触发条件**：设备支持虚拟显示能力，并且目标启动路径允许指定显示区域。
+  - **执行方式**：创建 VirtualDisplay / Presentation 环境，通过 `setLaunchDisplayId` 尝试把目标 Activity 启动到虚拟屏。
+  - **策略定位**：用于覆盖多显示器、虚拟屏和体外展示相关场景，是 Android 高版本 Activity 启动策略的重要补充。
+  - **注意事项**：受设备显示能力、系统权限、厂商实现和目标 Activity 启动模式影响较大。
+
+- **`ActivityManager.moveTaskToFront` 策略**
+  - **适用范围**：具备当前 Activity taskId 且声明 `REORDER_TASKS` 权限的场景。
+  - **触发条件**：目标任务已经存在，需要把现有任务移动到前台，而不是创建新的 Activity 实例。
+  - **执行方式**：调用 `ActivityManager.moveTaskToFront(taskId, flags)`。
+  - **策略定位**：适合恢复已有任务栈、减少重复实例、提升已有页面可见性。
+  - **注意事项**：该策略不是创建新 Activity，而是移动已有任务；如果任务不存在则无法命中。
+
+- **Shell / Root 命令登记策略**
+  - **适用范围**：具备 shell、root 或系统级执行条件的环境。
+  - **触发条件**：普通应用无法直接执行，需要调试环境、系统应用或授权测试环境提供命令执行能力。
+  - **执行方式**：登记 shell 侧 Activity 启动命令分支，并在全量审计中输出版本、权限和跳过原因。
+  - **策略定位**：用于工程验证和系统级测试，不作为普通应用默认执行路径。
+  - **安全边界**：默认入口不会执行该路径；普通应用条件不足时只记录跳过。
+
+- **Notification BAL token 登记策略**
+  - **适用范围**：Android 10 - Android 14（API 29 - 34）的后台 Activity 启动限制研究窗口。
+  - **触发条件**：需要审计通知相关后台 Activity 启动授权链路。
+  - **执行方式**：只登记策略和日志，不内置漏洞利用链路。
+  - **策略定位**：用于观察不同系统版本对通知触发 Activity 的限制差异。
+  - **安全边界**：默认入口不执行，只在全量审计中返回明确跳过码。
+
+- **`startNextMatchingActivity` 策略**
+  - **适用范围**：仅 Activity Context。
+  - **触发条件**：当前 Activity 希望把符合条件的下一个 Activity 作为匹配目标启动。
+  - **执行方式**：调用公开 API `startNextMatchingActivity(intent)`。
+  - **策略定位**：覆盖 Android 公开 API 中较少使用的 Activity 匹配启动分支。
+  - **注意事项**：依赖当前 Activity、Intent 匹配结果和系统任务栈状态，命中率通常低于直启和 NEW_TASK。
+
+- **CredentialManager UI 登记策略**
+  - **适用范围**：Android 14（API 34）相关系统 UI 链路。
+  - **触发条件**：需要审计凭据管理器系统 UI 与 Activity 启动限制之间的关系。
+  - **执行方式**：只登记策略和日志，不滥用系统凭据 UI。
+  - **策略定位**：用于高版本系统 UI 触发路径的研究覆盖。
+  - **安全边界**：默认入口不执行，只在全量审计中说明跳过原因。
+
+- **PrintManager UI PendingIntent 登记策略**
+  - **适用范围**：Android 6.0 - Android 14（API 23 - 34）的系统打印 UI 研究窗口。
+  - **触发条件**：需要审计打印系统 UI、PendingIntent 和后台 Activity 启动限制之间的交互。
+  - **执行方式**：只登记策略和日志，不滥用系统打印 UI。
+  - **策略定位**：补齐系统 UI 触发 PendingIntent 的审计覆盖面。
+  - **安全边界**：默认入口不执行，只在全量审计中返回明确跳过码。
+
+- **MediaButton BAL 传播登记策略**
+  - **适用范围**：Android 12 - Android 14（API 31 - 34）的媒体按键后台 Activity 启动研究窗口。
+  - **触发条件**：需要审计媒体按键、MediaSession、PendingIntent 与 BAL 授权传播之间的关系。
+  - **执行方式**：只登记策略和日志，不内置特权媒体键链路。
+  - **策略定位**：用于媒体类应用后台启动边界的版本化分析。
+  - **安全边界**：默认入口不执行，只在全量审计中说明跳过原因。
+
+Native 固定执行顺序为：虚拟屏、Notification BAL 登记、MediaButton BAL 登记、Binder、PendingIntent、双 Intent、`startNextMatchingActivity`、`startActivityForResult`、CredentialManager 登记、PrintManager 登记、Shell / Root 命令登记、`moveTaskToFront`、`NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION`、Activity 直启、`FLAG_ACTIVITY_NEW_TASK` 兜底。高风险、特权型或仅适合研究的路径会保留在策略表和审计日志中，保证覆盖不遗漏；普通默认入口只执行可落地策略。
 
 ---
 
@@ -476,39 +598,6 @@ adb shell pm path com.moji.mjweather
 | 14+ | 34+   | [`FOREGROUND_SERVICE_MEDIA_PLAYBACK`](https://developer.android.com/about/versions/14/changes/fgs-types-required) 权限；PendingIntent 后台启动需发送方显式允许 |
 | 15+ | 35+   | 更严格的后台限制，**[16KB 页面大小](https://developer.android.com/guide/practices/page-sizes)设备支持** |
 | 16 | 36 | PendingIntent 后台启动增加创建方/发送方双侧模式，默认采用可见时允许分支 |
-
-### 统一 startActivity 策略
-
-Fw 新增 C++ `start/` 模块，通过 `FwStart.start(context, intent)` 对外暴露统一 `start` 函数。默认入口只执行可落地策略；`FwStart.startAuditAll(context, intent)` 会把仅登记/安全跳过的研究路径也纳入日志审计。该模块把微信收藏 830-835、放大镜 qumeng 逆向路径、虚拟屏 so 方法合并成一条带版本判断的策略流水线。
-
-```kotlin
-val result = FwStart.start(context, targetIntent)
-if (result.success) {
-    FwLog.d("命中统一 startActivity 策略：${result.strategy?.displayName}")
-}
-
-val auditResult = FwStart.startAuditAll(context, targetIntent)
-```
-
-| 来源 | 策略 | Android 范围 | 运行行为 |
-|------|------|--------------|----------|
-| 放大镜 qumeng | Activity `startActivity` | 全版本 | `context` 是 Activity 时执行 |
-| 放大镜 qumeng | `FLAG_ACTIVITY_NEW_TASK` 兜底 | 全版本 | 非 Activity Context 时执行 |
-| 快充雷达 sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | 全版本 | 默认可执行兜底，减少最近任务展示并取消切换动画 |
-| 放大镜 qumeng | `PendingIntent.getActivity(...).send()` | 全版本，Android 10+ 带 BAL Options | 按版本构造 `ActivityOptions` 后执行 |
-| 放大镜 qumeng | 双 Intent `startActivities(Intent[])` | 16+ | 作为兜底路径执行 |
-| 放大镜 qumeng | Binder `startActivities` | 21-30 | 按版本选择 `IActivityManager` / `IActivityTaskManager` |
-| 放大镜 qumeng | `startActivityForResult` | 仅 Activity Context | 走公开 API；不内置隐藏 Handler hook |
-| so 逆向 | `VirtualDisplay + Presentation` | 26+ | 通过 `setLaunchDisplayId` 尝试在虚拟屏启动 |
-| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity Context | 需要当前 Activity 的 taskId 和 `REORDER_TASKS` 权限 |
-| 微信收藏 830 | `am start-in-vsync` | shell/root 条件 | 登记版本和权限判断；普通应用跳过 |
-| 微信收藏 831 | Notification BAL token | 29-34 研究窗口 | 登记并输出日志；不内置漏洞利用 |
-| 微信收藏 832 | `startNextMatchingActivity` | 仅 Activity Context | 走公开 API 执行 |
-| 微信收藏 833 | CredentialManager UI | 34 | 登记并输出日志；不滥用系统 UI |
-| 微信收藏 834 | PrintManager UI PendingIntent | 23-34 研究窗口 | 登记并输出日志；不滥用系统 UI |
-| 微信收藏 835 | MediaButton BAL 传播 | 31-34 研究窗口 | 登记并输出日志；不内置特权媒体键链路 |
-
-Native 固定执行顺序为：虚拟屏、Notification BAL 登记、MediaButton BAL 登记、Binder、PendingIntent、双 Intent、`startNextMatchingActivity`、`startActivityForResult`、CredentialManager 登记、PrintManager 登记、shell 登记、`moveTaskToFront`、`NEW_TASK + EXCLUDE_FROM_RECENTS`、Activity 直启、`NEW_TASK` 兜底。高风险漏洞型路径全部保留在策略表中，保证研究覆盖不遗漏，但默认入口不执行这些路径；只有 `startAuditAll()` 会进入全量审计并返回明确跳过码。
 
 ### Android 16K 页面大小适配
 
