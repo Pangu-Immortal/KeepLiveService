@@ -8,6 +8,18 @@
 
 ---
 
+## 目次
+
+- [クイックスタート](#クイックスタート)
+- [体外 Activity 戦略](#体外-activity-戦略)
+- [基本設定](#基本設定)
+- [実行時 API](#実行時-api)
+- [ユーザー許可が必要な戦略](#ユーザー許可が必要な戦略)
+- [ビルドとテスト](#ビルドとテスト)
+- [さらに読む](#さらに読む)
+
+---
+
 ## クイックスタート
 
 ### 1. 依存関係を追加
@@ -38,6 +50,37 @@ class App : Application() {
 ```
 
 低侵襲の戦略はデフォルト設定で起動します。VPN、Companion Device、Device Admin、フローティングウィンドウ、1 ピクセル Activity、連絡先/SMS 監視などは、明示的な有効化またはユーザー許可が必要です。
+
+---
+
+## 体外 Activity 戦略
+
+Fw は `FwStart.start(context, intent)` で統一された体外 Activity 起動入口を提供し、`FwStart.startAuditAll(context, intent)` で全量監査入口を提供します。既定入口は通常アプリで実行可能かつリスクを制御できるパスだけを実行し、監査入口は特別なシステム条件、特権権限、または研究用登録のみのパスをログに記録して明確なスキップ理由を返します。
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    FwLog.d("${result.strategy?.displayName}")
+}
+
+val audit = FwStart.startAuditAll(context, targetIntent)
+```
+
+- **Activity Context 直接起動：全バージョン対応。`context` が Activity の場合に `startActivity(intent)` を直接呼びます。**
+- **`FLAG_ACTIVITY_NEW_TASK` フォールバック：非 Activity Context で新規タスクフラグを付けて起動します。**
+- **`NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION`：新規タスク起動時に最近のタスク表示と遷移アニメーションを抑えます。**
+- **PendingIntent Activity：`PendingIntent.getActivity(...).send()` による代理起動パスです。**
+- **二重 Intent `startActivities(Intent[])`：Android 4.1+ でより完全なタスクスタックを構築します。**
+- **Binder `startActivities`：主に Android 5.0-11 の Native/Binder 互換分岐をカバーします。**
+- **`startActivityForResult`：Activity Context のみ。公開 API の結果返却パスを保持します。**
+- **VirtualDisplay + Presentation：Android 8.0+ で `setLaunchDisplayId` により仮想画面起動を試みます。**
+- **`ActivityManager.moveTaskToFront`：既存タスクと `REORDER_TASKS` 権限がある場合に前面へ移動します。**
+- **Shell / Root コマンド登録：shell、root、システムアプリ、または許可済みテスト環境の監査用です。**
+- **Notification BAL token 登録：Android 10-14 の研究ウィンドウで、登録とログ出力のみ行います。**
+- **`startNextMatchingActivity`：Activity Context のみ。公開 Activity マッチング起動分岐です。**
+- **CredentialManager UI 登録：Android 14 のシステム UI パスを監査し、システム UI を濫用しません。**
+- **PrintManager UI PendingIntent 登録：Android 6.0-14 の研究ウィンドウで、登録とログ出力のみ行います。**
+- **MediaButton BAL 伝播登録：Android 12-14 の研究ウィンドウで、メディアキーと BAL 伝播境界を監査します。**
 
 ---
 
@@ -77,10 +120,6 @@ Fw.stop()
 Fw.isInitialized()
 ```
 
-```kotlin
-val result = FwStart.start(context, targetIntent)
-val audit = FwStart.startAuditAll(context, targetIntent)
-```
 
 ---
 

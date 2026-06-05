@@ -25,12 +25,12 @@
 ## Navigation
 
 - [Quick Start](#quick-start)
+- [External Activity Strategy](#external-activity-strategy)
 - [Configuration Reference](#configuration-reference)
 - [Permissions and User Consent](#permissions-and-user-consent)
 - [Use Case Recommendations](#use-case-recommendations)
 - [Build, Install, and Test](#build-install-and-test)
 - [Android Version Compatibility](#android-version-compatibility)
-- [Unified startActivity Strategy](#unified-startactivity-strategy)
 - [Vendor ROM Adaptation](#vendor-rom-adaptation)
 - [FAQ](#faq)
 - [Changelog](CHANGELOG.md)
@@ -127,6 +127,113 @@ if (vpnIntent != null) {
     startActivityForResult(vpnIntent, 1001)
 }
 ```
+
+---
+
+## External Activity Strategy
+
+Fw provides one external Activity launch entry through `FwStart.start(context, intent)` and a full audit entry through `FwStart.startAuditAll(context, intent)`. The default entry runs only executable, low-risk paths that normal apps can actually use; the audit entry records paths that require special system conditions, privileged execution, or research-only registration, and returns explicit skip reasons in logs.
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    Log.d("FwStart", "Started by ${result.strategy?.displayName}")
+}
+
+val auditResult = FwStart.startAuditAll(context, targetIntent)
+```
+
+- **Activity Context direct launch**
+  - **Scope**: All Android versions.
+  - **Condition**: The supplied `context` is an Activity and the target Intent is launchable.
+  - **Behavior**: Calls Activity `startActivity(intent)` directly.
+  - **Role**: The safest public API path for visible pages and business-approved navigation.
+
+- **`FLAG_ACTIVITY_NEW_TASK` fallback**
+  - **Scope**: All Android versions.
+  - **Condition**: The supplied context is an Application, Service, BroadcastReceiver, or another non-Activity context.
+  - **Behavior**: Adds `FLAG_ACTIVITY_NEW_TASK` and calls `context.startActivity(intent)`.
+  - **Role**: The standard fallback for SDK code that does not own an Activity context.
+
+- **`NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` fallback**
+  - **Scope**: All Android versions.
+  - **Condition**: A new task is needed while recent-task exposure and transition animation should be minimized.
+  - **Behavior**: Adds `FLAG_ACTIVITY_NEW_TASK`, `FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS`, and `FLAG_ACTIVITY_NO_ANIMATION`.
+  - **Role**: An executable fallback that improves task-stack presentation without bypassing system limits.
+
+- **PendingIntent Activity launch**
+  - **Scope**: All Android versions; Android 10+ uses version-aware background-activity-launch options.
+  - **Condition**: Launching through a `PendingIntent` is more suitable than a direct start call.
+  - **Behavior**: Builds `PendingIntent.getActivity(...)` and triggers it with `send()`.
+  - **Role**: Auditable proxy launch path that respects sender-side and creator-side system checks.
+
+- **Double Intent `startActivities(Intent[])`**
+  - **Scope**: Android 4.1/API 16 and above.
+  - **Condition**: A fuller task stack should be built through multiple Intents.
+  - **Behavior**: Calls `startActivities(...)` with an Intent array.
+  - **Role**: Public API fallback with a different task-stack branch from single-Intent launch.
+
+- **Binder `startActivities`**
+  - **Scope**: Mainly Android 5.0-11/API 21-30.
+  - **Condition**: The current platform exposes a compatible Activity manager transaction path.
+  - **Behavior**: Selects `IActivityManager` or `IActivityTaskManager` by version and issues a Binder transaction.
+  - **Role**: Native/Binder compatibility path for historical Android branches.
+
+- **`startActivityForResult`**
+  - **Scope**: Activity context only.
+  - **Condition**: The caller needs the legacy result-returning public API.
+  - **Behavior**: Calls `startActivityForResult(intent, requestCode)`.
+  - **Role**: Compatibility path for legacy business flows; hidden callback hooks are not embedded.
+
+- **VirtualDisplay + Presentation**
+  - **Scope**: Android 8.0/API 26 and above.
+  - **Condition**: The device supports virtual display and launch-display assignment.
+  - **Behavior**: Creates a VirtualDisplay/Presentation environment and attempts `setLaunchDisplayId`.
+  - **Role**: Covers multi-display, virtual-display, and external Activity presentation scenarios.
+
+- **`ActivityManager.moveTaskToFront`**
+  - **Scope**: Existing task with current Activity `taskId` and `REORDER_TASKS` permission.
+  - **Condition**: The target task already exists and should be restored instead of creating a new Activity.
+  - **Behavior**: Calls `ActivityManager.moveTaskToFront(taskId, flags)`.
+  - **Role**: Restores an existing task stack and avoids duplicate Activity instances.
+
+- **Shell / Root command registration**
+  - **Scope**: shell, root, system app, or authorized test environments.
+  - **Condition**: Command-side Activity launch needs to be audited.
+  - **Behavior**: Registers the command branch and logs version, permission, and skip reasons.
+  - **Role**: Test and system-level verification path; not executed by the normal app entry.
+
+- **Notification BAL token registration**
+  - **Scope**: Android 10-14/API 29-34 research window.
+  - **Condition**: Notification-related background Activity launch authorization needs to be audited.
+  - **Behavior**: Registration and logging only.
+  - **Role**: Records version-specific notification launch boundaries without embedding exploit behavior.
+
+- **`startNextMatchingActivity`**
+  - **Scope**: Activity context only.
+  - **Condition**: The current Activity wants to continue with the next matching Activity.
+  - **Behavior**: Calls public API `startNextMatchingActivity(intent)`.
+  - **Role**: Covers a less common public Activity matching branch.
+
+- **CredentialManager UI registration**
+  - **Scope**: Android 14/API 34 system UI path.
+  - **Condition**: CredentialManager UI and background Activity limits need to be audited.
+  - **Behavior**: Registration and logging only.
+  - **Role**: Research coverage for high-version system UI launch boundaries.
+
+- **PrintManager UI PendingIntent registration**
+  - **Scope**: Android 6.0-14/API 23-34 research window.
+  - **Condition**: Print system UI, PendingIntent, and background Activity launch interaction needs to be audited.
+  - **Behavior**: Registration and logging only.
+  - **Role**: Audit coverage for system-UI-triggered PendingIntent branches.
+
+- **MediaButton BAL propagation registration**
+  - **Scope**: Android 12-14/API 31-34 research window.
+  - **Condition**: Media button, MediaSession, PendingIntent, and BAL propagation boundaries need to be audited.
+  - **Behavior**: Registration and logging only.
+  - **Role**: Versioned analysis path for media-app background launch boundaries.
+
+The native strategy order is fixed: virtual display, notification BAL registration, media-button BAL registration, Binder, PendingIntent, double `startActivities`, `startNextMatchingActivity`, `startActivityForResult`, CredentialManager registration, PrintManager registration, Shell / Root command registration, `moveTaskToFront`, `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION`, direct Activity context, and `FLAG_ACTIVITY_NEW_TASK` fallback. High-risk, privileged, or research-only paths remain in the strategy registry and audit logs for coverage, while the default entry runs only executable paths.
 
 ---
 
@@ -271,41 +378,6 @@ adb logcat | grep -E "(Fw|FwStart|FwHealth|ServiceStarter)"
 | 14+ | 34+ | `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permission; sender-side opt-in for PendingIntent background launches |
 | 15+ | 35+ | Stricter background limits, **16KB page size support** |
 | 16 | 36 | Sender/creator-side PendingIntent launch modes; default branch uses visible-only allowance |
-
-### Unified startActivity Strategy
-
-Fw now includes a C++ `start/` module that exposes one unified `start` entry through `FwStart.start(context, intent)`. The default entry runs executable strategies only; `FwStart.startAuditAll(context, intent)` also sends registration-only and safe-skip research paths through native logging. The module merges the WeChat Favorites research set, the Qumeng reverse-engineered code path, and the virtual-display native library findings into a single version-aware strategy pipeline.
-
-```kotlin
-val result = FwStart.start(context, targetIntent)
-if (result.success) {
-    Log.d("FwStart", "Started by ${result.strategy?.displayName}")
-}
-
-val auditResult = FwStart.startAuditAll(context, targetIntent)
-```
-
-| Source | Strategy | Android Scope | Runtime Behavior |
-|--------|----------|---------------|------------------|
-| Qumeng | Activity `startActivity` | All versions | Executed when `context` is an `Activity` |
-| Qumeng | `FLAG_ACTIVITY_NEW_TASK` fallback | All versions | Executed for non-Activity contexts |
-| kuaichongleida sss2 | `NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION` | All versions | Executable fallback that reduces recent-task exposure and transition animation |
-| Qumeng | `PendingIntent.getActivity(...).send()` | All versions, BAL options on 10+ | Executed with version-aware `ActivityOptions` |
-| Qumeng | Double `startActivities(Intent[])` | 16+ | Executed as fallback |
-| Qumeng | Binder `startActivities` | 21-30 | Executed with `IActivityManager` / `IActivityTaskManager` selection |
-| Qumeng | `startActivityForResult` | Activity context only | Executed via public API; hidden callback hook is not embedded |
-| Native SO | `VirtualDisplay + Presentation` | 26+ | Executed through `setLaunchDisplayId` when the system allows it |
-| gdtadv2 | `ActivityManager.moveTaskToFront` | Activity context | Requires current Activity taskId and `REORDER_TASKS` |
-| WeChat 830 | `am start-in-vsync` | shell/root only | Registered with version/permission checks; skipped for normal apps |
-| WeChat 831 | Notification BAL token | 29-34 research window | Registered and logged; vulnerability exploitation is not embedded |
-| WeChat 832 | `startNextMatchingActivity` | Activity context only | Executed through public API |
-| WeChat 833 | CredentialManager UI | 34 | Registered and logged; system UI abuse is not embedded |
-| WeChat 834 | PrintManager UI PendingIntent | 23-34 research window | Registered and logged; system UI abuse is not embedded |
-| WeChat 835 | MediaButton BAL propagation | 31-34 research window | Registered and logged; privileged media-key chain is not embedded |
-
-The native strategy order is fixed: virtual display, notification BAL registration, media-button BAL registration, Binder, PendingIntent, double `startActivities`, `startNextMatchingActivity`, `startActivityForResult`, CredentialManager registration, PrintManager registration, shell registration, `moveTaskToFront`, `NEW_TASK + EXCLUDE_FROM_RECENTS`, direct Activity context, and `NEW_TASK` fallback. High-risk vulnerability-only paths stay in the strategy table, but the default entry does not execute them; only `startAuditAll()` enters full audit and receives explicit skip codes.
-
----
 
 ## Vendor ROM Adaptation
 

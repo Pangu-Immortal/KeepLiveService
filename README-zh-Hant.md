@@ -8,6 +8,18 @@
 
 ---
 
+## 文件導覽
+
+- [快速接入](#快速接入)
+- [體外 Activity 策略](#體外-activity-策略)
+- [常用配置](#常用配置)
+- [執行時 API](#執行時-api)
+- [授權型策略](#授權型策略)
+- [建置與測試](#建置與測試)
+- [更多文件](#更多文件)
+
+---
+
 ## 快速接入
 
 ### 1. 加入依賴
@@ -38,6 +50,37 @@ class App : Application() {
 ```
 
 低侵入策略會使用預設配置啟動；VPN、伴侶裝置、設備管理員、懸浮窗、1 像素 Activity、聯絡人/簡訊觀察等策略需要明確開啟或取得使用者授權。
+
+---
+
+## 體外 Activity 策略
+
+Fw 透過 `FwStart.start(context, intent)` 提供統一的體外 Activity 啟動入口，並透過 `FwStart.startAuditAll(context, intent)` 提供全量審計入口。預設入口只執行普通應用可落地、風險可控的路徑；審計入口會記錄需要特殊系統條件、特權權限或僅供研究登記的路徑，並在日誌中返回明確跳過原因。
+
+```kotlin
+val result = FwStart.start(context, targetIntent)
+if (result.success) {
+    FwLog.d("${result.strategy?.displayName}")
+}
+
+val audit = FwStart.startAuditAll(context, targetIntent)
+```
+
+- **Activity Context 直啟：全版本可用，當 `context` 是 Activity 時直接呼叫 `startActivity(intent)`。**
+- **`FLAG_ACTIVITY_NEW_TASK` 兜底：非 Activity Context 時追加新任務旗標後啟動。**
+- **`NEW_TASK + EXCLUDE_FROM_RECENTS + NO_ANIMATION`：新任務啟動時減少最近任務展示與切換動畫。**
+- **PendingIntent Activity：透過 `PendingIntent.getActivity(...).send()` 走代理啟動路徑。**
+- **雙 Intent `startActivities(Intent[])`：Android 4.1+ 用於建立更完整的任務棧。**
+- **Binder `startActivities`：主要覆蓋 Android 5.0-11 的 Native/Binder 相容分支。**
+- **`startActivityForResult`：僅 Activity Context，保留公開 API 結果回傳路徑。**
+- **VirtualDisplay + Presentation：Android 8.0+ 嘗試透過 `setLaunchDisplayId` 啟動到虛擬螢幕。**
+- **`ActivityManager.moveTaskToFront`：已有任務且具備 `REORDER_TASKS` 權限時把任務移到前台。**
+- **Shell / Root 命令登記：僅供 shell、root、系統應用或授權測試環境審計。**
+- **Notification BAL token 登記：Android 10-14 研究窗口，只登記與記錄日誌。**
+- **`startNextMatchingActivity`：僅 Activity Context，走公開 Activity 匹配啟動分支。**
+- **CredentialManager UI 登記：Android 14 系統 UI 路徑，只審計不濫用系統 UI。**
+- **PrintManager UI PendingIntent 登記：Android 6.0-14 研究窗口，只登記與記錄日誌。**
+- **MediaButton BAL 傳播登記：Android 12-14 研究窗口，只審計媒體按鍵與 BAL 傳播邊界。**
 
 ---
 
@@ -77,10 +120,6 @@ Fw.stop()
 Fw.isInitialized()
 ```
 
-```kotlin
-val result = FwStart.start(context, targetIntent)
-val audit = FwStart.startAuditAll(context, targetIntent)
-```
 
 ---
 
