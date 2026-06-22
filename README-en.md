@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-purple.svg)](https://kotlinlang.org)
 [![16K Page Size](https://img.shields.io/badge/16K%20Page%20Size-Compatible-orange.svg)](https://developer.android.com/guide/practices/page-sizes)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
 
@@ -402,12 +402,15 @@ AutoStartPermissionManager.openAutoStartSettings(context)
 
 | Tool | Version |
 |------|---------|
-| Gradle | 9.5.1 |
+| Gradle | 9.6.0 |
 | AGP (Android Gradle Plugin) | 9.2.1 |
-| Kotlin | 2.3.21 |
+| Kotlin | 2.4.0 |
 | JVM | 21 |
-| NDK | 27.2.12479018 |
-| compileSdk / targetSdk | 36 (Android 16) |
+| Java source / target | 21 |
+| NDK | 28.2.13676358 |
+| CMake | 4.1.2 |
+| Build Tools | 36.1.0 |
+| compileSdk / targetSdk | 36.1 (Android 16 QPR2) / 36 (Android 16) |
 | minSdk | 24 (Android 7.0) |
 
 ---
@@ -665,7 +668,7 @@ Native daemon (`fork()`) has limited effectiveness in normal apps because force-
 
 **Q: Does Fw support Android 16?**
 
-Yes. Fw targets `compileSdk = 36` (Android 16) and is fully compatible with 16KB page size devices introduced in Android 15+. All native libraries are compiled with `-Wl,-z,max-page-size=16384`.
+Yes. Fw targets Android 16 QPR2 with `compileSdk` 36.1 and is fully compatible with 16KB page size devices introduced in Android 15+. All native libraries are compiled with `-Wl,-z,max-page-size=16384`.
 
 **Q: How do apps like Moji Weather stay alive "forever"?**
 

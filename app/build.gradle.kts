@@ -48,8 +48,13 @@ fun hasReleaseSigningEnv(): Boolean {
 
 android {
     namespace = "com.google.services"
-    compileSdk = 36
-    ndkVersion = "27.2.12479018"
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+    buildToolsVersion = "36.1.0"
+    ndkVersion = "28.2.13676358"
 
     val releaseSigningEnabled = hasReleaseSigningEnv()
     logger.lifecycle(
@@ -140,7 +145,7 @@ android {
 
 // 注意：proguard-dictionary.txt 已经手动配置好了，不需要自动生成
 // 如果需要重新生成，可以手动运行 generateProguardDictionary task
-val generateProguardDictionary by tasks.register("generateProguardDictionary") {
+val generateProguardDictionary = tasks.register("generateProguardDictionary") {
     group = "Build"
     description = "Generates a new random ProGuard dictionary (WARNING: overwrites existing dictionary)"
     doLast {

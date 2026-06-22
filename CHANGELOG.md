@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardened VPN startup to require user authorization, foreground notification startup, no default traffic routing, and explicit special-use subtype metadata.
 - Changed 1-pixel Activity and contacts/SMS observers to opt-in defaults, and stopped merging contacts/SMS permissions into host apps by default.
 - Updated PendingIntent background-launch handling for Android 14-16 sender/creator-side options.
-- Upgraded the build toolchain to Gradle 9.5.1, AGP 9.2.1, Kotlin 2.3.21, Compose BOM 2026.05.01, and migrated to AGP built-in Kotlin with the new DSL.
+- Upgraded the build toolchain to Gradle 9.6.0, AGP 9.2.1, Kotlin 2.4.0, JDK 21, Android 16 QPR2 compile SDK 36.1, Build Tools 36.1.0, NDK r28c, CMake 4.1.2, Compose BOM 2026.05.01, and migrated to AGP built-in Kotlin with the new DSL.
 - Updated README, English README, and helper docs to document health checks, VPN authorization, MediaBrowser, and full startActivity strategy boundaries.
 
 ## [2.0.1] - 2026-05-26
@@ -48,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 16 GitHub topic tags
 
 ### Changed
-- Upgraded toolchain: Gradle 9.5.1, AGP 9.2.1, Kotlin 2.3.21
+- Upgraded toolchain: Gradle 9.6.0, AGP 9.2.1, Kotlin 2.4.0
 - Strategy count increased from 27 to 35+
 - Published to Maven Central as v2.0.0
 

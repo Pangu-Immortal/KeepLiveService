@@ -12,7 +12,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![API](https://img.shields.io/badge/API-24%2B-brightgreen.svg)](https://android-arsenal.com/api?level=24)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-purple.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.0-purple.svg)](https://kotlinlang.org)
 [![16K Page Size](https://img.shields.io/badge/16K%20Page%20Size-Compatible-orange.svg)](https://developer.android.com/guide/practices/page-sizes)
 [![Google Play](https://img.shields.io/badge/Google%20Play-Ready-success.svg)](https://developer.android.com/distribute/best-practices/develop/64-bit)
 
@@ -1350,13 +1350,15 @@ Native 守护进程（C++ fork）在普通应用中效果有限——Android 5.0
 | 项目 | 版本 |
 |-----|------|
 | Android Studio | Android Studio Otter 2 Feature Drop 2025.2.2 |
-| Gradle | 9.5.1 |
+| Gradle | 9.6.0 |
 | AGP (Android Gradle Plugin) | 9.2.1 |
-| Kotlin | 2.3.21 |
+| Kotlin | 2.4.0 |
 | JVM | 21 |
-| NDK | 27.2.12479018 |
-| CMake | 3.22.1 |
-| compileSdk | 36 (Android 16) |
+| Java source / target | 21 |
+| NDK | 28.2.13676358 |
+| CMake | 4.1.2 |
+| Build Tools | 36.1.0 |
+| compileSdk | 36.1 (Android 16 QPR2) |
 | targetSdk | 36 |
 | minSdk | 24 (Android 7.0) |
 
@@ -1408,7 +1410,7 @@ Native 守护进程（C++ fork）在普通应用中效果有限——Android 5.0
 - 新增 `FwWidgetProvider` — 桌面小组件保活，30 分钟定时唤醒
 - 新增 `FwDreamService` — 屏保保活，充电待机时自动激活
 - FwConfig 新增 8 个配置项，总配置项数量超过 50+
-- 全面升级工具链：Gradle 9.5.1 + AGP 9.2.1 + Kotlin 2.3.21
+- 全面升级工具链：Gradle 9.6.0 + AGP 9.2.1 + Kotlin 2.4.0
 - 增加项目主题标签和竞品对比表
 - 发布到 Maven Central：`implementation("io.github.pangu-immortal:keeplive-framework:2.0.0")`
 

@@ -203,10 +203,10 @@ Yes. All 35+ strategies have independent on/off switches via `FwConfig`. The 50+
 
 ## Tech Stack
 
-- **Language**: Kotlin 2.3.20 + C++17
-- **Build**: Gradle 9.4.1, Android Gradle Plugin 9.1.0
-- **NDK**: 27.2.12479018, CMake 3.22.1
-- **Target**: compileSdk 36 (Android 16), minSdk 24 (Android 7.0)
+- **Language**: Kotlin 2.4.0 + C++17
+- **Build**: Gradle 9.6.0, Android Gradle Plugin 9.2.1
+- **NDK**: 28.2.13676358, CMake 4.1.2
+- **Target**: compileSdk 36.1 (Android 16 QPR2), targetSdk 36, minSdk 24 (Android 7.0)
 - **JVM**: 21
 - **Architecture**: armeabi-v7a, arm64-v8a, x86, x86_64
 - **Dependencies**: AndroidX Core KTX, AndroidX Media, AndroidX MediaRouter, AndroidX WorkManager, AndroidX Lifecycle

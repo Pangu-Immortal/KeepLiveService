@@ -1,6 +1,6 @@
 [versions]
 agp = "9.2.1"
-kotlin = "2.3.21"
+kotlin = "2.4.0"
 coreKtx = "1.18.0"
 splashScreen = "1.2.0"
 lottie = "6.7.1"

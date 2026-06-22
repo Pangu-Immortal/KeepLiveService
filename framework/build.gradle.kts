@@ -54,7 +54,7 @@ val fwRustAndroidTargets = listOf(
     FwRustAndroidTarget("x86", "i686-linux-android", "i686-linux-android"),
     FwRustAndroidTarget("x86_64", "x86_64-linux-android", "x86_64-linux-android")
 )
-val fwAndroidNdkVersion = "27.2.12479018"
+val fwAndroidNdkVersion = "28.2.13676358"
 val fwBuildRust = providers.gradleProperty("fwBuildRust")
     .map { value -> value.equals("true", ignoreCase = true) }
     .orElse(false)
@@ -73,7 +73,12 @@ fun rustLinkerEnvName(rustTriple: String): String =
 
 android {
     namespace = "com.service.framework"
-    compileSdk = 36
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+    buildToolsVersion = "36.1.0"
     ndkVersion = fwAndroidNdkVersion
 
     defaultConfig {
@@ -143,7 +148,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+            version = "4.1.2"
         }
     }
 
