@@ -19,6 +19,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -63,6 +64,8 @@ import com.google.services.util.PermissionHelper
 import com.service.framework.Fw
 import com.service.framework.strategy.AutoStartPermissionManager
 import com.service.framework.strategy.BatteryOptimizationManager
+import com.service.framework.strategy.CompanionDeviceManagerHelper
+import com.service.framework.strategy.FwVpnService
 import com.service.framework.util.DeviceUtils
 
 class MainActivity : ComponentActivity() {
@@ -76,6 +79,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private var refreshTrigger = mutableStateOf(0)
+    private var verifierSummary = mutableStateOf("等待执行全量 API 验证")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,7 +96,14 @@ class MainActivity : ComponentActivity() {
                     onRequestBatteryOptimization = ::requestBatteryOptimization,
                     onOpenAutoStartSettings = ::openAutoStartSettings,
                     onOpenOverlaySettings = ::openOverlaySettings,
-                    onOpenAppSettings = ::openAppSettings
+                    onOpenAppSettings = ::openAppSettings,
+                    onStartExternalOnce = ::startExternalOnce,
+                    onStartExternalLoop = ::startExternalLoop,
+                    onStopExternalLoop = ::stopExternalLoop,
+                    onVerifyAllFwApi = ::verifyAllFwApi,
+                    onRequestVpnPermission = ::requestVpnPermission,
+                    onRequestCompanionDevice = ::requestCompanionDevice,
+                    verifierSummary = verifierSummary.value
                 )
             }
         }
@@ -192,6 +203,47 @@ class MainActivity : ComponentActivity() {
         val message = if (isInitialized) "小守护正在努力工作ing~ 💪✨" else "小守护还在睡觉觉 💤"
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
+
+    private fun startExternalOnce() {
+        val result = ExternalActivityLaunchTester.startAuditOnce(this, "ui-once")
+        Toast.makeText(this, "体外启动：${result.message}", Toast.LENGTH_LONG).show()
+    }
+
+    private fun startExternalLoop() {
+        ExternalActivityLaunchTester.startLoop(this)
+        refreshTrigger.value++
+        Toast.makeText(this, "10 秒循环已启动，请按 Home 后观察日志", Toast.LENGTH_LONG).show()
+    }
+
+    private fun stopExternalLoop() {
+        ExternalActivityLaunchTester.stopLoop()
+        refreshTrigger.value++
+        Toast.makeText(this, "10 秒循环已停止", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun verifyAllFwApi() {
+        Log.d("FwMain", "开始执行 FW 全量 API 验证")
+        verifierSummary.value = FwApiFullVerifier.verify(this)
+        Toast.makeText(this, "FW 全量 API 验证完成，请看日志", Toast.LENGTH_LONG).show()
+    }
+
+    private fun requestVpnPermission() {
+        try {
+            val intent = FwVpnService.prepareIntent(this)
+            if (intent == null) {
+                Toast.makeText(this, "VPN 已授权", Toast.LENGTH_SHORT).show()
+            } else {
+                startActivity(intent)
+            }
+        } catch (e: Exception) {
+            Log.e("FwMain", "打开 VPN 授权失败", e)
+            Toast.makeText(this, "VPN 授权入口打开失败", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun requestCompanionDevice() {
+        CompanionDeviceManagerHelper.associate(this)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -205,7 +257,14 @@ fun MainScreen(
     onRequestBatteryOptimization: () -> Unit,
     onOpenAutoStartSettings: () -> Unit,
     onOpenOverlaySettings: () -> Unit,
-    onOpenAppSettings: () -> Unit
+    onOpenAppSettings: () -> Unit,
+    onStartExternalOnce: () -> Unit,
+    onStartExternalLoop: () -> Unit,
+    onStopExternalLoop: () -> Unit,
+    onVerifyAllFwApi: () -> Unit,
+    onRequestVpnPermission: () -> Unit,
+    onRequestCompanionDevice: () -> Unit,
+    verifierSummary: String
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -276,6 +335,18 @@ fun MainScreen(
                         onStopService = onStopService,
                         onCheckService = onCheckService,
                         onOpenAppSettings = onOpenAppSettings
+                    )
+
+                    // 体外 Activity 与 FW 全量验证测试台
+                    ExternalActivityTestSection(
+                        isLoopRunning = ExternalActivityLaunchTester.isRunning(),
+                        verifierSummary = verifierSummary,
+                        onStartExternalOnce = onStartExternalOnce,
+                        onStartExternalLoop = onStartExternalLoop,
+                        onStopExternalLoop = onStopExternalLoop,
+                        onVerifyAllFwApi = onVerifyAllFwApi,
+                        onRequestVpnPermission = onRequestVpnPermission,
+                        onRequestCompanionDevice = onRequestCompanionDevice
                     )
 
                     StrategyInfoSection()
@@ -528,6 +599,81 @@ fun VendorTipCard(title: String, tips: List<String>) {
                     color = Color(0xFF6B5B95).copy(alpha = 0.9f)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun ExternalActivityTestSection(
+    isLoopRunning: Boolean,
+    verifierSummary: String,
+    onStartExternalOnce: () -> Unit,
+    onStartExternalLoop: () -> Unit,
+    onStopExternalLoop: () -> Unit,
+    onVerifyAllFwApi: () -> Unit,
+    onRequestVpnPermission: () -> Unit,
+    onRequestCompanionDevice: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.96f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Layers,
+                    contentDescription = null,
+                    tint = Color(0xFFD81B60)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "体外 Activity 测试台 🧪",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = PinkDeep
+                )
+            }
+            Text(
+                text = "每 10 秒全量调用 FwStart，按 Home 后通过 logcat 观察 Android 后台启动限制。循环状态：${if (isLoopRunning) "运行中" else "未运行"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF666666)
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = onStartExternalOnce, modifier = Modifier.weight(1f)) {
+                    Text("弹一次")
+                }
+                Button(onClick = onStartExternalLoop, modifier = Modifier.weight(1f)) {
+                    Text("10秒循环")
+                }
+                OutlinedButton(onClick = onStopExternalLoop, modifier = Modifier.weight(1f)) {
+                    Text("停止")
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = onVerifyAllFwApi, modifier = Modifier.weight(1f)) {
+                    Text("全量API验证")
+                }
+                OutlinedButton(onClick = onRequestVpnPermission, modifier = Modifier.weight(1f)) {
+                    Text("VPN授权")
+                }
+                OutlinedButton(onClick = onRequestCompanionDevice, modifier = Modifier.weight(1f)) {
+                    Text("伴侣设备")
+                }
+            }
+            Text(
+                text = verifierSummary,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF4A4458),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF7F2FA), RoundedCornerShape(12.dp))
+                    .padding(12.dp)
+            )
         }
     }
 }

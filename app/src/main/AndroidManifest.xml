@@ -49,6 +49,17 @@
             android:theme="@style/Theme.KeepLiveService"
             tools:ignore="Instantiatable" />
 
+        <!-- ==================== 体外 Activity 弹窗测试页 ==================== -->
+        <!-- 使用独立任务栈和对话框主题，便于观察后台 FwStart 拉起效果。 -->
+        <activity
+            android:name=".ExternalActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity="${applicationId}.external"
+            android:theme="@style/Theme.KeepLiveService.ExternalDialog"
+            tools:ignore="Instantiatable" />
+
         <!--
             其他组件说明：
 

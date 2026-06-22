@@ -117,14 +117,14 @@ object FwLog {
      * Get log tag, use configured tag first, default to "Fw"
      */
     private val tag: String
-        get() = Fw.config?.logTag ?: "Fw"
+        get() = if (Fw.isInitialized()) Fw.config.logTag else "Fw"
 
     /**
      * 是否启用调试日志
      * Whether debug logging is enabled
      */
     private val isDebug: Boolean
-        get() = Fw.config?.enableDebugLog ?: true
+        get() = if (Fw.isInitialized()) Fw.config.enableDebugLog else true
 
     /**
      * 是否显示线程信息

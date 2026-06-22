@@ -114,7 +114,7 @@
         <service
             android:name="com.service.framework.service.FwForegroundService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback|dataSync|phoneCall"
+            android:foregroundServiceType="mediaPlayback|phoneCall"
             tools:ignore="Instantiatable" />
 
         <!--
@@ -127,8 +127,12 @@
             android:name="com.service.framework.service.DaemonService"
             android:exported="false"
             android:process=":daemon"
-            android:foregroundServiceType="dataSync"
-            tools:ignore="Instantiatable" />
+            android:foregroundServiceType="specialUse"
+            tools:ignore="Instantiatable">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="dual_process_daemon_monitoring_keep_alive_no_user_data_sync" />
+        </service>
 
         <!-- ==================== JobScheduler 服务 ==================== -->
 

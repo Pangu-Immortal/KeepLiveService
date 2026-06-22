@@ -104,12 +104,6 @@ class FwForegroundService : LifecycleService() {
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun resolveForegroundServiceType(): Int {
         var type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Fw.config.enableWorkManager) {
-            type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Fw.config.enableJobScheduler) {
-            type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Fw.config.enableCallStyleNotification) {
             type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL
         }

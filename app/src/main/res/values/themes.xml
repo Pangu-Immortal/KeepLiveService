@@ -30,4 +30,13 @@
         <item name="postSplashScreenTheme">@style/Theme.KeepLiveService</item>
     </style>
 
+    <!-- 体外 Activity 弹窗主题：透明背景、居中弹窗、独立任务栈。 -->
+    <style name="Theme.KeepLiveService.ExternalDialog" parent="android:style/Theme.Material.Light.Dialog.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+    </style>
+
 </resources>

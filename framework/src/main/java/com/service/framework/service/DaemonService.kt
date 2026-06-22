@@ -77,6 +77,7 @@ class DaemonService : LifecycleService() {
     companion object {
         private const val NOTIFICATION_ID = 10002
         private const val CHANNEL_ID = "fw_daemon_channel"
+        private const val DEFAULT_CHECK_INTERVAL_MS = 3000L
     }
 
     override fun onCreate() {
@@ -107,8 +108,9 @@ class DaemonService : LifecycleService() {
         createNotificationChannel()
         val notification = buildNotification()
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // 长驻守护进程不是短时数据同步任务，使用 specialUse 避免 Android 15+ dataSync 超时强杀。
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
@@ -137,6 +139,7 @@ class DaemonService : LifecycleService() {
             .setContentTitle("守护精灵")
             .setContentText("正在默默守护中~")
             .setSmallIcon(R.drawable.ic_notification)
+            .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .build()
     }
@@ -150,10 +153,15 @@ class DaemonService : LifecycleService() {
         monitoringJob = lifecycleScope.launch {
             FwLog.d("Starting main process monitoring job.")
             while (isActive) {
-                delay(Fw.config.dualProcessCheckInterval)
+                delay(resolveCheckInterval())
                 checkAndRestartMainProcess()
             }
         }
+    }
+
+    /** 获取守护轮询间隔；子进程未初始化 Fw 时使用默认值，避免读取 lateinit config 崩溃。 */
+    private fun resolveCheckInterval(): Long {
+        return if (Fw.isInitialized()) Fw.config.dualProcessCheckInterval else DEFAULT_CHECK_INTERVAL_MS
     }
 
     /**
